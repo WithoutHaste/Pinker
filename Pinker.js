@@ -14,6 +14,7 @@ pinker.config = {
 	,scopePadding: 10 //minimum space between scope boundary and scope contents
 	,canvasPadding: 15 //minimum space between canvas boundary and scopes
 	,backgroundColor: "#FFFFFF" //white
+	,shadeColor: "#EEEEEE" //pale gray
 	,lineColor: "#000000" //black
 	,lineDashLength: 5 //length of a dash in pixels
 	,lineDashSpacing: 3 //length of space between dashes in pixels
@@ -291,57 +292,69 @@ pinker.config = {
 		drawNodes(nodes, context);
 		
 		//relations
-		if(source.relations != null)
-		{
-			source.relations.relations.forEach(function(relation) {
-				const startNode = findNode(nodes, relation.startLabel);
-				const endNode = findNode(nodes, relation.endLabel);
-				if(startNode == null || endNode == null)
-					return;
-				drawArrowBetweenNodes(startNode, endNode, convertArrowType(relation.arrowType), convertLineType(relation.arrowType), context);
-			});
-		}
+		drawRelations(source, nodes, context);
 	}
 	
-	//draw nodes with a starting offset of (x,y)
-	function drawNodes(nodes, context, x=0, y=0) {
+	function drawNodes(nodes, context) {
 		context.strokeStyle = pinker.config.lineColor;
 		context.fillStyle = pinker.config.lineColor;
 		nodes.forEach(function(node) {
-			context.strokeRect(x + node.x, y + node.y, node.width, node.height);
+			context.strokeRect(node.absoluteX, node.absoluteY, node.width, node.height);
 			//label
 			//TODO save label layout instead of redoing it
 			//TODO have one method for centering text in a region, pass in one line or multiple lines
 			context.font = pinker.config.font();
 			let wordHeight = pinker.config.estimateFontHeight();
-			let localX = node.x + x;
-			let localY = node.y + y;
 			if(node.nodes.length == 0)
 			{
-				let y = localY + pinker.config.scopePadding + wordHeight;
+				let y = node.absoluteY + pinker.config.scopePadding + wordHeight;
 				let words = node.label.split(" ");
 				words.forEach(function(word) {
 					let textWidth = context.measureText(word).width;
-					context.fillText(word, localX + ((node.width - textWidth)/2), y);
+					context.fillText(word, node.absoluteX + ((node.width - textWidth)/2), y);
 					y += wordHeight;
 				});
 			}
 			else
 			{
+				context.fillStyle = pinker.config.shadeColor;
+				context.strokeStyle = pinker.config.lineColor;
+				context.fillRect(node.absoluteX, node.absoluteY, node.width, node.contentsY);
+				context.strokeRect(node.absoluteX, node.absoluteY, node.width, node.contentsY);
 				let textWidth = context.measureText(node.label).width;
-				context.fillText(node.label, localX + ((node.width - textWidth)/2), localY + pinker.config.scopePadding + wordHeight);
-				context.beginPath();
-				const lineY = localY + (pinker.config.scopePadding * 2) + wordHeight;
-				context.moveTo(localX, lineY);
-				context.lineTo(localX + node.width, lineY);
-				context.stroke();
+				context.fillStyle = pinker.config.lineColor;
+				context.fillText(node.label, node.absoluteX + ((node.width - textWidth)/2), node.absoluteY + node.contentsY - pinker.config.scopePadding);
 			
-				drawNodes(node.nodes, context, localX, lineY);
+				drawNodes(node.nodes, context);
 			}
 		});
 	}
 	
-	function convertLayoutToNodes(source, context) {
+	function drawRelations(source, allNodes, context, path=null) {
+		if(path == null || path.length == 0)
+			path = source.label;
+		else
+			path += "." + source.label;
+		if(source.relations != null)
+		{
+			source.relations.relations.forEach(function(relation) {
+				const startNode = findNode(allNodes, relation.startLabel, path);
+				const endNode = findNode(allNodes, relation.endLabel, path);
+				if(startNode == null || endNode == null)
+					return;
+				drawArrowBetweenNodes(startNode, endNode, convertArrowType(relation.arrowType), convertLineType(relation.arrowType), context);
+			});
+		}
+		source.nestedSources.forEach(function(nestedSource) {
+			drawRelations(nestedSource, allNodes, context, path);
+		});
+	}
+	
+	function convertLayoutToNodes(source, context, path=null) {
+		if(path == null || path.length == 0)
+			path = source.label;
+		else
+			path += "." + source.label;
 		let nodeRows = [];
 		let allNodes = [];
 		let y = pinker.config.canvasPadding; //top margin
@@ -360,15 +373,17 @@ pinker.config = {
 					let nestedSource = source.nestedSources[i];
 					if(nestedSource.label == label)
 					{
-						nestedNodes = convertLayoutToNodes(nestedSource, context);
+						nestedNodes = convertLayoutToNodes(nestedSource, context, path);
 						break;
 					}
 				}
 				
 				const isRightAlign = (index >= leftAlignCount);
 				const nodeDimensions = calculateNodeDimensions(label, nestedNodes, context);
-				let node = createNode(x, y, nodeDimensions.width, nodeDimensions.height, label, isRightAlign);
+				let node = createNode(x, y, nodeDimensions.width, nodeDimensions.height, label, path, isRightAlign);
 				node.nodes = nestedNodes;
+				node.contentsX = nodeDimensions.contentsX;
+				node.contentsY = nodeDimensions.contentsY;
 				nodes.push(node);
 				
 				x += nodeDimensions.width + pinker.config.scopeMargin;
@@ -391,45 +406,106 @@ pinker.config = {
 				x -= node.width - pinker.config.scopeMargin;
 			});
 		});
+		//calculate final locations
+		allNodes.forEach(function(node) {
+			node.setAbsoluteLocations();
+		});
 		return allNodes;
 	}
 	
-	function findNode(nodes, label) {
+	function findNode(nodes, label, labelPath) {
+		let node = findNodeRelative(nodes, label, labelPath);
+		if(node != null)
+			return node;
+		return findNodeAbsolute(nodes, label);
+	}
+	
+	function findNodeRelative(nodes, label, path) {
+		let startingNode = findNodeAbsolute(nodes, path);
+		if(startingNode == null)
+			return null;
+		return findNodeAbsolute(startingNode.nodes, label);
+	}
+	
+	function findNodeAbsolute(nodes, label) {
 		for(let i=0; i<nodes.length; i++)
 		{
 			let node = nodes[i];
-			if(node.label == label)
-				return node;
+			let result = node.findLabel(label);
+			if(result != null)
+				return result;
 		}
 		return null;
 	}
 	
-	function createNode(x, y, width, height, label=null, isRightAlign=false) {
+	function createNode(x, y, width, height, label=null, path=null, isRightAlign=false) {
 		return {
 			x: x,
 			y: y,
 			width: width,
 			height: height,
-			label: label,
+			path: path, //full path from root to parent scope
+			label: label, //simple label of node within scope
+			contentsX: 0, //starting point of contents, relative to this node
+			contentsY: 0,
 			nodes: [],
 			isRightAlign: isRightAlign,
+			pathLabel: function() {
+				if(path == null || path.length == 0)
+					return label;
+				return path + "." + label;
+			},
 			center: function() {
 				return {
 					x: this.x + (this.width / 2),
 					y: this.y + (this.height / 2)
 				};
 			},
+			absoluteCenter: function() {
+				return {
+					x: this.absoluteX + (this.width / 2),
+					y: this.absoluteY + (this.height / 2)
+				};
+			},
+			setAbsoluteLocations: function(deltaX=0, deltaY=0) {
+				this.absoluteX = this.x + deltaX;
+				this.absoluteY = this.y + deltaY;
+				let self = this;
+				this.nodes.forEach(function(nestedNode) {
+					nestedNode.setAbsoluteLocations(self.absoluteX + self.contentsX, self.absoluteY + self.contentsY);
+				});
+			},
 			isAbove: function(otherNode) {
-				return (this.y + this.height < otherNode.y);
+				return (this.absoluteY + this.height < otherNode.absoluteY);
 			},
 			isBelow: function(otherNode) {
-				return (this.y > otherNode.y + otherNode.height);
+				return (this.absoluteY > otherNode.absoluteY + otherNode.height);
 			},
 			isLeftOf: function(otherNode) {
-				return (this.x + this.width < otherNode.x);
+				return (this.absoluteX + this.width < otherNode.absoluteX);
 			},
 			isRightOf: function(otherNode) {
-				return (this.x > otherNode.x + otherNode.width);
+				return (this.absoluteX > otherNode.absoluteX + otherNode.width);
+			},
+			pathPrefix: function() {
+				return this.label + ".";
+			},
+			findLabel: function(label) {
+				if(label == null)
+					return null;
+				if(this.label == label)
+					return this;
+				if(!label.startsWith(this.pathPrefix()))
+					return null;
+				label = label.substring(this.pathPrefix().length);
+				for(let i=0; i<this.nodes.length;i++)
+				{
+					let node = this.nodes[i];
+					let result = node.findLabel(label);
+					if(result != null)
+						return result;
+				}
+				return null;
 			}
 		};
 	}
@@ -451,9 +527,13 @@ pinker.config = {
 			return calculateLabelDimensions(label, context);
 		const nestedDimensions = calculateCanvasDimensions(nestedNodes);
 		const labelWidth = context.measureText(label).width;
-		const width = Math.max(labelWidth + (pinker.config.scopePadding * 2), nestedDimensions.width);
-		const height = nestedDimensions.height + pinker.config.estimateFontHeight() + (pinker.config.scopePadding * 2);
-		return createDimensions(width, height);
+		const labelHeight = pinker.config.estimateFontHeight() + (pinker.config.scopePadding * 2);
+		return {
+			width: Math.max(labelWidth + (pinker.config.scopePadding * 2), nestedDimensions.width),
+			height: nestedDimensions.height + labelHeight,
+			contentsX: 0,
+			contentsY: labelHeight
+		};
 	}
 	
 	function calculateLabelDimensions(label, context) {
@@ -468,7 +548,12 @@ pinker.config = {
 		});
 		width += pinker.config.scopePadding * 2;
 		height += pinker.config.scopePadding * 2;
-		return createDimensions(width, height);
+		return {
+			width: width,
+			height: height,
+			contentsX: 0,
+			contentsY: 0
+		};
 	}
 	
 	function createDimensions(width, height) {
@@ -518,24 +603,24 @@ pinker.config = {
 	}
 	
 	function drawArrowBetweenNodes(startNode, endNode, arrowType, lineType, context) {
-		let start = startNode.center();
-		let end = endNode.center();
+		let start = startNode.absoluteCenter();
+		let end = endNode.absoluteCenter();
 		if(startNode.isAbove(endNode))
-			start.y = startNode.y + startNode.height;
+			start.y = startNode.absoluteY + startNode.height;
 		else if(startNode.isBelow(endNode))
-			start.y = startNode.y;
+			start.y = startNode.absoluteY;
 		if(startNode.isLeftOf(endNode))
-			start.x = startNode.x + startNode.width;
+			start.x = startNode.absoluteX + startNode.width;
 		else if(startNode.isRightOf(endNode))
-			start.x = startNode.x;
+			start.x = startNode.absoluteX;
 		if(endNode.isAbove(startNode))
-			end.y = endNode.y + endNode.height;
+			end.y = endNode.absoluteY + endNode.height;
 		else if(endNode.isBelow(startNode))
-			end.y = endNode.y;
+			end.y = endNode.absoluteY;
 		if(endNode.isLeftOf(startNode))
-			end.x = endNode.x + endNode.width;
+			end.x = endNode.absoluteX + endNode.width;
 		else if(endNode.isRightOf(startNode))
-			end.x = endNode.x;
+			end.x = endNode.absoluteX;
 		drawArrow(start, end, arrowType, lineType, context);
 	}
 	
