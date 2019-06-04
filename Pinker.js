@@ -220,6 +220,13 @@ pinker.config = {
 		});
 		
 		//relations
+		source.relations.relations.forEach(function(relation) {
+			const startNode = findNode(nodes, relation.startLabel);
+			const endNode = findNode(nodes, relation.endLabel);
+			if(startNode == null || endNode == null)
+				return;
+			drawArrowBetweenNodes(startNode, endNode, context);
+		});
 	}
 	
 	function convertLayoutToNodes(layout, context) {
@@ -261,6 +268,16 @@ pinker.config = {
 		return allNodes;
 	}
 	
+	function findNode(nodes, label) {
+		for(let i=0; i<nodes.length; i++)
+		{
+			let node = nodes[i];
+			if(node.label == label)
+				return node;
+		}
+		return null;
+	}
+	
 	function createNode(x, y, width, height, label=null, isRightAlign=false) {
 		return {
 			x: x,
@@ -268,7 +285,25 @@ pinker.config = {
 			width: width,
 			height: height,
 			label: label,
-			isRightAlign: isRightAlign
+			isRightAlign: isRightAlign,
+			center: function() {
+				return {
+					x: this.x + (this.width / 2),
+					y: this.y + (this.height / 2)
+				};
+			},
+			isAbove: function(otherNode) {
+				return (this.y + this.height < otherNode.y);
+			},
+			isBelow: function(otherNode) {
+				return (this.y > otherNode.y + otherNode.height);
+			},
+			isLeftOf: function(otherNode) {
+				return (this.x + this.width < otherNode.x);
+			},
+			isRightOf: function(otherNode) {
+				return (this.x > otherNode.x + otherNode.width);
+			}
 		};
 	}
 	
@@ -330,5 +365,39 @@ pinker.config = {
 			height: height
 		};
 	}
+	
+	function drawArrowBetweenNodes(startNode, endNode, context) {
+		let start = startNode.center();
+		let end = endNode.center();
+		if(startNode.isAbove(endNode))
+			start.y = startNode.y + startNode.height;
+		else if(startNode.isBelow(endNode))
+			start.y = startNode.y;
+		if(startNode.isLeftOf(endNode))
+			start.x = startNode.x + startNode.width;
+		else if(startNode.isRightOf(endNode))
+			start.x = startNode.x;
+		if(endNode.isAbove(startNode))
+			end.y = endNode.y + endNode.height;
+		else if(endNode.isBelow(startNode))
+			end.y = endNode.y;
+		if(endNode.isLeftOf(startNode))
+			end.x = endNode.x + endNode.width;
+		else if(endNode.isRightOf(startNode))
+			end.x = endNode.x;
+		drawArrow(start.x, start.y, end.x, end.y, context);
+	}
+	
+	function drawArrow(fromX, fromY, toX, toY, context) {
+		var headlen = 10; // length of head in pixels
+		var angle = Math.atan2(toY - fromY, toX - fromX);
+		context.beginPath();
+		context.moveTo(fromX, fromY);
+		context.lineTo(toX, toY);
+		context.lineTo(toX - headlen * Math.cos(angle - Math.PI/6), toY - headlen * Math.sin(angle - Math.PI/6));
+		context.moveTo(toX, toY);
+		context.lineTo(toX - headlen * Math.cos(angle + Math.PI/6), toY - headlen * Math.sin(angle + Math.PI/6));
+		context.stroke();
+	}	
 
 })();
