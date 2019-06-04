@@ -44,12 +44,11 @@
 			var canvas = document.getElementById("Example03");
 			var source = `
 			Layout:
-				[A][B][C]
-				[D]...[E]
-				[F]...[G]
+				[A][B]
+				[C][D]
 			Relations:
-				[D]->[E]
-				[F]-->[G]
+				[A]->[B]
+				[C]-->[D]
 			`;
 			pinker.draw(canvas, source);
 		</script>

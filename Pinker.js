@@ -223,13 +223,16 @@ pinker.config = {
 		});
 		
 		//relations
-		source.relations.relations.forEach(function(relation) {
-			const startNode = findNode(nodes, relation.startLabel);
-			const endNode = findNode(nodes, relation.endLabel);
-			if(startNode == null || endNode == null)
-				return;
-			drawArrowBetweenNodes(startNode, endNode, convertArrowType(relation.arrowType), convertLineType(relation.arrowType), context);
-		});
+		if(source.relations != null)
+		{
+			source.relations.relations.forEach(function(relation) {
+				const startNode = findNode(nodes, relation.startLabel);
+				const endNode = findNode(nodes, relation.endLabel);
+				if(startNode == null || endNode == null)
+					return;
+				drawArrowBetweenNodes(startNode, endNode, convertArrowType(relation.arrowType), convertLineType(relation.arrowType), context);
+			});
+		}
 	}
 	
 	function convertLayoutToNodes(layout, context) {

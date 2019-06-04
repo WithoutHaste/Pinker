@@ -30,6 +30,24 @@ The simplest scope just contains a label.
 
 Pinker defaults to displaying labels as center-aligned single words.
 
+### Arrow Types
+
+Plain arrow, for associations: `->`
+
+Hollow arrow, for inheritance: `-:>`
+
+Hollow diamond, for aggregation: `-o` (lower case letter O)
+
+Filled diamond, for composition: `-+`
+
+### Line Types
+
+Solid line: `->`
+
+Dashed line: `-->`
+
+Any kind of line can be combined with any kind of arrow.
+
 ### Single-Level Diagram
 
 In a single-level diagram, all scopes are at the same level of detail.
@@ -54,12 +72,39 @@ The **Relations** section defines connections between scopes. Each line in this 
 
 The **Relations** section is optional.
 
-### Arrow Types
+### Multi-Level Diagram
 
-Plain arrow, for associations: `->`
+In a multi-level diagram, scopes can be nested inside scopes. You can create any level of nesting.
 
-Hollow arrow, for inheritance: `-:>`
+To nest a diagram within a scope, create a **section** with the same label as the enclosing scope. 
 
-Hollow diamond, for aggregation: `-o` (lower case letter O)
+To reference a nested scope, specify the entire path to the scope using period-delimiters. For example, `[D]` is nested inside `[A]` so it is referenced as `A.D`. 
 
-Filled diamond, for composition: `-+`
+```
+Layout:
+	[A][B]
+Relations:
+	[A]->[B]
+A:
+	Layout:
+		[C][D]
+	Relations:
+		[C]->[D]
+		[C]->[D.G]
+B:
+	Layout:
+		[E][F]
+	Relations:
+		[E]->[F]
+A.D:
+	Layout:
+		[G]
+		[H]
+		[I]
+	Relations:
+		[H]->[G],[I]
+```
+
+Relations can be made across scopes. For example, `[C]` has a relation to `A.D.G`. Since `[C]` and `[D]` exist in the same scope, the relative reference `[D.G]` is sufficient. Relative references will be checked before global references.
+
+### Aliases
