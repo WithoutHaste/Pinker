@@ -1,55 +1,84 @@
 <html>
 	<head>
 		<script src='Pinker.js'></script>
+		<style type='text/css'>
+			body {
+				font-family: Arial;
+				font-size: 18;
+			}
+			div.header {
+				font-size: 38;
+				margin-bottom: 0.5em;
+			}
+			pre {
+				display: inline-block;
+				vertical-align: top;
+				font-family: Courier;
+				font-size: 18;
+			}
+		</style>
 	</head>
 	<body>
-		Example 1: A single-level diagram.
-		<div><canvas id='Example01'></canvas></div>
+		<div class='header'>
+		Pinker.js
+		</div>
+		
+		Types of arrows
+		<div>
+			<pre id='Source01'>
+Layout:
+	[A][B]
+	[C][D]
+	[E][F]
+	[G][H]
+Relations:
+	[A]->[B]
+	[C]-:>[D]
+	[E]-o[F]
+	[G]-+[H]
+			</pre>
+			<canvas id='Canvas01'></canvas>
+		</div>
 		<script>
-			var canvas = document.getElementById("Example01");
-			var source = `
-			Layout:
-				[A]
-				[B][D][E]
-				[C]...[F]
-			Relations:
-				[B]->[A],[C]
-				[D]->[B],[E],[F]
-			`;
+			var canvas = document.getElementById("Canvas01");
+			var source = document.getElementById("Source01").innerHTML;
 			pinker.draw(canvas, source);
 		</script>
 
-		Example 2: Types of arrows.
-		<div><canvas id='Example02'></canvas></div>
+		Types of lines
+		<div>
+			<pre id='Source02'>
+Layout:
+	[A][B]
+	[C][D]
+Relations:
+	[A]->[B]
+	[C]-->[D]
+			</pre>
+			<canvas id='Canvas02'></canvas>
+		</div>
 		<script>
-			var canvas = document.getElementById("Example02");
-			var source = `
-			Layout:
-				[A][B]
-				[C][D]
-				[E][F]
-				[G][H]
-			Relations:
-				[A]->[B]
-				[C]-:>[D]
-				[E]-o[F]
-				[G]-+[H]
-			`;
+			var canvas = document.getElementById("Canvas02");
+			var source = document.getElementById("Source02").innerHTML;
 			pinker.draw(canvas, source);
 		</script>
 
-		Example 3: Types of lines.
-		<div><canvas id='Example03'></canvas></div>
+		Single-level diagram
+		<div>
+			<pre id='Source03'>
+Layout:
+	[A]
+	[B][D][E]
+	[C]...[F]
+Relations:
+	[B]->[A],[C]
+	[D]->[B],[E],[F]
+			</pre>
+			<canvas id='Canvas03'></canvas>
+		</div>
 		<script>
-			var canvas = document.getElementById("Example03");
-			var source = `
-			Layout:
-				[A][B]
-				[C][D]
-			Relations:
-				[A]->[B]
-				[C]-->[D]
-			`;
+			var canvas = document.getElementById("Canvas03");
+			var source = document.getElementById("Source03").innerHTML;
 			pinker.draw(canvas, source);
 		</script>
 	</body>
