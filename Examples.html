@@ -81,5 +81,32 @@ Relations:
 			var source = document.getElementById("Source03").innerHTML;
 			pinker.draw(canvas, source);
 		</script>
+
+		Multi-level diagram
+		<div>
+			<pre id='Source04'>
+Layout:
+	[A][B]
+[A]:
+	Layout:
+		[C][D]
+	Relations:
+		[C]->[D]
+		[D]->[B.E]
+[B]:
+	Layout:
+		[E]
+		[F]
+	Relations:
+		[E]->[F]
+		[F]->[A.D]
+			</pre>
+			<canvas id='Canvas04'></canvas>
+		</div>
+		<script>
+			var canvas = document.getElementById("Canvas04");
+			var source = document.getElementById("Source04").innerHTML;
+			pinker.draw(canvas, source);
+		</script>
 	</body>
 </html>

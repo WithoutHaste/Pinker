@@ -29,6 +29,13 @@ pinker.config = {
 	
 	pinker.draw = function(canvasElement, sourceText) {
 		const source = parseSource(sourceText);
+		if(source.hasErrors)
+		{
+			source.errorMessages.forEach(function(errorMessage) {
+				console.log(`Pinker Error on canvas '${canvasElement.id}': ${errorMessage}`);
+			});
+			return;
+		}
 		//console.log(source);
 		updateCanvas(canvasElement, source);
 	};
