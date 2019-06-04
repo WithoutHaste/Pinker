@@ -92,8 +92,7 @@ pinker.config = {
 			}
 			else if(section.header.match(/^\{.+\}$/) != null) //an alias header
 			{
-				let header = section.header.match(/^\{(.+)\}$/)[1];
-				currentReferenceSection = createReferenceSection(header);
+				currentReferenceSection = createReferenceSection(section.header);
 				collapsedSections.push(currentReferenceSection);
 				inReferenceSection = true;
 			}
@@ -207,7 +206,7 @@ pinker.config = {
 				this.nestedSources.push(nestedSource);
 			},
 			//returns true when alias is found
-			addAliasesNestedSource: function(alias, sections) {
+			addAliasedNestedSource: function(alias, sections) {
 				if(this.alias == alias)
 					return true; //skip it, we already have one
 				let layoutRecord = this.layout.findAlias(alias);
@@ -279,14 +278,14 @@ pinker.config = {
 	function parseRelationsSection(section) {
 		let relationsSection = createRelationsSection();
 		section.body.forEach(function(line) {
-			let match = line.match(/\[(.*?)\](.*?)(\[.*\])/);
+			let match = line.match(/([\[\{].*?[\]\}])(.*?)([\[\{].*[\]\}])/); //TODO could match mismatched braces
 			if(match == null)
 				return;
 			let start = match[1];
 			let arrowType = match[2];
-			let ends = match[3].match(/\[.*?\]/g);
+			let ends = match[3].match(/[\[\{].*?[\]\}]/g);
 			ends.forEach(function(end) {
-				relationsSection.relations.push(createRelation(start, arrowType, dereferenceLabel(end)));
+				relationsSection.relations.push(createRelation(dereferenceLabel(start), arrowType, dereferenceLabel(end)));
 			});
 		});
 		return relationsSection;
@@ -310,7 +309,18 @@ pinker.config = {
 	
 	function createLayoutSection() {
 		return {
-			rows: []
+			rows: [],
+			//returns the matching LayoutRecord, or null
+			findAlias: function(alias) {
+				for(let i=0; i<this.rows.length; i++)
+				{
+					let row = this.rows[i];
+					let result = row.findAlias(alias);
+					if(result != null)
+						return result;
+				}
+				return null;
+			}
 		};
 	}
 	
@@ -320,6 +330,17 @@ pinker.config = {
 			rightAlign: [],
 			all: function() {
 				return this.leftAlign.concat(this.rightAlign);
+			},
+			//returns the matching LayoutRecord, or null
+			findAlias: function(alias) {
+				let layoutRecords = this.all();
+				for(let i=0; i<layoutRecords.length; i++)
+				{
+					let layoutRecord = layoutRecords[i];
+					if(layoutRecord.alias == alias)
+						return layoutRecord;
+				}
+				return null;
 			}
 		};
 	}
@@ -347,7 +368,10 @@ pinker.config = {
 	
 	//remove outer square brackets from text
 	function dereferenceLabel(text) {
-		return text.match(/^\[(.+)\]$/)[1];
+		let matches = text.match(/^\[(.+)\]$/);
+		if(matches == null)
+			return text;
+		return matches[1];
 	}
 	
 	function updateCanvas(canvasElement, source) {
@@ -413,6 +437,7 @@ pinker.config = {
 			source.relations.relations.forEach(function(relation) {
 				const startNode = findNode(allNodes, relation.startLabel, path);
 				const endNode = findNode(allNodes, relation.endLabel, path);
+				console.log(`relation ${relation.startLabel} to ${relation.endLabel}`);
 				if(startNode == null || endNode == null)
 					return;
 				drawArrowBetweenNodes(startNode, endNode, convertArrowType(relation.arrowType), convertLineType(relation.arrowType), context);
@@ -488,6 +513,9 @@ pinker.config = {
 	}
 	
 	function findNode(nodes, label, labelPath) {
+		let isAlias = (label.match(/^\{.+\}$/) != null);
+		if(isAlias)
+			return findNodeAlias(nodes, label);
 		let node = findNodeRelative(nodes, label, labelPath);
 		if(node != null)
 			return node;
@@ -506,6 +534,17 @@ pinker.config = {
 		{
 			let node = nodes[i];
 			let result = node.findLabel(label);
+			if(result != null)
+				return result;
+		}
+		return null;
+	}
+	
+	function findNodeAlias(nodes, alias) {
+		for(let i=0; i<nodes.length; i++)
+		{
+			let node = nodes[i];
+			let result = node.findAlias(alias);
 			if(result != null)
 				return result;
 		}
@@ -577,6 +616,20 @@ pinker.config = {
 				{
 					let node = this.nodes[i];
 					let result = node.findLabel(label);
+					if(result != null)
+						return result;
+				}
+				return null;
+			},
+			findAlias: function(alias) {
+				if(alias == null)
+					return null;
+				if(this.alias == alias)
+					return this;
+				for(let i=0; i<this.nodes.length;i++)
+				{
+					let node = this.nodes[i];
+					let result = node.findAlias(alias);
 					if(result != null)
 						return result;
 				}
