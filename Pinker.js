@@ -311,6 +311,7 @@ pinker.config = {
 			context.strokeRect(x + node.x, y + node.y, node.width, node.height);
 			//label
 			//TODO save label layout instead of redoing it
+			//TODO have one method for centering text in a region, pass in one line or multiple lines
 			context.font = pinker.config.font();
 			let wordHeight = pinker.config.estimateFontHeight();
 			let localX = node.x + x;
@@ -320,14 +321,15 @@ pinker.config = {
 				let y = localY + pinker.config.scopePadding + wordHeight;
 				let words = node.label.split(" ");
 				words.forEach(function(word) {
-					let width = context.measureText(word).width;
-					context.fillText(word, localX + ((node.width - width)/2), y);
+					let textWidth = context.measureText(word).width;
+					context.fillText(word, localX + ((node.width - textWidth)/2), y);
 					y += wordHeight;
 				});
 			}
 			else
 			{
-				context.fillText(node.label, localX + pinker.config.scopePadding, localY + pinker.config.scopePadding + wordHeight);
+				let textWidth = context.measureText(node.label).width;
+				context.fillText(node.label, localX + ((node.width - textWidth)/2), localY + pinker.config.scopePadding + wordHeight);
 				context.beginPath();
 				const lineY = localY + (pinker.config.scopePadding * 2) + wordHeight;
 				context.moveTo(localX, lineY);
