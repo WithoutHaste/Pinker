@@ -1,0 +1,23 @@
+<html>
+	<head>
+		<script src='Pinker.js'></script>
+	</head>
+	<body>
+		Example 1: A single-level diagram.
+		<div><canvas id='Example01'></canvas></div>
+		<script>
+			let canvas = document.getElementById("Example01");
+			let source = `
+			Layout:
+				[A]
+				[B][D][E]
+				[C]...[F]
+			Relations:
+				[B]->[A],[D]
+				[B]-:>[C]
+				[D]->[E],[F]
+			`;
+			pinker.draw(canvas, source);
+		</script>
+	</body>
+</html>
