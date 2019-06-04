@@ -4,11 +4,64 @@ A standalone JavaScript library for rendering code dependency diagrams on your w
 
 Pinker gives the user control over the layout of the diagram, which enables it to render more complicated diagrams.
 
-## Syntax
+## Using Pinker
+
+### Draw-Syntax
+
+Specify exactly when and how Pinker diagrams should be drawn.
+
+```
+<html>
+	<head>
+		<script src='Pinker.js'></script>
+	</head>
+	<body>
+		<pre id='Source01'>
+			Layout:
+				[A][B]
+			Relations:
+				[A]->[B]
+		</pre>
+		<canvas id='Canvas01'></canvas>
+		<script>
+			var canvas = document.getElementById("Canvas01");
+			var source = document.getElementById("Source01").innerHTML;
+			pinker.draw(canvas, source);
+		</script>
+	</body>
+</html>
+```
+
+### Render-Syntax
+
+Every `<pre class='pinker'>` element will be rendered as a Pinker diagram. The diagram source will be replaced with the resulting `<canvas>` element.
+
+```
+<html>
+	<head>
+		<script src='Pinker.js'></script>
+	</head>
+	<body>
+		<pre id='Source01' class='pinker'>
+			Layout:
+				[A][B]
+			Relations:
+				[A]->[B]
+		</pre>
+	</body>
+</html>
+<script type='text/javascript'>
+	pinker.render();
+</script>
+```
+
+## Pinker Syntax
 
 Indentation is not important; you can use indentation to make the source more legible.
 
 End-lines are important.
+
+Pinker will render as much of a diagram as it can make sense of. If parts of the source conflict with each other, Pinker will render the first/earlier part of the source.
 
 ### Source
 
@@ -22,7 +75,7 @@ A **scope** is an enclosing rectangle/shape around zero or more scopes. Scopes c
 
 Scopes are delimited by square brackets **[]**.
 
-The simplest scope just contains a label.
+The simplest scope just contains a label. Labels can be made of any characters except square brackets and end-lines.
 
 ```
 [Scope Label]

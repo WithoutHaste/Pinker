@@ -54,15 +54,16 @@ pinker.config = {
 	//returns an array of "section" objects
 	function parseSections(sourceText) {
 		const lines = sourceText.split("\n");
+		let sections = [];
 		let inSection = false;
 		let currentSection = null;
-		let sections = [];
+		//find all sections
 		for(let i=0; i<lines.length; i++)
 		{
 			let line = lines[i];
 			if(line.length == 0)
 				continue;
-			if(line.match(/\w+\:/) == null) //not a header
+			if(line.match(/^.+\:$/) == null) //not a normal or reference header
 			{
 				if(inSection)
 				{
@@ -71,14 +72,34 @@ pinker.config = {
 			}
 			else
 			{
-				currentSection = createSection(line.replace(":",""));
+				const header = line.match(/^(.+)\:$/)[1]
+				currentSection = createSection(header);
 				sections.push(currentSection);
 				inSection = true;
 			}
 		}
-		return sections;
-		//console.log(sections.length);
-		//console.log(sections);
+		//collapse reference sections
+		let collapsedSections = [];
+		let inReferenceSection = false;
+		let currentReferenceSection = null;
+		sections.forEach(function(section) {
+			if(section.header.match(/^\[.+\]$/) == null) //not a reference header
+			{
+				if(inReferenceSection)
+					currentReferenceSection.sections.push(section);
+				else
+					collapsedSections.push(section);
+			}
+			else
+			{
+				const header = section.header.match(/^\[(.+)\]$/)[1];
+				currentReferenceSection = createReferenceSection(header);
+				collapsedSections.push(currentReferenceSection);
+				inReferenceSection = true;
+			}
+		});		
+		
+		return collapsedSections;
 	}
 	
 	//returns the text, with all leading whitespace characters removed
@@ -86,33 +107,77 @@ pinker.config = {
 		return text.replace(/^\s+/mg,"");
 	}
 	
-	function createEmptySource() {
+	function createEmptySource(label=null) {
 		return {
+			label: label, //Level 1 has no label
 			hasErrors: false,
 			errorMessages: [],
 			layout: null,
 			relations: null,
+			nestedSources: [],
 			validate: function() {
 				if(this.layout == null)
 				{
 					this.hasErrors = true;
 					this.errorMessages.push("No layout section.");
 				}
+				let self = this;
+				this.nestedSources.forEach(function(nestedSource) {
+					nestedSource.validate();
+					if(nestedSource.hasErrors)
+					{
+						self.hasErrors = true;
+						nestedSource.errorMessages.forEach(function(errorMessage) {
+							self.errorMessages.push(`${errorMessage} Section: '${nestedSource.label}'.`);
+						});
+					}
+				});
 			},
 			addSections: function(sections) {
 				let self = this;
 				sections.forEach(function(section) {
-					self.addSection(section);
+					if(section.isReferenceSection)
+						self.addNestedSource(section.reference, section.sections);
+					else
+						self.addSection(section);
 				});
 			},
 			addSection: function(section) {
 				switch(section.header)
 				{
 					case "layout":
-					case "Layout": this.layout = parseLayoutSection(section); break;
+					case "Layout": 
+						if(this.layout != null)
+							return;
+						this.layout = parseLayoutSection(section); 
+						break;
 					case "relations":
-					case "Relations": this.relations = parseRelationsSection(section); break;
+					case "Relations": 
+						if(this.relations != null)
+							return;
+						this.relations = parseRelationsSection(section); 
+						break;
 				}
+			},
+			addNestedSource: function(label, sections) {
+				if(label.length == 0)
+					return; //invalid label
+				for(let i=0; i < this.nestedSources.length; i++)
+				{
+					let nestedSource = this.nestedSources[i];
+					if(nestedSource.label == label)
+						return; //it belongs here but we already have one, so skip it
+					let labelStart = nestedSource.label + ".";
+					if(label.startsWith(labelStart))
+					{
+						let subLabel = label.substring(labelStart.length);
+						nestedSource.addNestedSource(subLabel, sections);
+						return;
+					}
+				}
+				let nestedSource = createEmptySource(label);
+				nestedSource.addSections(sections);
+				this.nestedSources.push(nestedSource);
 			}
 		};
 	}
@@ -132,13 +197,13 @@ pinker.config = {
 		let leftRight = line.split("...");
 		let left = leftRight[0].match(/\[(.)+?\]/g);
 		left.forEach(function(label) {
-			layoutRow.leftAlign.push(label.replace(/[\[\]]/g, ""));
+			layoutRow.leftAlign.push(dereferenceLabel(label));
 		});
 		if(leftRight.length > 1)
 		{
 			let right = leftRight[1].match(/\[(.)+?\]/g);
 			right.forEach(function(label) {
-				layoutRow.rightAlign.push(label.replace(/[\[\]]/g, ""));
+				layoutRow.rightAlign.push(dereferenceLabel(label));
 			});
 		}
 		return layoutRow;
@@ -154,8 +219,7 @@ pinker.config = {
 			let arrowType = match[2];
 			let ends = match[3].match(/\[.*?\]/g);
 			ends.forEach(function(end) {
-				end = end.replace(/[\[\]]/g, "");
-				relationsSection.relations.push(createRelation(start, arrowType, end));
+				relationsSection.relations.push(createRelation(start, arrowType, dereferenceLabel(end)));
 			});
 		});
 		return relationsSection;
@@ -164,7 +228,16 @@ pinker.config = {
 	function createSection(header) {
 		return {
 			header: header,
-			body: []
+			body: [],
+			isReferenceSection: false
+		};
+	}
+	
+	function createReferenceSection(reference) {
+		return {
+			reference: reference,
+			sections: [],
+			isReferenceSection: true
 		};
 	}
 	
@@ -198,10 +271,14 @@ pinker.config = {
 		};
 	}
 	
+	//remove outer square brackets from text
+	function dereferenceLabel(text) {
+		return text.match(/^\[(.+)\]$/)[1];
+	}
+	
 	function updateCanvas(canvasElement, source) {
 		let context = canvasElement.getContext('2d');
-		const nodes = convertLayoutToNodes(source.layout, context);
-		console.log(nodes);
+		const nodes = convertLayoutToNodes(source, context);
 		const dimensions = calculateCanvasDimensions(nodes);
 		canvasElement.setAttribute("width", dimensions.width);
 		canvasElement.setAttribute("height", dimensions.height);
@@ -211,23 +288,7 @@ pinker.config = {
 		context.fillRect(0, 0, dimensions.width, dimensions.height);
 		
 		//layout
-		context.strokeStyle = pinker.config.lineColor;
-		context.fillStyle = pinker.config.lineColor;
-		nodes.forEach(function(node) {
-			context.strokeRect(node.x, node.y, node.width, node.height);
-			//label
-			//TODO save label layout instead of redoing it
-			context.font = pinker.config.font();
-			let wordHeight = pinker.config.estimateFontHeight();
-			let y = node.y + pinker.config.scopePadding + wordHeight;
-			let words = node.label.split(" ");
-			words.forEach(function(word) {
-				let width = context.measureText(word).width;
-				context.fillText(word, node.x + ((node.width - width)/2), y);
-				y += wordHeight;
-			});
-			
-		});
+		drawNodes(nodes, context);
 		
 		//relations
 		if(source.relations != null)
@@ -242,24 +303,74 @@ pinker.config = {
 		}
 	}
 	
-	function convertLayoutToNodes(layout, context) {
+	//draw nodes with a starting offset of (x,y)
+	function drawNodes(nodes, context, x=0, y=0) {
+		context.strokeStyle = pinker.config.lineColor;
+		context.fillStyle = pinker.config.lineColor;
+		nodes.forEach(function(node) {
+			context.strokeRect(x + node.x, y + node.y, node.width, node.height);
+			//label
+			//TODO save label layout instead of redoing it
+			context.font = pinker.config.font();
+			let wordHeight = pinker.config.estimateFontHeight();
+			let localX = node.x + x;
+			let localY = node.y + y;
+			if(node.nodes.length == 0)
+			{
+				let y = localY + pinker.config.scopePadding + wordHeight;
+				let words = node.label.split(" ");
+				words.forEach(function(word) {
+					let width = context.measureText(word).width;
+					context.fillText(word, localX + ((node.width - width)/2), y);
+					y += wordHeight;
+				});
+			}
+			else
+			{
+				context.fillText(node.label, localX + pinker.config.scopePadding, localY + pinker.config.scopePadding + wordHeight);
+				context.beginPath();
+				const lineY = localY + (pinker.config.scopePadding * 2) + wordHeight;
+				context.moveTo(localX, lineY);
+				context.lineTo(localX + node.width, lineY);
+				context.stroke();
+			
+				drawNodes(node.nodes, context, localX, lineY);
+			}
+		});
+	}
+	
+	function convertLayoutToNodes(source, context) {
 		let nodeRows = [];
 		let allNodes = [];
 		let y = pinker.config.canvasPadding; //top margin
 		let maxX = 0;
 		//layout as if all are left aligned
-		layout.rows.forEach(function(row) {
+		source.layout.rows.forEach(function(row) {
 			let nodes = []
 			let x = pinker.config.canvasPadding; //left margin
 			let rowHeight = 0;
 			const leftAlignCount = row.leftAlign.length;
 			let index = 0;
 			row.all().forEach(function(label) {
+				let nestedNodes = [];
+				for(let i=0; i<source.nestedSources.length; i++)
+				{
+					let nestedSource = source.nestedSources[i];
+					if(nestedSource.label == label)
+					{
+						nestedNodes = convertLayoutToNodes(nestedSource, context);
+						break;
+					}
+				}
+				
 				const isRightAlign = (index >= leftAlignCount);
-				const labelDimensions = calculateLabelDimensions(label, context);
-				nodes.push(createNode(x, y, labelDimensions.width, labelDimensions.height, label, isRightAlign));
-				x += labelDimensions.width + pinker.config.scopeMargin;
-				rowHeight = Math.max(rowHeight, labelDimensions.height);
+				const nodeDimensions = calculateNodeDimensions(label, nestedNodes, context);
+				let node = createNode(x, y, nodeDimensions.width, nodeDimensions.height, label, isRightAlign);
+				node.nodes = nestedNodes;
+				nodes.push(node);
+				
+				x += nodeDimensions.width + pinker.config.scopeMargin;
+				rowHeight = Math.max(rowHeight, nodeDimensions.height);
 				index++;
 			});
 			maxX = Math.max(maxX, x - pinker.config.scopeMargin);
@@ -298,6 +409,7 @@ pinker.config = {
 			width: width,
 			height: height,
 			label: label,
+			nodes: [],
 			isRightAlign: isRightAlign,
 			center: function() {
 				return {
@@ -332,6 +444,16 @@ pinker.config = {
 		return createDimensions(width, height);
 	}
 
+	function calculateNodeDimensions(label, nestedNodes, context) {
+		if(nestedNodes == null || nestedNodes.length == 0)
+			return calculateLabelDimensions(label, context);
+		const nestedDimensions = calculateCanvasDimensions(nestedNodes);
+		const labelWidth = context.measureText(label).width;
+		const width = Math.max(labelWidth + (pinker.config.scopePadding * 2), nestedDimensions.width);
+		const height = nestedDimensions.height + pinker.config.estimateFontHeight() + (pinker.config.scopePadding * 2);
+		return createDimensions(width, height);
+	}
+	
 	function calculateLabelDimensions(label, context) {
 		context.font = pinker.config.font();
 		let wordHeight = pinker.config.estimateFontHeight();
