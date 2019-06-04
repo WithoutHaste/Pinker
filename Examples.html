@@ -6,16 +6,35 @@
 		Example 1: A single-level diagram.
 		<div><canvas id='Example01'></canvas></div>
 		<script>
-			let canvas = document.getElementById("Example01");
-			let source = `
+			var canvas = document.getElementById("Example01");
+			var source = `
 			Layout:
 				[A]
 				[B][D][E]
 				[C]...[F]
 			Relations:
 				[B]->[A],[D]
-				[B]-:>[C]
+				[B]->[C]
 				[D]->[E],[F]
+			`;
+			pinker.draw(canvas, source);
+		</script>
+
+		Example 2: Types of arrows.
+		<div><canvas id='Example02'></canvas></div>
+		<script>
+			var canvas = document.getElementById("Example02");
+			var source = `
+			Layout:
+				[A][B]
+				[C][D]
+				[E][F]
+				[G][H]
+			Relations:
+				[A]->[B]
+				[C]-:>[D]
+				[E]-o[F]
+				[G]-+[H]
 			`;
 			pinker.draw(canvas, source);
 		</script>

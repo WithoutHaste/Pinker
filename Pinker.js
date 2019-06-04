@@ -367,16 +367,20 @@ pinker.config = {
 	}
 	
 	const arrowTypes = {
-		plain: 1, //arrow formed by two lines
-		hollow: 2, //arrow is a hollow triangle
+		plainArrow: 1,
+		hollowArrow: 2,
+		hollowDiamond: 3,
+		filledDiamond: 4
 	};
 	
 	function convertArrowType(arrowText) {
 		switch(arrowText)
 		{
-			case "->": return arrowTypes.plain;
-			case "-:>": return arrowTypes.hollow;
-			default: return arrowTypes.plain;
+			case "->": return arrowTypes.plainArrow;
+			case "-:>": return arrowTypes.hollowArrow;
+			case "-o": return arrowTypes.hollowDiamond;
+			case "-+": return arrowTypes.filledDiamond;
+			default: return arrowTypes.plainArrow;
 		}
 	}
 	
@@ -413,9 +417,10 @@ pinker.config = {
 		//arrow
 		const arrowCornerA = createCoordinates(end.x - headlen * Math.cos(angle - Math.PI/6), end.y - headlen * Math.sin(angle - Math.PI/6));
 		const arrowCornerB = createCoordinates(end.x - headlen * Math.cos(angle + Math.PI/6), end.y - headlen * Math.sin(angle + Math.PI/6));
+		const diamondCornerC = createCoordinates(arrowCornerA.x - headlen * Math.cos(angle + Math.PI/6), arrowCornerA.y - headlen * Math.sin(angle + Math.PI/6));
 		switch(arrowType)
 		{
-			case arrowTypes.plain:
+			case arrowTypes.plainArrow:
 				context.beginPath();
 				context.moveTo(end.x, end.y);
 				context.lineTo(arrowCornerA.x, arrowCornerA.y);
@@ -423,7 +428,7 @@ pinker.config = {
 				context.lineTo(arrowCornerB.x, arrowCornerB.y);
 				context.stroke();
 				break;
-			case arrowTypes.hollow:
+			case arrowTypes.hollowArrow:
 				//hollow center covers line
 				context.fillStyle = pinker.config.backgroundColor;
 				context.beginPath();
@@ -436,6 +441,44 @@ pinker.config = {
 				context.beginPath();
 				context.moveTo(end.x, end.y);
 				context.lineTo(arrowCornerA.x, arrowCornerA.y);
+				context.lineTo(arrowCornerB.x, arrowCornerB.y);
+				context.lineTo(end.x, end.y);
+				context.stroke();
+				break;
+			case arrowTypes.hollowDiamond:
+				//hollow center covers line
+				context.fillStyle = pinker.config.backgroundColor;
+				context.beginPath();
+				context.moveTo(end.x, end.y);
+				context.lineTo(arrowCornerA.x, arrowCornerA.y);
+				context.lineTo(diamondCornerC.x, diamondCornerC.y);
+				context.lineTo(arrowCornerB.x, arrowCornerB.y);
+				context.lineTo(end.x, end.y);
+				context.fill();
+				//arrow outline
+				context.beginPath();
+				context.moveTo(end.x, end.y);
+				context.lineTo(arrowCornerA.x, arrowCornerA.y);
+				context.lineTo(diamondCornerC.x, diamondCornerC.y);
+				context.lineTo(arrowCornerB.x, arrowCornerB.y);
+				context.lineTo(end.x, end.y);
+				context.stroke();
+				break;
+			case arrowTypes.filledDiamond:
+				//solid center covers line
+				context.fillStyle = pinker.config.lineColor;
+				context.beginPath();
+				context.moveTo(end.x, end.y);
+				context.lineTo(arrowCornerA.x, arrowCornerA.y);
+				context.lineTo(diamondCornerC.x, diamondCornerC.y);
+				context.lineTo(arrowCornerB.x, arrowCornerB.y);
+				context.lineTo(end.x, end.y);
+				context.fill();
+				//arrow outline
+				context.beginPath();
+				context.moveTo(end.x, end.y);
+				context.lineTo(arrowCornerA.x, arrowCornerA.y);
+				context.lineTo(diamondCornerC.x, diamondCornerC.y);
 				context.lineTo(arrowCornerB.x, arrowCornerB.y);
 				context.lineTo(end.x, end.y);
 				context.stroke();
