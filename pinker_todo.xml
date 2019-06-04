@@ -76,6 +76,25 @@ with the examples and link to github</Data>
       </Row>
       <Row>
         <Cell>
+          <Data ss:Type="Number">11</Data>
+        </Cell>
+        <Cell ss:StyleID="paragraph">
+          <Data ss:Type="String">sample
+of having a diagram source in a separate file
+and getting it in the webpage or js when you need it</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Todo</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Task</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-04T00:00:00.000</Data>
+        </Cell>
+      </Row>
+      <Row>
+        <Cell>
           <Data ss:Type="Number">2</Data>
         </Cell>
         <Cell ss:StyleID="paragraph">
@@ -102,6 +121,23 @@ like IsAlias or IsSectionHeader</Data>
           <Data ss:Type="String">refactor
 node.x/y to node.relativeX/Y
 node.absoluteX/Y to node.x/y</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Todo</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Task</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-04T00:00:00.000</Data>
+        </Cell>
+      </Row>
+      <Row>
+        <Cell>
+          <Data ss:Type="Number">13</Data>
+        </Cell>
+        <Cell ss:StyleID="paragraph">
+          <Data ss:Type="String">maybe default all  nodes in a lowest scope to the same dimensions? make the layout more regular?</Data>
         </Cell>
         <Cell>
           <Data ss:Type="String">Todo</Data>
@@ -223,6 +259,26 @@ maybe thicker for higher levels, thinner for inner levels</Data>
           <Data ss:Type="DateTime">2019-06-04T00:00:00.000</Data>
         </Cell>
       </Row>
+      <Row>
+        <Cell>
+          <Data ss:Type="Number">12</Data>
+        </Cell>
+        <Cell ss:StyleID="paragraph">
+          <Data ss:Type="String">support
+adding a Key to a diagram
+like this line type means X
+this line type means Y</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Todo</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Task</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-04T00:00:00.000</Data>
+        </Cell>
+      </Row>
     </Table>
     <x:WorksheetOptions />
   </ss:Worksheet>
@@ -300,7 +356,7 @@ maybe thicker for higher levels, thinner for inner levels</Data>
           </Data>
         </Cell>
         <Cell>
-          <Data ss:Type="Number">10</Data>
+          <Data ss:Type="Number">13</Data>
         </Cell>
       </Row>
       <Row>

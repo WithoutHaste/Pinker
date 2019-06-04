@@ -8,7 +8,7 @@ Pinker gives the user control over the layout of the diagram, which enables it t
 
 ### Draw-Syntax
 
-Specify exactly when and how Pinker diagrams should be drawn.
+Specify exactly when and how Pinker diagrams should be drawn. [Demo](Demo/DrawSyntax.html)
 
 ```
 <html>
@@ -34,7 +34,7 @@ Specify exactly when and how Pinker diagrams should be drawn.
 
 ### Render-Syntax
 
-Every `<pre class='pinker'>` element will be rendered as a Pinker diagram. The diagram source will be replaced with the resulting `<canvas>` element.
+Every `<pre class='pinker'>` element will be rendered as a Pinker diagram. The diagram source will be replaced with the resulting `<canvas>` element. [Demo](Demo/RenderSyntax.html)
 
 ```
 <html>
@@ -54,6 +54,22 @@ Every `<pre class='pinker'>` element will be rendered as a Pinker diagram. The d
 	pinker.render();
 </script>
 ```
+
+You can also separate your diagram sources into text files and include them in your web page. __(In testing, this worked in FireFox, but did not work in Chrome.)__ [Demo](Demo/RenderSyntax_FromFile.html)
+
+```
+<html>
+	<head>
+		<script src='Pinker.js'></script>
+	</head>
+	<body>
+		<object id='Source01' type="text/plain" data="Diagram01.txt" class="pinker"></object>
+	</body>
+</html>
+<script type='text/javascript'>
+	pinker.render();
+</script>
+
 
 ## Pinker Syntax
 

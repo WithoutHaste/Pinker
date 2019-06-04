@@ -1,0 +1,57 @@
+<html>
+	<head>
+		<script src='../Pinker.js'></script>
+		<style type='text/css'>
+			body {
+				font-family: Arial;
+				font-size: 18;
+			}
+			div.header {
+				font-size: 38;
+				margin-bottom: 0.5em;
+			}
+		</style>
+	</head>
+	<body>
+		<div class='header'>
+		Pinker.js: Render-Syntax
+		</div>
+		
+		Single-level diagram
+		<div>
+			<pre id='Source01' class='pinker'>
+Layout:
+	[A]
+	[B][D][E]
+	[C]...[F]
+Relations:
+	[B]->[A],[C]
+	[D]->[B],[E],[F]
+			</pre>
+		</div>
+
+		Multi-level diagram
+		<div>
+			<pre id='Source02' class='pinker'>
+Layout:
+	[A][B]
+[A]:
+	Layout:
+		[C][D]
+	Relations:
+		[C]->[D]
+		[D]->[B.E]
+[B]:
+	Layout:
+		[E]
+		[F]
+	Relations:
+		[E]->[F]
+		[F]->[A.D]
+			</pre>
+		</div>
+	</body>
+</html>
+<script type='text/javascript'>
+	pinker.render();
+</script>

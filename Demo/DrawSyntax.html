@@ -1,0 +1,72 @@
+<html>
+	<head>
+		<script src='../Pinker.js'></script>
+		<style type='text/css'>
+			body {
+				font-family: Arial;
+				font-size: 18;
+			}
+			div.header {
+				font-size: 38;
+				margin-bottom: 0.5em;
+			}
+			pre {
+				display: inline-block;
+				vertical-align: top;
+				font-family: Courier;
+				font-size: 18;
+			}
+		</style>
+	</head>
+	<body>
+		<div class='header'>
+		Pinker.js: Draw-Syntax
+		</div>
+		
+		Single-level diagram
+		<div>
+			<pre id='Source01'>
+Layout:
+	[A]
+	[B][D][E]
+	[C]...[F]
+Relations:
+	[B]->[A],[C]
+	[D]->[B],[E],[F]
+			</pre>
+			<canvas id='Canvas01'></canvas>
+		</div>
+		<script>
+			var canvas = document.getElementById("Canvas01");
+			var source = document.getElementById("Source01").innerHTML;
+			pinker.draw(canvas, source);
+		</script>
+
+		Multi-level diagram
+		<div>
+			<pre id='Source02'>
+Layout:
+	[A][B]
+[A]:
+	Layout:
+		[C][D]
+	Relations:
+		[C]->[D]
+		[D]->[B.E]
+[B]:
+	Layout:
+		[E]
+		[F]
+	Relations:
+		[E]->[F]
+		[F]->[A.D]
+			</pre>
+			<canvas id='Canvas02'></canvas>
+		</div>
+		<script>
+			var canvas = document.getElementById("Canvas02");
+			var source = document.getElementById("Source02").innerHTML;
+			pinker.draw(canvas, source);
+		</script>
+	</body>
+</html>

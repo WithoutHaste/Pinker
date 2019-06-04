@@ -27,7 +27,51 @@ pinker.config = {
 };
 
 (function() { //private scope
+
+	//render all sources onto new canvases
+	pinker.render = function() {
+		let pinkerElements = document.getElementsByClassName("pinker");
+		for(let i = 0; i < pinkerElements.length; i++)
+		{
+			let pinkerElement = pinkerElements[i];
+			switch(pinkerElement.tagName)
+			{
+				case "PRE": renderFromPre(pinkerElement); break;
+				case "OBJECT": pinkerElement.onload = function() { renderFromObject(pinkerElement); }; break;
+			}
+		}
+	};
 	
+	function renderFromPre(preElement) {
+		const sourceText = preElement.innerHTML;
+		const canvasElement = document.createElement("canvas");
+		if(preElement.id != null)
+			canvasElement.id = "canvas-" + preElement.id;
+		//insert canvas into pre element
+		preElement.innerHTML = null;
+		preElement.appendChild(canvasElement);
+		pinker.draw(canvasElement, sourceText);
+	}
+	
+	//works in FireFox but fails in Chrome due to CORS (cross-site data access rules)
+	function renderFromObject(objectElement) {
+		const sourceDocument = objectElement.contentDocument || objectElement.contentWindow.document;
+		let container = sourceDocument.getElementsByTagName('body')[0];
+		while(container.children.length > 0)
+		{
+			container = container.children[0];
+		}
+		const sourceText = container.innerHTML;
+		const canvasElement = document.createElement("canvas");
+		if(objectElement.id != null)
+			canvasElement.id = "canvas-" + objectElement.id;
+		//replace object element with canvas
+		objectElement.parentNode.insertBefore(canvasElement, objectElement);
+		objectElement.parentNode.removeChild(objectElement);
+		pinker.draw(canvasElement, sourceText);
+	}
+
+	//draw on provided canvas with provided source
 	pinker.draw = function(canvasElement, sourceText) {
 		const source = parseSource(sourceText);
 		if(source.hasErrors)
