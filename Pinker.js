@@ -437,7 +437,6 @@ pinker.config = {
 			source.relations.relations.forEach(function(relation) {
 				const startNode = findNode(allNodes, relation.startLabel, path);
 				const endNode = findNode(allNodes, relation.endLabel, path);
-				console.log(`relation ${relation.startLabel} to ${relation.endLabel}`);
 				if(startNode == null || endNode == null)
 					return;
 				drawArrowBetweenNodes(startNode, endNode, convertArrowType(relation.arrowType), convertLineType(relation.arrowType), context);
