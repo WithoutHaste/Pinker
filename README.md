@@ -2,7 +2,7 @@
 
 A standalone JavaScript library for rendering code dependency diagrams on your web page.
 
-Because Pinker pushes many of the layout decisions onto the user, it can render much more complicated diagrams than usual.
+Pinker gives the user control over the layout of the diagram, which enables it to render more complicated diagrams.
 
 ## Syntax
 
@@ -78,25 +78,25 @@ In a multi-level diagram, scopes can be nested inside scopes. You can create any
 
 To nest a diagram within a scope, create a **section** with the same label as the enclosing scope. 
 
-To reference a nested scope, specify the entire path to the scope using period-delimiters. For example, `[D]` is nested inside `[A]` so it is referenced as `A.D`. 
+To reference a nested scope, specify the entire path to the scope using period-delimiters. For example, `[D]` is nested inside `[A]` so it is referenced as `[A.D]`. 
 
 ```
 Layout:
 	[A][B]
 Relations:
 	[A]->[B]
-A:
+[A]:
 	Layout:
 		[C][D]
 	Relations:
 		[C]->[D]
 		[C]->[D.G]
-B:
+[B]:
 	Layout:
 		[E][F]
 	Relations:
 		[E]->[F]
-A.D:
+[A.D]:
 	Layout:
 		[G]
 		[H]
@@ -105,6 +105,6 @@ A.D:
 		[H]->[G],[I]
 ```
 
-Relations can be made across scopes. For example, `[C]` has a relation to `A.D.G`. Since `[C]` and `[D]` exist in the same scope, the relative reference `[D.G]` is sufficient. Relative references will be checked before global references.
+Relations can be made across scopes. For example, `[C]` has a relation to `[A.D.G]`. Since `[C]` and `[D]` exist in the same scope, the relative reference `[D.G]` is sufficient. Relative references will be checked before global references.
 
 ### Aliases
