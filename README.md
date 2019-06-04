@@ -97,8 +97,6 @@ The simplest scope just contains a label. Labels can be made of any characters e
 [Scope Label]
 ```
 
-Pinker defaults to displaying labels as center-aligned single words.
-
 ### Arrow Types
 
 Plain arrow, for associations: `->`
