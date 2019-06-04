@@ -12,7 +12,8 @@ pinker.config = {
 	,fontFamily: "Georgia"
 	,scopeMargin: 30 //minimum space around each scope
 	,scopePadding: 10 //minimum space between scope boundary and scope contents
-	,backgroundColor: "#CAFFF6" //sea foam
+	,canvasPadding: 15 //minimum space between canvas boundary and scopes
+	,backgroundColor: "#FFFFFF" // white "#EEEEEE" //silver "#FFFDEF" //beige "#FEF9DC" //sand "#CAFFF6" //sea foam
 	,lineColor: "#000000" //black
 	,font: function() {
 		return this.fontSize + "px " + this.fontFamily;
@@ -232,12 +233,12 @@ pinker.config = {
 	function convertLayoutToNodes(layout, context) {
 		let nodeRows = [];
 		let allNodes = [];
-		let y = pinker.config.scopeMargin; //top margin
+		let y = pinker.config.canvasPadding; //top margin
 		let maxX = 0;
 		//layout as if all are left aligned
 		layout.rows.forEach(function(row) {
 			let nodes = []
-			let x = pinker.config.scopeMargin; //left margin
+			let x = pinker.config.canvasPadding; //left margin
 			let rowHeight = 0;
 			const leftAlignCount = row.leftAlign.length;
 			let index = 0;
@@ -314,36 +315,11 @@ pinker.config = {
 			width = Math.max(width, node.x + node.width);
 			height = Math.max(height, node.y + node.height);
 		});
-		width += pinker.config.scopeMargin; //right margin
-		height += pinker.config.scopeMargin; //bottom margin
+		width += pinker.config.canvasPadding; //right margin
+		height += pinker.config.canvasPadding; //bottom margin
 		return createDimensions(width, height);
 	}
-/*	
-	function calculateCanvasDimensions(source, context) {
-		let width = 0;
-		let height = 0;
-		source.layout.rows.forEach(function(row) {
-			let rowDimensions = calculateRowDimensions(row, context);
-			width = Math.max(width, rowDimensions.width);
-			height += rowDimensions.height;
-		});
-		width += pinker.config.scopeMargin * 2;
-		height += pinker.config.scopeMargin * 2;
-		return createDimensions(width, height);
-	}
-	
-	function calculateRowDimensions(row, context) {
-		let width = 0;
-		let height = 0;
-		row.all().forEach(function(label) {
-			let labelDimensions = calculateLabelDimensions(label, context);
-			width += labelDimensions.width;
-			height = Math.max(height, labelDimensions.height);
-		});
-		width += pinker.config.scopeMargin * (row.all().length - 1);
-		return createDimensions(width, height);
-	}
-*/	
+
 	function calculateLabelDimensions(label, context) {
 		context.font = pinker.config.font();
 		let wordHeight = pinker.config.estimateFontHeight();
