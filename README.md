@@ -55,7 +55,7 @@ Every `<pre class='pinker'>` element will be rendered as a Pinker diagram. The d
 </script>
 ```
 
-You can also separate your diagram sources into text files and include them in your web page. __(In testing, this worked in FireFox, but did not work in Chrome.)__ [Demo](Demo/RenderSyntax_FromFile.html)
+You can also separate your diagram sources into text files and include them in your web page. _In testing, this worked in FireFox, but did not work in Chrome._ [Demo](Demo/RenderSyntax_FromFile.html)
 
 ```
 <html>
@@ -69,7 +69,7 @@ You can also separate your diagram sources into text files and include them in y
 <script type='text/javascript'>
 	pinker.render();
 </script>
-
+```
 
 ## Pinker Syntax
 
