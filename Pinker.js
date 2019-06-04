@@ -13,7 +13,7 @@ pinker.config = {
 	,scopeMargin: 30 //minimum space around each scope
 	,scopePadding: 10 //minimum space between scope boundary and scope contents
 	,canvasPadding: 15 //minimum space between canvas boundary and scopes
-	,backgroundColor: "#FFFFFF" // white "#EEEEEE" //silver "#FFFDEF" //beige "#FEF9DC" //sand "#CAFFF6" //sea foam
+	,backgroundColor: "#FFFFFF" //white
 	,lineColor: "#000000" //black
 	,font: function() {
 		return this.fontSize + "px " + this.fontFamily;
@@ -258,12 +258,12 @@ pinker.config = {
 		//apply right alignment
 		nodeRows.forEach(function(nodes) {
 			nodes.reverse();
-			let x = maxX;
+			let x = maxX - pinker.config.scopeMargin;
 			nodes.forEach(function(node) {
 				if(!node.isRightAlign)
 					return;
 				node.x = x;
-				x += node.width + pinker.config.scopeMargin;
+				x -= node.width - pinker.config.scopeMargin;
 			});
 		});
 		return allNodes;
