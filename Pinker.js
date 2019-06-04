@@ -225,7 +225,7 @@ pinker.config = {
 			const endNode = findNode(nodes, relation.endLabel);
 			if(startNode == null || endNode == null)
 				return;
-			drawArrowBetweenNodes(startNode, endNode, context);
+			drawArrowBetweenNodes(startNode, endNode, convertArrowType(relation.arrowType), context);
 		});
 	}
 	
@@ -366,7 +366,21 @@ pinker.config = {
 		};
 	}
 	
-	function drawArrowBetweenNodes(startNode, endNode, context) {
+	const arrowTypes = {
+		plain: 1, //arrow formed by two lines
+		hollow: 2, //arrow is a hollow triangle
+	};
+	
+	function convertArrowType(arrowText) {
+		switch(arrowText)
+		{
+			case "->": return arrowTypes.plain;
+			case "-:>": return arrowTypes.hollow;
+			default: return arrowTypes.plain;
+		}
+	}
+	
+	function drawArrowBetweenNodes(startNode, endNode, arrowType, context) {
 		let start = startNode.center();
 		let end = endNode.center();
 		if(startNode.isAbove(endNode))
@@ -385,19 +399,55 @@ pinker.config = {
 			end.x = endNode.x + endNode.width;
 		else if(endNode.isRightOf(startNode))
 			end.x = endNode.x;
-		drawArrow(start.x, start.y, end.x, end.y, context);
+		drawArrow(start, end, arrowType, context);
 	}
 	
-	function drawArrow(fromX, fromY, toX, toY, context) {
+	function drawArrow(start, end, arrowType, context) {
 		var headlen = 10; // length of head in pixels
-		var angle = Math.atan2(toY - fromY, toX - fromX);
+		var angle = Math.atan2(end.y - start.y, end.x - start.x);
+		//line
 		context.beginPath();
-		context.moveTo(fromX, fromY);
-		context.lineTo(toX, toY);
-		context.lineTo(toX - headlen * Math.cos(angle - Math.PI/6), toY - headlen * Math.sin(angle - Math.PI/6));
-		context.moveTo(toX, toY);
-		context.lineTo(toX - headlen * Math.cos(angle + Math.PI/6), toY - headlen * Math.sin(angle + Math.PI/6));
+		context.moveTo(start.x, start.y);
+		context.lineTo(end.x, end.y);
 		context.stroke();
+		//arrow
+		const arrowCornerA = createCoordinates(end.x - headlen * Math.cos(angle - Math.PI/6), end.y - headlen * Math.sin(angle - Math.PI/6));
+		const arrowCornerB = createCoordinates(end.x - headlen * Math.cos(angle + Math.PI/6), end.y - headlen * Math.sin(angle + Math.PI/6));
+		switch(arrowType)
+		{
+			case arrowTypes.plain:
+				context.beginPath();
+				context.moveTo(end.x, end.y);
+				context.lineTo(arrowCornerA.x, arrowCornerA.y);
+				context.moveTo(end.x, end.y);
+				context.lineTo(arrowCornerB.x, arrowCornerB.y);
+				context.stroke();
+				break;
+			case arrowTypes.hollow:
+				//hollow center covers line
+				context.fillStyle = pinker.config.backgroundColor;
+				context.beginPath();
+				context.moveTo(end.x, end.y);
+				context.lineTo(arrowCornerA.x, arrowCornerA.y);
+				context.lineTo(arrowCornerB.x, arrowCornerB.y);
+				context.lineTo(end.x, end.y);
+				context.fill();
+				//arrow outline
+				context.beginPath();
+				context.moveTo(end.x, end.y);
+				context.lineTo(arrowCornerA.x, arrowCornerA.y);
+				context.lineTo(arrowCornerB.x, arrowCornerB.y);
+				context.lineTo(end.x, end.y);
+				context.stroke();
+				break;
+		}
 	}	
+	
+	function createCoordinates(x, y) {
+		return {
+			x: x,
+			y: y
+		};
+	}
 
 })();

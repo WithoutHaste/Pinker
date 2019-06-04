@@ -52,4 +52,6 @@ All layouts are divided into horizontal rows. In this example, row 1 is made up 
 
 The **Relations** section defines connections between scopes. Each line in this section starts with 1 scope and an arrow type, followed by a comma-delimited list of other scopes. An arrow will be drawn from the starting scope to each of the other scopes.
 
+All arrows must point left-to-right.
+
 The **Relations** section is optional.
