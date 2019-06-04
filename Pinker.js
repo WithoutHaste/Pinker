@@ -15,6 +15,8 @@ pinker.config = {
 	,canvasPadding: 15 //minimum space between canvas boundary and scopes
 	,backgroundColor: "#FFFFFF" //white
 	,lineColor: "#000000" //black
+	,lineDashLength: 5 //length of a dash in pixels
+	,lineDashSpacing: 3 //length of space between dashes in pixels
 	,font: function() {
 		return this.fontSize + "px " + this.fontFamily;
 	}
@@ -226,7 +228,7 @@ pinker.config = {
 			const endNode = findNode(nodes, relation.endLabel);
 			if(startNode == null || endNode == null)
 				return;
-			drawArrowBetweenNodes(startNode, endNode, convertArrowType(relation.arrowType), context);
+			drawArrowBetweenNodes(startNode, endNode, convertArrowType(relation.arrowType), convertLineType(relation.arrowType), context);
 		});
 	}
 	
@@ -349,18 +351,39 @@ pinker.config = {
 		filledDiamond: 4
 	};
 	
+	const lineTypes = {
+		solid: 1,
+		dashed: 2
+	};
+	
 	function convertArrowType(arrowText) {
+		if(arrowText.length > 2)
+			arrowText = arrowText.substring(arrowText.length-2);
 		switch(arrowText)
 		{
 			case "->": return arrowTypes.plainArrow;
-			case "-:>": return arrowTypes.hollowArrow;
+			case ":>": return arrowTypes.hollowArrow;
 			case "-o": return arrowTypes.hollowDiamond;
 			case "-+": return arrowTypes.filledDiamond;
 			default: return arrowTypes.plainArrow;
 		}
 	}
 	
-	function drawArrowBetweenNodes(startNode, endNode, arrowType, context) {
+	function convertLineType(arrowText) {
+		if(arrowText.length > 2)
+			arrowText = arrowText.substring(0, 2);
+		switch(arrowText)
+		{
+			case "--": return lineTypes.dashed;
+			case "->": 
+			case "-:": 
+			case "-o": 
+			case "-+": return lineTypes.solid;
+			default: return lineTypes.solid;
+		}
+	}
+	
+	function drawArrowBetweenNodes(startNode, endNode, arrowType, lineType, context) {
 		let start = startNode.center();
 		let end = endNode.center();
 		if(startNode.isAbove(endNode))
@@ -379,18 +402,24 @@ pinker.config = {
 			end.x = endNode.x + endNode.width;
 		else if(endNode.isRightOf(startNode))
 			end.x = endNode.x;
-		drawArrow(start, end, arrowType, context);
+		drawArrow(start, end, arrowType, lineType, context);
 	}
 	
-	function drawArrow(start, end, arrowType, context) {
-		var headlen = 10; // length of head in pixels
+	function drawArrow(start, end, arrowType, lineType, context) {
+		var headlen = 10; // length of head in pixels TODO move to config calculation based on scopeMargin
 		var angle = Math.atan2(end.y - start.y, end.x - start.x);
 		//line
 		context.beginPath();
+		switch(lineType)
+		{
+			case lineTypes.solid: context.setLineDash([]); break;
+			case lineTypes.dashed: context.setLineDash([pinker.config.lineDashLength, pinker.config.lineDashSpacing]); break;
+		}
 		context.moveTo(start.x, start.y);
 		context.lineTo(end.x, end.y);
 		context.stroke();
 		//arrow
+		context.setLineDash([]); //solid line
 		const arrowCornerA = createCoordinates(end.x - headlen * Math.cos(angle - Math.PI/6), end.y - headlen * Math.sin(angle - Math.PI/6));
 		const arrowCornerB = createCoordinates(end.x - headlen * Math.cos(angle + Math.PI/6), end.y - headlen * Math.sin(angle + Math.PI/6));
 		const diamondCornerC = createCoordinates(arrowCornerA.x - headlen * Math.cos(angle + Math.PI/6), arrowCornerA.y - headlen * Math.sin(angle + Math.PI/6));

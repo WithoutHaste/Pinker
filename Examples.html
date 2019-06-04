@@ -37,5 +37,21 @@
 			`;
 			pinker.draw(canvas, source);
 		</script>
+
+		Example 3: Types of lines.
+		<div><canvas id='Example03'></canvas></div>
+		<script>
+			var canvas = document.getElementById("Example03");
+			var source = `
+			Layout:
+				[A][B][C]
+				[D]...[E]
+				[F]...[G]
+			Relations:
+				[D]->[E]
+				[F]-->[G]
+			`;
+			pinker.draw(canvas, source);
+		</script>
 	</body>
 </html>
