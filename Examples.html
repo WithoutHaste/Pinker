@@ -108,5 +108,27 @@ Layout:
 			var source = document.getElementById("Source04").innerHTML;
 			pinker.draw(canvas, source);
 		</script>
+
+		Using Aliases
+		<div>
+			<pre id='Source05'>
+Layout:
+	[{A}Long Long Label A][{B}Long Long Label B]
+{A}:
+	Layout:
+		[{C}Long Long Label C]
+{B}:
+	Layout:
+		[D]
+	Relations:
+		[D]->{C}
+			</pre>
+			<canvas id='Canvas05'></canvas>
+		</div>
+		<script>
+			var canvas = document.getElementById("Canvas05");
+			var source = document.getElementById("Source05").innerHTML;
+			pinker.draw(canvas, source);
+		</script>
 	</body>
 </html>

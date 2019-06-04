@@ -35,9 +35,8 @@ pinker.config = {
 			source.errorMessages.forEach(function(errorMessage) {
 				console.log(`Pinker Error on canvas '${canvasElement.id}': ${errorMessage}`);
 			});
-			return;
 		}
-		//console.log(source);
+		//displays what it can, despite errors
 		updateCanvas(canvasElement, source);
 	};
 	
@@ -84,19 +83,26 @@ pinker.config = {
 		let inReferenceSection = false;
 		let currentReferenceSection = null;
 		sections.forEach(function(section) {
-			if(section.header.match(/^\[.+\]$/) == null) //not a reference header
+			if(section.header.match(/^\[.+\]$/) != null) //a reference header
+			{
+				let header = section.header.match(/^\[(.+)\]$/)[1];
+				currentReferenceSection = createReferenceSection(header);
+				collapsedSections.push(currentReferenceSection);
+				inReferenceSection = true;
+			}
+			else if(section.header.match(/^\{.+\}$/) != null) //an alias header
+			{
+				let header = section.header.match(/^\{(.+)\}$/)[1];
+				currentReferenceSection = createReferenceSection(header);
+				collapsedSections.push(currentReferenceSection);
+				inReferenceSection = true;
+			}
+			else //a normal header
 			{
 				if(inReferenceSection)
 					currentReferenceSection.sections.push(section);
 				else
 					collapsedSections.push(section);
-			}
-			else
-			{
-				const header = section.header.match(/^\[(.+)\]$/)[1];
-				currentReferenceSection = createReferenceSection(header);
-				collapsedSections.push(currentReferenceSection);
-				inReferenceSection = true;
 			}
 		});		
 		
@@ -111,6 +117,7 @@ pinker.config = {
 	function createEmptySource(label=null) {
 		return {
 			label: label, //Level 1 has no label
+			alias: null,
 			hasErrors: false,
 			errorMessages: [],
 			layout: null,
@@ -138,9 +145,26 @@ pinker.config = {
 				let self = this;
 				sections.forEach(function(section) {
 					if(section.isReferenceSection)
-						self.addNestedSource(section.reference, section.sections);
+					{
+						let isAlias = (section.reference.match(/^\{.+\}$/) != null);
+						if(isAlias)
+						{
+							let success = self.addAliasedNestedSource(section.reference, section.sections);
+							if(!success)
+							{
+								self.hasErrors = true;
+								self.errorMessages.push(`Cannot find alias '${section.reference}' in any Layouts.`);
+							}
+						}
+						else
+						{
+							self.addNestedSource(section.reference, section.sections);
+						}
+					}
 					else
+					{
 						self.addSection(section);
+					}
 				});
 			},
 			addSection: function(section) {
@@ -163,11 +187,13 @@ pinker.config = {
 			addNestedSource: function(label, sections) {
 				if(label.length == 0)
 					return; //invalid label
+				
+				const isAlias = (label.match(/^\{.+\}$/) != null);
 				for(let i=0; i < this.nestedSources.length; i++)
 				{
 					let nestedSource = this.nestedSources[i];
 					if(nestedSource.label == label)
-						return; //it belongs here but we already have one, so skip it
+						return; //skip it, it belongs here but we already have one
 					let labelStart = nestedSource.label + ".";
 					if(label.startsWith(labelStart))
 					{
@@ -179,6 +205,28 @@ pinker.config = {
 				let nestedSource = createEmptySource(label);
 				nestedSource.addSections(sections);
 				this.nestedSources.push(nestedSource);
+			},
+			//returns true when alias is found
+			addAliasesNestedSource: function(alias, sections) {
+				if(this.alias == alias)
+					return true; //skip it, we already have one
+				let layoutRecord = this.layout.findAlias(alias);
+				if(layoutRecord != null)
+				{
+					let nestedSource = createEmptySource(layoutRecord.label);
+					nestedSource.alias = alias;
+					nestedSource.addSections(sections);
+					this.nestedSources.push(nestedSource);
+					return true;
+				}
+				for(let i=0; i<this.nestedSoures.length; i++)
+				{
+					let nestedSource = this.nestedSources[i];
+					let result = nestedSource.addAliasesNestedSource(alias, sections);
+					if(result)
+						return true;
+				}
+				return false;
 			}
 		};
 	}
@@ -197,14 +245,32 @@ pinker.config = {
 		let layoutRow = createLayoutRow();
 		let leftRight = line.split("...");
 		let left = leftRight[0].match(/\[(.)+?\]/g);
+		//TODO lots of code duplication here, maybe let createLayoutRecord handle it
+		//or go through all labels in one loop, with a left/right flag, and pass it to LayoutRow.addRecord() with the flag
 		left.forEach(function(label) {
-			layoutRow.leftAlign.push(dereferenceLabel(label));
+			let plainLabel = dereferenceLabel(label).trim();
+			let alias = null;
+			if(plainLabel.match(/^\{.+\}/) != null)
+			{
+				let matches = plainLabel.match(/^(\{.+\})(.+)$/);
+				alias = matches[1];
+				plainLabel = matches[2].trim();
+			}
+			layoutRow.leftAlign.push(createLayoutRecord(plainLabel, alias));
 		});
 		if(leftRight.length > 1)
 		{
 			let right = leftRight[1].match(/\[(.)+?\]/g);
 			right.forEach(function(label) {
-				layoutRow.rightAlign.push(dereferenceLabel(label));
+				let plainLabel = dereferenceLabel(label).trim();
+				let alias = null;
+				if(plainLabel.match(/^\{.+\}/) != null)
+				{
+					let matches = plainLabel.match(/^(\{.+\})(.+)$/);
+					alias = matches[1];
+					plainLabel = matches[2].trim();
+				}
+				layoutRow.rightAlign.push(createLayoutRecord(plainLabel, alias));
 			});
 		}
 		return layoutRow;
@@ -250,11 +316,18 @@ pinker.config = {
 	
 	function createLayoutRow() {
 		return {
-			leftAlign: [], //arrays of strings/labels
+			leftAlign: [], //arrays of LayoutRecords
 			rightAlign: [],
 			all: function() {
 				return this.leftAlign.concat(this.rightAlign);
 			}
+		};
+	}
+	
+	function createLayoutRecord(label, alias=null) {
+		return {
+			label: label,
+			alias: alias
 		};
 	}
 	
@@ -366,12 +439,12 @@ pinker.config = {
 			let rowHeight = 0;
 			const leftAlignCount = row.leftAlign.length;
 			let index = 0;
-			row.all().forEach(function(label) {
+			row.all().forEach(function(layoutRecord) {
 				let nestedNodes = [];
 				for(let i=0; i<source.nestedSources.length; i++)
 				{
 					let nestedSource = source.nestedSources[i];
-					if(nestedSource.label == label)
+					if(nestedSource.label == layoutRecord.label)
 					{
 						nestedNodes = convertLayoutToNodes(nestedSource, context, path);
 						break;
@@ -379,11 +452,12 @@ pinker.config = {
 				}
 				
 				const isRightAlign = (index >= leftAlignCount);
-				const nodeDimensions = calculateNodeDimensions(label, nestedNodes, context);
-				let node = createNode(x, y, nodeDimensions.width, nodeDimensions.height, label, path, isRightAlign);
+				const nodeDimensions = calculateNodeDimensions(layoutRecord.label, nestedNodes, context);
+				let node = createNode(x, y, nodeDimensions.width, nodeDimensions.height, layoutRecord.label, path, isRightAlign);
 				node.nodes = nestedNodes;
 				node.contentsX = nodeDimensions.contentsX;
 				node.contentsY = nodeDimensions.contentsY;
+				node.alias = layoutRecord.alias;
 				nodes.push(node);
 				
 				x += nodeDimensions.width + pinker.config.scopeMargin;
@@ -446,6 +520,7 @@ pinker.config = {
 			height: height,
 			path: path, //full path from root to parent scope
 			label: label, //simple label of node within scope
+			alias: null,
 			contentsX: 0, //starting point of contents, relative to this node
 			contentsY: 0,
 			nodes: [],

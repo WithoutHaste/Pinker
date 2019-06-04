@@ -161,3 +161,27 @@ Relations:
 Relations can be made across scopes. For example, `[C]` has a relation to `[A.D.G]`. Since `[C]` and `[D]` exist in the same scope, the relative reference `[D.G]` is sufficient. Relative references will be checked before global references.
 
 ### Aliases
+
+Since some labels can be very long, Pinker supports **aliases**.
+
+**Aliases** are labels surrounded by curly braces **{}**. They are defined at the very beginning of a scope label. An alias can include any characters except curly braces, square braces, and end-lines.
+
+When referencing an aliased scope in either a section header or a relation, write `{A}` instead of `[A]`.
+
+**Aliases** are all global and must be unique to a diagram. When you use an alias in a relation, you never include the full path to the alias. For example, `[D]->{C}` instead of `[D]->[A].{C}`.
+
+```
+Layout:
+	[{A}Some Very Long Label][{B}Another Very Long Label]
+Relations:
+	{A}->{B}
+{A}:
+	Layout:
+		[{C}More Long Labels]
+{B}:
+	Layout:
+		[D]
+	Relations:
+		[D]->{C}
+	
+```
