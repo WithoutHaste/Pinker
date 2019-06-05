@@ -3,13 +3,13 @@ Layout:
 [A]:
 	Layout:
 		[C][D]
-	Relations:
+	Relate:
 		[C]->[D]
 		[D]->[B.E]
 [B]:
 	Layout:
 		[E]
 		[F]
-	Relations:
+	Relate:
 		[E]->[F]
 		[F]->[A.D]

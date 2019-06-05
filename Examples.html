@@ -31,7 +31,7 @@ Layout:
 	[C][D][E][F]
 	[G][H]
 	[I][J]
-Relations:
+Relate:
 	[A]->[B]
 	[C]-D[D]
 	[E]-:>[F]
@@ -53,7 +53,7 @@ Layout:
 	[A][B][G][H]
 	[C][D][I][J]
 	[E][F][K][L]
-Relations:
+Relate:
 	[A]->[B]
 	[C]=>[D]
 	[E]-->[F]
@@ -76,7 +76,7 @@ Layout:
 	[A]
 	[B][D][E]
 	[C]...[F]
-Relations:
+Relate:
 	[B]->[A],[C]
 	[D]->[B],[E],[F]
 			</pre>
@@ -96,14 +96,14 @@ Layout:
 [A]:
 	Layout:
 		[C][D]
-	Relations:
+	Relate:
 		[C]->[D]
 		[D]->[B.E]
 [B]:
 	Layout:
 		[E]
 		[F]
-	Relations:
+	Relate:
 		[E]->[F]
 		[F]->[A.D]
 			</pre>
@@ -120,7 +120,7 @@ Layout:
 			<pre id='Source05'>
 Layout:
 	[{A}Long Long Label A][{B}Long Long Label B]
-Relations:
+Relate:
 	{A}->{B}
 {A}:
 	Layout:
@@ -128,7 +128,7 @@ Relations:
 {B}:
 	Layout:
 		[D]
-	Relations:
+	Relate:
 		[D]->{C}.[E.F]
 {C}:
 	Layout:
@@ -150,7 +150,7 @@ Relations:
 			<pre id='Source06'>
 Layout:
 	[A][B]
-Relations:
+Relate:
 	[A]->[B]
 [A]:
 	Define:

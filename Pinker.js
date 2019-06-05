@@ -148,7 +148,7 @@ var pinker = pinker || {};
 				errorMessages: [],
 				define: null,
 				layout: null,
-				relations: null,
+				relate: null,
 				nestedSources: [],
 				validate: function() {
 					if(this.layout == null && this.define == null)
@@ -225,12 +225,12 @@ var pinker = pinker || {};
 								return;
 							this.layout = parseLayoutSection(section); 
 							break;
-						case "relations":
-						case "Relations": 
-						case "RELATIONS":
-							if(this.relations != null)
+						case "relate":
+						case "Relate": 
+						case "RELATE":
+							if(this.relate != null)
 								return;
-							this.relations = parseRelationsSection(section); 
+							this.relate = parseRelateSection(section); 
 							break;
 					}
 				},
@@ -342,8 +342,8 @@ var pinker = pinker || {};
 				}
 			};
 		},
-		//returns relation section object
-		createRelation: function() {
+		//returns relate section object
+		createRelate: function() {
 			return {
 				records: []
 			};
@@ -433,16 +433,16 @@ var pinker = pinker || {};
 		}
 	};
 
-	const RelationRecord = {
-		//returns true if source relations line starts with a scope
+	const RelateRecord = {
+		//returns true if source relate line starts with a scope
 		startIsScope: function(line) {
 			return (line.match(/^\[.+?\]/) != null);
 		},
-		//returns true if source relations line starts with an alias
+		//returns true if source relate line starts with an alias
 		startIsAlias: function(line) {
 			return (line.match(/^\{.+?\}/) != null);
 		},
-		//returns the starting scope or alias from a source relations line
+		//returns the starting scope or alias from a source relate line
 		parseStartTerm: function(line) {
 			if(this.startIsAlias(line))
 				return line.match(/^(\{.+?\})/)[1];
@@ -451,7 +451,7 @@ var pinker = pinker || {};
 			else
 				return null;
 		},
-		//returns array of ending scopes or alias from the part of a source relations line after the arrow
+		//returns array of ending scopes or alias from the part of a source relate line after the arrow
 		parseEndTerms: function(partialLine) {
 			let endTerms = [];
 			const fields = partialLine.split(',');
@@ -462,7 +462,7 @@ var pinker = pinker || {};
 			});
 			return endTerms;
 		},
-		//returns [startScope, arrowType, [endScope,...]] from source relations line
+		//returns [startScope, arrowType, [endScope,...]] from source relate line
 		parseTerms: function(line) {
 			const startTerm = this.parseStartTerm(line);
 			if(startTerm != null)
@@ -473,7 +473,7 @@ var pinker = pinker || {};
 			const endTerms = this.parseEndTerms(line);
 			return [startTerm, arrowTerm, endTerms];
 		},
-		//returns a relation record
+		//returns a relate record
 		create: function(startLabel, arrowType, endLabel) {
 			return {
 				startLabel: startLabel,
@@ -606,17 +606,17 @@ var pinker = pinker || {};
 		return layoutRow;
 	}
 	
-	function parseRelationsSection(section) {
-		let relationsSection = Section.createRelation();
+	function parseRelateSection(section) {
+		let relateSection = Section.createRelate();
 		section.body.forEach(function(line) {
-			const [startTerm, arrowTerm, endTerms] = RelationRecord.parseTerms(line);
+			const [startTerm, arrowTerm, endTerms] = RelateRecord.parseTerms(line);
 			if(startTerm == null || arrowTerm == null || endTerms.length == 0)
 				return;
 			endTerms.forEach(function(endTerm) {
-				relationsSection.records.push(RelationRecord.create(Source.openScope(startTerm), arrowTerm, Source.openScope(endTerm)));
+				relateSection.records.push(RelateRecord.create(Source.openScope(startTerm), arrowTerm, Source.openScope(endTerm)));
 			});
 		});
-		return relationsSection;
+		return relateSection;
 	}
 	
 	//########################################
@@ -1000,9 +1000,9 @@ var pinker = pinker || {};
 			path = source.label;
 		else
 			path += "." + source.label;
-		if(source.relations != null)
+		if(source.relate != null)
 		{
-			source.relations.records.forEach(function(relation) {
+			source.relate.records.forEach(function(relation) {
 				const startNode = findNode(allNodes, relation.startLabel, path);
 				const endNode = findNode(allNodes, relation.endLabel, path);
 				if(startNode == null || endNode == null)

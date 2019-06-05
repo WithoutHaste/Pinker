@@ -23,7 +23,7 @@ Specify exactly when and how Pinker diagrams should be drawn. [Demo](Demo/DrawSy
 		<pre id='Source01'>
 			Layout:
 				[A][B]
-			Relations:
+			Relate:
 				[A]->[B]
 		</pre>
 		<canvas id='Canvas01'></canvas>
@@ -49,7 +49,7 @@ Every `<pre class='pinker'>` element will be rendered as a Pinker diagram. The d
 		<pre id='Source01' class='pinker'>
 			Layout:
 				[A][B]
-			Relations:
+			Relate:
 				[A]->[B]
 		</pre>
 	</body>
@@ -123,13 +123,13 @@ Any kind of line can be combined with any kind of arrow. Leave off the arrow-hea
 
 In a single-level diagram, all scopes are at the same level of detail.
 
-The source is made up of a **Layout** section and a **Relations** section. Each section header ends with a colon and an end-line.
+The source is made up of a **Layout** section and a **Relate** section. Each section header ends with a colon and an end-line.
 
 ```
 Layout:
 	[A][B][C]
 	[D]...[E]
-Relations:
+Relate:
 	[A]->[B],[D]
 	[B]->[C]
 	[C]->[E]
@@ -139,9 +139,9 @@ The **Layout** section defines the basic visual relationship of the scopes.
 
 All layouts are divided into horizontal rows. In this example, row 1 is made up of scopes `[A]`, `[B]`, and `[C]` laid out left to right. Row 2 is made up of scope `[D]` aligned to the left and scope `[E]` aligned to the right. The ellipses **...** indicate the alignment change from left (the default) to right.
 
-The **Relations** section defines connections between scopes. Each line in this section starts with 1 scope and an arrow type, followed by a comma-delimited list of other scopes. An arrow will be drawn from the starting scope to each of the other scopes.
+The **Relate** section defines connections between scopes. Each line in this section starts with 1 scope and an arrow type, followed by a comma-delimited list of other scopes. An arrow will be drawn from the starting scope to each of the other scopes.
 
-The **Relations** section is optional.
+The **Relate** section is optional.
 
 ### Multi-Level Diagram
 
@@ -154,25 +154,25 @@ To reference a nested scope, specify the entire path to the scope using period-d
 ```
 Layout:
 	[A][B]
-Relations:
+Relate:
 	[A]->[B]
 [A]:
 	Layout:
 		[C][D]
-	Relations:
+	Relate:
 		[C]->[D]
 		[C]->[D.G]
 [B]:
 	Layout:
 		[E][F]
-	Relations:
+	Relate:
 		[E]->[F]
 [A.D]:
 	Layout:
 		[G]
 		[H]
 		[I]
-	Relations:
+	Relate:
 		[H]->[G],[I]
 ```
 
@@ -191,7 +191,7 @@ When referencing an aliased scope in either a section header or a relation, writ
 ```
 Layout:
 	[{A}Some Very Long Label][{B}Another Very Long Label]
-Relations:
+Relate:
 	{A}->{B}
 {A}:
 	Layout:
@@ -199,7 +199,7 @@ Relations:
 {B}:
 	Layout:
 		[D]
-	Relations:
+	Relate:
 		[D]->{C}
 	
 ```
@@ -217,7 +217,7 @@ The pipe **|** character inserts a horizontal rule between lines of text. It can
 ```
 Layout:
 	[A][B]
-Relations:
+Relate:
 	[B]->[A]
 [A]:
 	Define:

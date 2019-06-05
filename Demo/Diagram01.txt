@@ -2,6 +2,6 @@ Layout:
 	[A]
 	[B][D][E]
 	[C]...[F]
-Relations:
+Relate:
 	[B]->[A],[C]
 	[D]->[B],[E],[F]
