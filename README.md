@@ -1,10 +1,14 @@
 # Pinker
 
-A standalone JavaScript library for rendering code dependency diagrams on your web page.
+A standalone JavaScript library for rendering code/class diagrams on your web page.
 
-Pinker gives the user control over the layout of the diagram, which enables it to render more complicated diagrams.
+Pinker gives the user control over the layout of the diagram, so you can render more complicated diagrams.
 
-## Using Pinker
+Supports: UML diagrams, nested scopes, arrows crossing scopes, and aliases.
+
+Since Pinker has a plain-text format, it is version-control-friendly.
+
+## Using Pinker in a Web Page
 
 ### Draw-Syntax
 
@@ -199,3 +203,23 @@ Relations:
 		[D]->{C}
 	
 ```
+
+## Configuration
+
+```
+pinker.config.attribute = value;
+```
+
+| Attribute | Data Type | Description |
+| --------- | --------- | ----------- |
+|**fontSize**|integer or float|font size in pixels|
+|**fontFamily**|string|font family|
+|**scopeMargin**|integer or float|minimum space around each scope|
+|**scopePadding**|integer or float|minimum space between scope boundary and scope contents|
+|**canvasPadding**|integer or float|minimum space between canvas boundary and scopes|
+|**backgroundColor**|string, like "#FFFFFF"|diagram background color|
+|**shadeColor**|string, like "#FFFFFF"|accent color|
+|**lineColor**|string, like "#000000"|line and text color|
+|**lineDashLength**|integer or float|length of a dash in pixels|
+|**lineDashSpacing**|integer or float|length of space between dashes in pixels|
+|**estimateFontHeight**|function()|returns height of font in pixels|

@@ -5,28 +5,28 @@
 
 var pinker = pinker || {};
 
-pinker.version = '1.0.0';
-
-pinker.config = {
-	fontSize: 14 //font size in pixels
-	,fontFamily: "Georgia"
-	,scopeMargin: 30 //minimum space around each scope
-	,scopePadding: 10 //minimum space between scope boundary and scope contents
-	,canvasPadding: 15 //minimum space between canvas boundary and scopes
-	,backgroundColor: "#FFFFFF" //white
-	,shadeColor: "#EEEEEE" //pale gray
-	,lineColor: "#000000" //black
-	,lineDashLength: 5 //length of a dash in pixels
-	,lineDashSpacing: 3 //length of space between dashes in pixels
-	,font: function() {
-		return this.fontSize + "px " + this.fontFamily;
-	}
-	,estimateFontHeight: function() {
-		return this.fontSize;
-	}
-};
-
 (function() { //private scope
+
+	pinker.version = '1.0.0';
+
+	pinker.config = {
+		fontSize: 14 //font size in pixels
+		,fontFamily: "Georgia"
+		,scopeMargin: 30 //minimum space around each scope
+		,scopePadding: 10 //minimum space between scope boundary and scope contents
+		,canvasPadding: 15 //minimum space between canvas boundary and scopes
+		,backgroundColor: "#FFFFFF" //white
+		,shadeColor: "#EEEEEE" //pale gray
+		,lineColor: "#000000" //black
+		,lineDashLength: 5 //length of a dash in pixels
+		,lineDashSpacing: 3 //length of space between dashes in pixels
+		,font: function() {
+			return this.fontSize + "px " + this.fontFamily;
+		}
+		,estimateFontHeight: function() {
+			return this.fontSize;
+		}
+	};
 
 	//render all sources onto new canvases
 	pinker.render = function() {
