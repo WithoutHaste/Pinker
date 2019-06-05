@@ -204,16 +204,6 @@ Relations:
 	
 ```
 
-**Aliases** may be defined in the Layout section, or in a global section. If the alias is defined in the global section, you can use the alias in the Layout section instead of the entire label. If you define the same alias in both places, the global section alias will trump the Layout section alias.
-
-```
-Layout:
-	{A}[B]
-Relations:
-	[B]->{A}
-[{A}Long Long Label]:
-```
-
 A relative reference may start from any **alias**. The syntax is `{A}.[B.C]` where `{A}` is the global alias and `[B.C]` is the rest of the path from that point, with scope `[C]` nested in scope `[B]`.
 
 ### Definitions

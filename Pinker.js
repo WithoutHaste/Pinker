@@ -151,10 +151,10 @@ var pinker = pinker || {};
 				relations: null,
 				nestedSources: [],
 				validate: function() {
-					if(this.layout == null)
+					if(this.layout == null && this.define == null)
 					{
 						this.hasErrors = true;
-						this.errorMessages.push("No layout section.");
+						this.errorMessages.push("No layout OR define section.");
 					}
 					let self = this;
 					this.nestedSources.forEach(function(nestedSource) {
@@ -315,7 +315,14 @@ var pinker = pinker || {};
 		//returns define section object
 		createDefine: function() {
 			return {
-				sections: []
+				pipe: "|",
+				lines: [],
+				//append line, do not allow two pipes in a row
+				addLine: function(line) {
+					if(line == this.pipe && this.lines.length > 0 && this.lines[this.lines.length-1] == this.pipe)
+						return;
+					this.lines.push(line);
+				}
 			};
 		},
 		//returns layout section object
@@ -344,11 +351,32 @@ var pinker = pinker || {};
 	};
 	
 	const LayoutRow = {
-		//returns array of opened-scopes from source layout row
+		//returns array of opened-scopes or closed-aliases from source layout row
 		parseScopes: function(line) {
 			if(line == null || line.length == 0)
 				return [];
-			return line.match(/\[(.)+?\]/g);
+			let results = [];
+			while(line.length > 0)
+			{
+				let matches = line.match(/^\[.+?\]/);
+				if(matches != null)
+				{
+					let scope = matches[0];
+					line = line.substring(scope.length);
+					results.push(Source.openScope(scope));
+					continue;
+				}
+				matches = line.match(/^\{.+?\}/);
+				if(matches != null)
+				{
+					let alias = matches[0];
+					line = line.substring(alias.length);
+					results.push(alias);
+					continue;
+				}
+				break; //unknown term found
+			}
+			return results;
 		},
 		//returns layout row object
 		create: function() {
@@ -388,6 +416,10 @@ var pinker = pinker || {};
 		},
 		//returns parsed layout record
 		parse: function(fullLabel) {
+			if(Source.isAlias(fullLabel))
+			{
+				return this.create(null, fullLabel);
+			}
 			fullLabel = Source.openScope(fullLabel);
 			const [alias, label] = this.parseAliasFromLabel(fullLabel);
 			return this.create(label, alias);
@@ -524,7 +556,26 @@ var pinker = pinker || {};
 	
 	function parseDefineSection(section) {
 		let defineSection = Section.createDefine();
-console.log(section);		
+		const pipe = defineSection.pipe;
+		section.body.forEach(function(line) {
+			if(line == null || line.length == 0)
+				return;
+			if(line.startsWith(pipe))
+			{
+				defineSection.addLine(pipe);
+				line = line.substring(pipe.length).trim();
+			}
+			if(line.endsWith(pipe))
+			{
+				line = line.substring(0, line.length - pipe.length);
+				defineSection.addLine(line);
+				defineSection.addLine(pipe);
+			}
+			else
+			{
+				defineSection.lines.push(line);
+			}
+		});
 		return defineSection;
 	}
 	
@@ -584,7 +635,9 @@ console.log(section);
 				label: label, //simple label of node within scope
 				alias: alias,
 				labelLayout: null,
-				contentArea: null,
+				defineContentArea: null,
+				defineLayout: null,
+				nodeContentArea: null,
 				nodes: [],
 				isRightAlign: isRightAlign,
 				setLocation: function(x, y, width, height) {
@@ -592,7 +645,8 @@ console.log(section);
 					this.y = y;
 					this.width = width;
 					this.height = height;
-					this.contentArea = ContentArea.createWithPadding(0, 0, width, height, pinker.config.scopePadding);
+					this.defineContentArea = null;
+					this.nodeContentArea = ContentArea.createWithPadding(0, 0, width, height, pinker.config.scopePadding);
 				},
 				pathLabel: function() {
 					if(path == null || path.length == 0)
@@ -616,7 +670,7 @@ console.log(section);
 					this.absoluteY = this.y + deltaY;
 					let self = this;
 					this.nodes.forEach(function(nestedNode) {
-						nestedNode.setAbsoluteLocations(self.absoluteX + self.contentArea.x, self.absoluteY + self.contentArea.y);
+						nestedNode.setAbsoluteLocations(self.absoluteX + self.nodeContentArea.x, self.absoluteY + self.nodeContentArea.y);
 					});
 				},
 				isAbove: function(otherNode) {
@@ -670,6 +724,71 @@ console.log(section);
 		}
 	};
 	
+	const DefineLayout = {
+		//returns define layout object based on define section
+		parse: function(defineSection) {
+			let defineLayout = this.create();
+			defineSection.lines.forEach(function(line) {
+				if(line == defineSection.pipe)
+					defineLayout.addHorizontalRule();
+				else
+					defineLayout.addLine(line);
+			});
+			return defineLayout;
+		},
+		//returns define layout object
+		create: function() {
+			return {
+				lines: [],
+				horizontalRuleIndexes: [], //correlates to lines array
+				addLine: function(line) {
+					this.lines.push(line);
+				},
+				addHorizontalRule: function() {
+					this.horizontalRuleIndexes.push(this.lines.length);
+				},
+				//returns display dimensions
+				calculateDimensions: function(context) {
+					let lineHeight = pinker.config.estimateFontHeight();
+					let lineSpacing = lineHeight / 3; //TODO move to config
+					let width = 0;
+					let height = 0;
+					context.font = pinker.config.font();
+					for(let i=0; i<this.lines.length; i++)
+					{
+						let line = this.lines[i];
+						width = Math.max(width, context.measureText(line).width);
+						height += lineHeight + lineSpacing;
+					}
+					width += (pinker.config.scopePadding * 2);
+					height += (pinker.config.scopePadding * 2);
+					return Dimension.create(width, height);
+				},
+				//draw lines on context
+				draw: function(x, y, width, context) {
+					context.strokeStyle = pinker.config.lineColor;
+					let lineHeight = pinker.config.estimateFontHeight();
+					let lineSpacing = lineHeight / 3; //TODO move to config
+					y += lineHeight;
+					for(let i=0; i<this.lines.length; i++)
+					{
+						let line = this.lines[i];
+						context.fillText(line, x, y);
+						if(this.horizontalRuleIndexes.includes(i+1))
+						{
+							context.beginPath(); //TODO screwy math for h-rule, probably caused by the padding confusion
+							context.moveTo(x - pinker.config.scopePadding, y + (lineSpacing * 0.85));
+							context.lineTo(x - pinker.config.scopePadding + width, y + (lineSpacing * 0.85));
+							context.closePath();
+							context.stroke();
+						}
+						y += lineHeight + lineSpacing;
+					}
+				}
+			};
+		}
+	};
+	
 	const LabelLayout = {
 		types: {
 			text: 1, //plain text
@@ -699,6 +818,10 @@ console.log(section);
 				}
 			};
 		},
+		//returns an empty text-type label layout object
+		createEmptyText: function() {
+			return this.create(0, 0, 5, 5, this.types.text, []);
+		},
 		//returns text-type label layout object
 		createText: function(x, y, width, height, lines) {
 			return this.create(x, y, width, height, this.types.text, lines);
@@ -709,6 +832,8 @@ console.log(section);
 		},
 		//returns text-type label layout object
 		calculateText: function (label, context) {
+			if(label == null || label.length == 0)
+				return this.createEmptyText();
 			context.font = pinker.config.font();
 			let wordHeight = pinker.config.estimateFontHeight();
 			let width = 0;
@@ -859,6 +984,12 @@ console.log(section);
 					node.labelLayout.drawCentered(node.absoluteX, node.absoluteY, context);
 					break;
 			}
+			
+			if(node.defineLayout != null)
+			{
+				context.fillStyle = pinker.config.lineColor;
+				node.defineLayout.draw(node.absoluteX + node.defineContentArea.x, node.absoluteY + node.defineContentArea.y + (pinker.config.scopePadding/2), node.defineContentArea.width, context);
+			}
 
 			drawNodes(node.nodes, context);
 		});
@@ -885,6 +1016,8 @@ console.log(section);
 	}
 	
 	function convertLayoutToNodes(source, context, path=null) {
+		if(source.layout == null)
+			return [];
 		if(path == null || path.length == 0)
 			path = source.label;
 		else
@@ -904,6 +1037,7 @@ console.log(section);
 				const isRightAlign = (index >= leftAlignCount);
 				let node = Node.create(layoutRecord.label, layoutRecord.alias, path, isRightAlign);
 
+				let relatedDefine = null;
 				let nestedNodes = [];
 				for(let i=0; i<source.nestedSources.length; i++)
 				{
@@ -911,25 +1045,72 @@ console.log(section);
 					if(nestedSource.label == layoutRecord.label)
 					{
 						nestedNodes = convertLayoutToNodes(nestedSource, context, path);
+						relatedDefine = nestedSource.define;
 						break;
 					}
 				}
-				if(nestedNodes.length > 0)
+				
+				if(relatedDefine != null || nestedNodes.length > 0)
 				{
-					node.nodes = nestedNodes;
 					node.labelLayout = LabelLayout.calculateHeader(node.label, context);
-					const nodeDimensions = calculateCanvasDimensions(nestedNodes);
-					const width = Math.max(node.labelLayout.width, nodeDimensions.width) + (pinker.config.scopePadding * 2);
-					const height = node.labelLayout.height + nodeDimensions.height + (pinker.config.scopePadding * 2);
-					node.setLocation(x, y, width, height);
-					node.contentArea = ContentArea.createWithPadding(0, node.labelLayout.height, node.width, node.height - node.labelLayout.height, pinker.config.scopePadding);
-					node.labelLayout.width = width;
 				}
 				else
 				{
 					node.labelLayout = LabelLayout.calculateText(node.label, context);
-					node.setLocation(x, y, node.labelLayout.width, node.labelLayout.height);
 				}
+				node.setLocation(x, y, node.labelLayout.width, node.labelLayout.height);
+				
+				if(nestedNodes.length > 0)
+				{
+					node.nodes = nestedNodes;
+					const nodeDimensions = calculateCanvasDimensions(nestedNodes);
+					const width = Math.max(node.labelLayout.width, nodeDimensions.width) + (pinker.config.scopePadding * 2);
+					const height = node.labelLayout.height + nodeDimensions.height + (pinker.config.scopePadding * 2);
+					node.setLocation(x, y, width, height);
+					node.nodeContentArea = ContentArea.createWithPadding(0, node.labelLayout.height, node.width, node.height - node.labelLayout.height, pinker.config.scopePadding);
+					node.labelLayout.width = width;
+				}
+
+				if(relatedDefine != null)
+				{
+					node.defineLayout = DefineLayout.parse(relatedDefine);
+					const defineDimensions = node.defineLayout.calculateDimensions(context);
+					const width = Math.max(node.width, defineDimensions.width);
+					node.defineContentArea = ContentArea.createWithPadding(0, node.labelLayout.height, width, defineDimensions.height, pinker.config.scopePadding);
+				}
+				
+				//clean up dimensions
+				if(node.defineContentArea != null && node.nodeContentArea != null)
+				{
+					node.width = Math.max(node.width, node.defineContentArea.width + (pinker.config.scopePadding * 2), node.nodeContentArea.width); //TODO why add padding, remove it with ContentArea.createWithPadding, then take it away again?
+					node.height = node.labelLayout.height + node.defineContentArea.height + (pinker.config.scopePadding * 2) + node.nodeContentArea.height;
+					node.labelLayout.width = node.width;
+					
+					node.defineContentArea.width = node.width;
+					node.defineContentArea.y = node.labelLayout.height;
+					
+					node.nodeContentArea.width = node.width;
+					node.nodeContentArea.y = node.labelLayout.height + node.defineContentArea.height;
+				}
+				else if(node.defineContentArea != null)
+				{
+					node.width = Math.max(node.width, node.defineContentArea.width + (pinker.config.scopePadding * 2));
+					node.height = node.labelLayout.height + node.defineContentArea.height + (pinker.config.scopePadding * 2);
+					node.labelLayout.width = node.width;
+					
+					node.defineContentArea.width = node.width;
+					node.defineContentArea.y = node.labelLayout.height;
+				}
+				else if(node.nodeContentArea != null)
+				{
+					node.width = Math.max(node.width, node.nodeContentArea.width + (pinker.config.scopePadding * 2));
+					node.height = node.labelLayout.height + node.nodeContentArea.height;
+					node.labelLayout.width = node.width;
+					
+					node.nodeContentArea.width = node.width;
+					node.nodeContentArea.y = node.labelLayout.height;
+				}
+
 				nodes.push(node);
 				
 				x += node.width + pinker.config.scopeMargin;
