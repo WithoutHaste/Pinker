@@ -105,7 +105,7 @@ The simplest scope just contains a label. Labels can be made of any characters e
 
 Plain arrow, for associations: `->`
 
-Hollow arrow, for inheritance: `-:>`
+Hollow arrow, for inheritance: `-D` or `-:>` (upper case letter D)
 
 Hollow diamond, for aggregation: `-o` (lower case letter O)
 
@@ -115,7 +115,7 @@ Filled diamond, for composition: `-+`
 
 Solid line: `->`
 
-Dashed line: `-->` or `=>`
+Dashed line: `=>` or `-->`
 
 Any kind of line can be combined with any kind of arrow.
 

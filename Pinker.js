@@ -721,6 +721,7 @@ var pinker = pinker || {};
 			switch(sourceArrow)
 			{
 				case "->": return this.plainArrow;
+				case "-D":
 				case ":>": return this.hollowArrow;
 				case "-o": return this.hollowDiamond;
 				case "-+": return this.filledDiamond;
