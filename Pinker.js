@@ -502,7 +502,160 @@ var pinker = pinker || {};
 	}
 	
 	//########################################
+	//## Drawing data structures
 	//########################################
+
+	const Node = {
+		//returns node object
+		create: function(x, y, width, height, label=null, path=null, isRightAlign=false) {
+			return {
+				x: x,
+				y: y,
+				width: width,
+				height: height,
+				path: path, //full path from root to parent scope
+				label: label, //simple label of node within scope
+				alias: null,
+				contentsX: 0, //starting point of contents, relative to this node
+				contentsY: 0,
+				nodes: [],
+				isRightAlign: isRightAlign,
+				pathLabel: function() {
+					if(path == null || path.length == 0)
+						return label;
+					return path + "." + label;
+				},
+				center: function() {
+					return {
+						x: this.x + (this.width / 2),
+						y: this.y + (this.height / 2)
+					};
+				},
+				absoluteCenter: function() {
+					return {
+						x: this.absoluteX + (this.width / 2),
+						y: this.absoluteY + (this.height / 2)
+					};
+				},
+				setAbsoluteLocations: function(deltaX=0, deltaY=0) {
+					this.absoluteX = this.x + deltaX;
+					this.absoluteY = this.y + deltaY;
+					let self = this;
+					this.nodes.forEach(function(nestedNode) {
+						nestedNode.setAbsoluteLocations(self.absoluteX + self.contentsX, self.absoluteY + self.contentsY);
+					});
+				},
+				isAbove: function(otherNode) {
+					return (this.absoluteY + this.height < otherNode.absoluteY);
+				},
+				isBelow: function(otherNode) {
+					return (this.absoluteY > otherNode.absoluteY + otherNode.height);
+				},
+				isLeftOf: function(otherNode) {
+					return (this.absoluteX + this.width < otherNode.absoluteX);
+				},
+				isRightOf: function(otherNode) {
+					return (this.absoluteX > otherNode.absoluteX + otherNode.width);
+				},
+				pathPrefix: function() {
+					return this.label + ".";
+				},
+				findLabel: function(label) {
+					if(label == null)
+						return null;
+					if(this.label == label)
+						return this;
+					if(!label.startsWith(this.pathPrefix()))
+						return null;
+					label = label.substring(this.pathPrefix().length);
+					for(let i=0; i<this.nodes.length;i++)
+					{
+						let node = this.nodes[i];
+						let result = node.findLabel(label);
+						if(result != null)
+							return result;
+					}
+					return null;
+				},
+				findAlias: function(alias) {
+					if(alias == null)
+						return null;
+					if(this.alias == alias)
+						return this;
+					for(let i=0; i<this.nodes.length;i++)
+					{
+						let node = this.nodes[i];
+						let result = node.findAlias(alias);
+						if(result != null)
+							return result;
+					}
+					return null;
+				}
+			};
+		}
+	};
+	
+	const Dimension = {
+		//returns dimension object
+		create: function(width, height) {
+			return {
+				width: width,
+				height: height
+			};
+		}
+	};
+	
+	const Point = {
+		//returns point object
+		create: function(x, y) {
+			return {
+				x: x,
+				y: y
+			};
+		}
+	};
+	
+	const ArrowTypes = {
+		plainArrow: 1,
+		hollowArrow: 2,
+		hollowDiamond: 3,
+		filledDiamond: 4,
+		//converts source arrow to arrow type
+		convert: function(sourceArrow) {
+			if(sourceArrow.length > 2)
+				sourceArrow = sourceArrow.substring(sourceArrow.length-2);
+			switch(sourceArrow)
+			{
+				case "->": return this.plainArrow;
+				case ":>": return this.hollowArrow;
+				case "-o": return this.hollowDiamond;
+				case "-+": return this.filledDiamond;
+			}
+			return this.plainArrow;
+		}
+	};
+	
+	const LineTypes = {
+		solid: 1,
+		dashed: 2,
+		//converts source arrow to line type
+		convert: function(sourceArrow) {
+			if(sourceArrow.length > 2)
+				sourceArrow = sourceArrow.substring(0, 2);
+			switch(sourceArrow)
+			{
+				case "--": return this.dashed;
+				case "->": 
+				case "-:": 
+				case "-o": 
+				case "-+": return this.solid;
+			}
+			return this.solid;
+		}
+	};
+		
+	//########################################
+	//## Drawing functions
 	//########################################
 	
 	function updateCanvas(canvasElement, source) {
@@ -516,10 +669,7 @@ var pinker = pinker || {};
 		context.fillStyle = pinker.config.backgroundColor;
 		context.fillRect(0, 0, dimensions.width, dimensions.height);
 		
-		//layout
 		drawNodes(nodes, context);
-		
-		//relations
 		drawRelations(source, nodes, context);
 	}
 	
@@ -570,7 +720,7 @@ var pinker = pinker || {};
 				const endNode = findNode(allNodes, relation.endLabel, path);
 				if(startNode == null || endNode == null)
 					return;
-				drawArrowBetweenNodes(startNode, endNode, convertArrowType(relation.arrowType), convertLineType(relation.arrowType), context);
+				drawArrowBetweenNodes(startNode, endNode, ArrowTypes.convert(relation.arrowType), LineTypes.convert(relation.arrowType), context);
 			});
 		}
 		source.nestedSources.forEach(function(nestedSource) {
@@ -608,7 +758,7 @@ var pinker = pinker || {};
 				
 				const isRightAlign = (index >= leftAlignCount);
 				const nodeDimensions = calculateNodeDimensions(layoutRecord.label, nestedNodes, context);
-				let node = createNode(x, y, nodeDimensions.width, nodeDimensions.height, layoutRecord.label, path, isRightAlign);
+				let node = Node.create(x, y, nodeDimensions.width, nodeDimensions.height, layoutRecord.label, path, isRightAlign);
 				node.nodes = nestedNodes;
 				node.contentsX = nodeDimensions.contentsX;
 				node.contentsY = nodeDimensions.contentsY;
@@ -681,93 +831,6 @@ var pinker = pinker || {};
 		return null;
 	}
 	
-	function createNode(x, y, width, height, label=null, path=null, isRightAlign=false) {
-		return {
-			x: x,
-			y: y,
-			width: width,
-			height: height,
-			path: path, //full path from root to parent scope
-			label: label, //simple label of node within scope
-			alias: null,
-			contentsX: 0, //starting point of contents, relative to this node
-			contentsY: 0,
-			nodes: [],
-			isRightAlign: isRightAlign,
-			pathLabel: function() {
-				if(path == null || path.length == 0)
-					return label;
-				return path + "." + label;
-			},
-			center: function() {
-				return {
-					x: this.x + (this.width / 2),
-					y: this.y + (this.height / 2)
-				};
-			},
-			absoluteCenter: function() {
-				return {
-					x: this.absoluteX + (this.width / 2),
-					y: this.absoluteY + (this.height / 2)
-				};
-			},
-			setAbsoluteLocations: function(deltaX=0, deltaY=0) {
-				this.absoluteX = this.x + deltaX;
-				this.absoluteY = this.y + deltaY;
-				let self = this;
-				this.nodes.forEach(function(nestedNode) {
-					nestedNode.setAbsoluteLocations(self.absoluteX + self.contentsX, self.absoluteY + self.contentsY);
-				});
-			},
-			isAbove: function(otherNode) {
-				return (this.absoluteY + this.height < otherNode.absoluteY);
-			},
-			isBelow: function(otherNode) {
-				return (this.absoluteY > otherNode.absoluteY + otherNode.height);
-			},
-			isLeftOf: function(otherNode) {
-				return (this.absoluteX + this.width < otherNode.absoluteX);
-			},
-			isRightOf: function(otherNode) {
-				return (this.absoluteX > otherNode.absoluteX + otherNode.width);
-			},
-			pathPrefix: function() {
-				return this.label + ".";
-			},
-			findLabel: function(label) {
-				if(label == null)
-					return null;
-				if(this.label == label)
-					return this;
-				if(!label.startsWith(this.pathPrefix()))
-					return null;
-				label = label.substring(this.pathPrefix().length);
-				for(let i=0; i<this.nodes.length;i++)
-				{
-					let node = this.nodes[i];
-					let result = node.findLabel(label);
-					if(result != null)
-						return result;
-				}
-				return null;
-			},
-			findAlias: function(alias) {
-				if(alias == null)
-					return null;
-				if(this.alias == alias)
-					return this;
-				for(let i=0; i<this.nodes.length;i++)
-				{
-					let node = this.nodes[i];
-					let result = node.findAlias(alias);
-					if(result != null)
-						return result;
-				}
-				return null;
-			}
-		};
-	}
-	
 	function calculateCanvasDimensions(nodes) {
 		let width = 0;
 		let height = 0;
@@ -777,7 +840,7 @@ var pinker = pinker || {};
 		});
 		width += pinker.config.canvasPadding; //right margin
 		height += pinker.config.canvasPadding; //bottom margin
-		return createDimensions(width, height);
+		return Dimension.create(width, height);
 	}
 
 	function calculateNodeDimensions(label, nestedNodes, context) {
@@ -813,53 +876,7 @@ var pinker = pinker || {};
 			contentsY: 0
 		};
 	}
-	
-	function createDimensions(width, height) {
-		return {
-			width: width,
-			height: height
-		};
-	}
-	
-	const arrowTypes = {
-		plainArrow: 1,
-		hollowArrow: 2,
-		hollowDiamond: 3,
-		filledDiamond: 4
-	};
-	
-	const lineTypes = {
-		solid: 1,
-		dashed: 2
-	};
-	
-	function convertArrowType(arrowText) {
-		if(arrowText.length > 2)
-			arrowText = arrowText.substring(arrowText.length-2);
-		switch(arrowText)
-		{
-			case "->": return arrowTypes.plainArrow;
-			case ":>": return arrowTypes.hollowArrow;
-			case "-o": return arrowTypes.hollowDiamond;
-			case "-+": return arrowTypes.filledDiamond;
-			default: return arrowTypes.plainArrow;
-		}
-	}
-	
-	function convertLineType(arrowText) {
-		if(arrowText.length > 2)
-			arrowText = arrowText.substring(0, 2);
-		switch(arrowText)
-		{
-			case "--": return lineTypes.dashed;
-			case "->": 
-			case "-:": 
-			case "-o": 
-			case "-+": return lineTypes.solid;
-			default: return lineTypes.solid;
-		}
-	}
-	
+
 	function drawArrowBetweenNodes(startNode, endNode, arrowType, lineType, context) {
 		let start = startNode.absoluteCenter();
 		let end = endNode.absoluteCenter();
@@ -889,20 +906,20 @@ var pinker = pinker || {};
 		context.beginPath();
 		switch(lineType)
 		{
-			case lineTypes.solid: context.setLineDash([]); break;
-			case lineTypes.dashed: context.setLineDash([pinker.config.lineDashLength, pinker.config.lineDashSpacing]); break;
+			case LineTypes.solid: context.setLineDash([]); break;
+			case LineTypes.dashed: context.setLineDash([pinker.config.lineDashLength, pinker.config.lineDashSpacing]); break;
 		}
 		context.moveTo(start.x, start.y);
 		context.lineTo(end.x, end.y);
 		context.stroke();
 		//arrow
 		context.setLineDash([]); //solid line
-		const arrowCornerA = createCoordinates(end.x - headlen * Math.cos(angle - Math.PI/6), end.y - headlen * Math.sin(angle - Math.PI/6));
-		const arrowCornerB = createCoordinates(end.x - headlen * Math.cos(angle + Math.PI/6), end.y - headlen * Math.sin(angle + Math.PI/6));
-		const diamondCornerC = createCoordinates(arrowCornerA.x - headlen * Math.cos(angle + Math.PI/6), arrowCornerA.y - headlen * Math.sin(angle + Math.PI/6));
+		const arrowCornerA = Point.create(end.x - headlen * Math.cos(angle - Math.PI/6), end.y - headlen * Math.sin(angle - Math.PI/6));
+		const arrowCornerB = Point.create(end.x - headlen * Math.cos(angle + Math.PI/6), end.y - headlen * Math.sin(angle + Math.PI/6));
+		const diamondCornerC = Point.create(arrowCornerA.x - headlen * Math.cos(angle + Math.PI/6), arrowCornerA.y - headlen * Math.sin(angle + Math.PI/6));
 		switch(arrowType)
 		{
-			case arrowTypes.plainArrow:
+			case ArrowTypes.plainArrow:
 				context.beginPath();
 				context.moveTo(end.x, end.y);
 				context.lineTo(arrowCornerA.x, arrowCornerA.y);
@@ -910,7 +927,7 @@ var pinker = pinker || {};
 				context.lineTo(arrowCornerB.x, arrowCornerB.y);
 				context.stroke();
 				break;
-			case arrowTypes.hollowArrow:
+			case ArrowTypes.hollowArrow:
 				//hollow center covers line
 				context.fillStyle = pinker.config.backgroundColor;
 				context.beginPath();
@@ -927,7 +944,7 @@ var pinker = pinker || {};
 				context.lineTo(end.x, end.y);
 				context.stroke();
 				break;
-			case arrowTypes.hollowDiamond:
+			case ArrowTypes.hollowDiamond:
 				//hollow center covers line
 				context.fillStyle = pinker.config.backgroundColor;
 				context.beginPath();
@@ -946,7 +963,7 @@ var pinker = pinker || {};
 				context.lineTo(end.x, end.y);
 				context.stroke();
 				break;
-			case arrowTypes.filledDiamond:
+			case ArrowTypes.filledDiamond:
 				//solid center covers line
 				context.fillStyle = pinker.config.lineColor;
 				context.beginPath();
@@ -967,12 +984,5 @@ var pinker = pinker || {};
 				break;
 		}
 	}	
-	
-	function createCoordinates(x, y) {
-		return {
-			x: x,
-			y: y
-		};
-	}
 
 })();
