@@ -38,12 +38,29 @@
       </Row>
       <Row>
         <Cell>
-          <Data ss:Type="Number">15</Data>
+          <Data ss:Type="Number">1</Data>
         </Cell>
         <Cell ss:StyleID="paragraph">
-          <Data ss:Type="String">refactor
-change "Relations" to "Relate"
-makes a better set: Define, Layout, Relate</Data>
+          <Data ss:Type="String">subdomain
+pinker.withouthaste.com
+with the examples and link to github</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Pending Response</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Task</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-04T00:00:00.000</Data>
+        </Cell>
+      </Row>
+      <Row>
+        <Cell>
+          <Data ss:Type="Number">19</Data>
+        </Cell>
+        <Cell ss:StyleID="paragraph">
+          <Data ss:Type="String">publish v1.0.0</Data>
         </Cell>
         <Cell>
           <Data ss:Type="String">Todo</Data>
@@ -53,25 +70,6 @@ makes a better set: Define, Layout, Relate</Data>
         </Cell>
         <Cell ss:StyleID="cellShortDate">
           <Data ss:Type="DateTime">2019-06-05T00:00:00.000</Data>
-        </Cell>
-      </Row>
-      <Row>
-        <Cell>
-          <Data ss:Type="Number">1</Data>
-        </Cell>
-        <Cell ss:StyleID="paragraph">
-          <Data ss:Type="String">subdomain
-pinker.withouthaste.com
-with the examples and link to github</Data>
-        </Cell>
-        <Cell>
-          <Data ss:Type="String">Todo</Data>
-        </Cell>
-        <Cell>
-          <Data ss:Type="String">Task</Data>
-        </Cell>
-        <Cell ss:StyleID="cellShortDate">
-          <Data ss:Type="DateTime">2019-06-04T00:00:00.000</Data>
         </Cell>
       </Row>
       <Row>
@@ -114,6 +112,25 @@ node.absoluteX/Y to node.x/y</Data>
       </Row>
       <Row>
         <Cell>
+          <Data ss:Type="Number">17</Data>
+        </Cell>
+        <Cell ss:StyleID="paragraph">
+          <Data ss:Type="String">when parsing a Relate row, with comma-separated list
+don't split on comma - what if a label has a comma in it?
+pull each [label] off the list one at a time</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Todo</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Bug</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-05T00:00:00.000</Data>
+        </Cell>
+      </Row>
+      <Row>
+        <Cell>
           <Data ss:Type="Number">13</Data>
         </Cell>
         <Cell ss:StyleID="paragraph">
@@ -127,6 +144,28 @@ node.absoluteX/Y to node.x/y</Data>
         </Cell>
         <Cell ss:StyleID="cellShortDate">
           <Data ss:Type="DateTime">2019-06-04T00:00:00.000</Data>
+        </Cell>
+      </Row>
+      <Row>
+        <Cell>
+          <Data ss:Type="Number">18</Data>
+        </Cell>
+        <Cell ss:StyleID="paragraph">
+          <Data ss:Type="String">support
+Alias section (only if it is very first)
+Alias:
+{A}[Label]
+{B}[Label]
+and remove support for defining aliases in layout? or leave that option? cleaner to remove it, but not backwards compatible - version++</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Todo</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Feature</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-05T00:00:00.000</Data>
         </Cell>
       </Row>
       <Row>
@@ -291,6 +330,28 @@ labels on lines</Data>
       </Row>
       <Row>
         <Cell>
+          <Data ss:Type="Number">15</Data>
+        </Cell>
+        <Cell ss:StyleID="paragraph">
+          <Data ss:Type="String">refactor
+change "Relations" to "Relate"
+makes a better set: Define, Layout, Relate</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Done</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Task</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-05T00:00:00.000</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-05T00:00:00.000</Data>
+        </Cell>
+      </Row>
+      <Row>
+        <Cell>
           <Data ss:Type="Number">8</Data>
         </Cell>
         <Cell ss:StyleID="paragraph">
@@ -424,15 +485,15 @@ and getting it in the webpage or js when you need it</Data>
           </Data>
         </Cell>
         <Cell>
-          <Data ss:Type="Number">16</Data>
+          <Data ss:Type="Number">19</Data>
         </Cell>
       </Row>
       <Row>
         <Cell>
-          <Data ss:Type="String">Done</Data>
+          <Data ss:Type="String">Pending Response</Data>
         </Cell>
         <Cell>
-          <Data ss:Type="String">Inactive</Data>
+          <Data ss:Type="String">Active</Data>
         </Cell>
         <Cell>
           <Data ss:Type="String">
@@ -452,8 +513,7 @@ and getting it in the webpage or js when you need it</Data>
       </Row>
       <Row>
         <Cell>
-          <Data ss:Type="String">
-          </Data>
+          <Data ss:Type="String">Done</Data>
         </Cell>
         <Cell>
           <Data ss:Type="String">Inactive</Data>
@@ -476,8 +536,7 @@ and getting it in the webpage or js when you need it</Data>
       </Row>
       <Row>
         <Cell>
-          <Data ss:Type="String">
-          </Data>
+          <Data ss:Type="String">Skip</Data>
         </Cell>
         <Cell>
           <Data ss:Type="String">Inactive</Data>
@@ -504,7 +563,8 @@ and getting it in the webpage or js when you need it</Data>
           </Data>
         </Cell>
         <Cell>
-          <Data ss:Type="String">Inactive</Data>
+          <Data ss:Type="String">
+          </Data>
         </Cell>
         <Cell>
           <Data ss:Type="String">
@@ -528,7 +588,8 @@ and getting it in the webpage or js when you need it</Data>
           </Data>
         </Cell>
         <Cell>
-          <Data ss:Type="String">Inactive</Data>
+          <Data ss:Type="String">
+          </Data>
         </Cell>
         <Cell>
           <Data ss:Type="String">
@@ -552,7 +613,8 @@ and getting it in the webpage or js when you need it</Data>
           </Data>
         </Cell>
         <Cell>
-          <Data ss:Type="String">Inactive</Data>
+          <Data ss:Type="String">
+          </Data>
         </Cell>
         <Cell>
           <Data ss:Type="String">
