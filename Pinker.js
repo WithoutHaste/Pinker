@@ -73,6 +73,7 @@ var pinker = pinker || {};
 
 	//draw on provided canvas with provided source
 	pinker.draw = function(canvasElement, sourceText) {
+		sourceText = Source.decodeHtml(sourceText);
 		const source = parseSource(sourceText);
 		if(source.hasErrors)
 		{
@@ -89,6 +90,12 @@ var pinker = pinker || {};
 	//########################################
 	
 	const Source = {
+		//returns the text, with all HTML character encodings converted to plain text
+		decodeHtml: function(text) {
+			var element = document.createElement("textarea");
+			element.innerHTML = text;
+			return element.value;
+		},
 		//returns the text, with all leading whitespace characters removed from each line
 		unIndent: function(text) {
 			return text.replace(/^\s+/mg,"");
@@ -731,6 +738,7 @@ var pinker = pinker || {};
 				sourceArrow = sourceArrow.substring(0, 2);
 			switch(sourceArrow)
 			{
+				case "=>":
 				case "--": return this.dashed;
 				case "->": 
 				case "-:": 

@@ -115,7 +115,7 @@ Filled diamond, for composition: `-+`
 
 Solid line: `->`
 
-Dashed line: `-->`
+Dashed line: `-->` or `=>`
 
 Any kind of line can be combined with any kind of arrow.
 
