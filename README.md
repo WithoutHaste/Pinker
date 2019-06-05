@@ -1,6 +1,6 @@
 # Pinker
 
-A standalone JavaScript library for rendering code/class diagrams on your web page.
+A standalone JavaScript library for rendering code/class diagrams on your web page. [View Examples](Examples.html)
 
 Pinker gives the user control over the layout of the diagram, so you can render more complicated diagrams.
 
@@ -249,3 +249,22 @@ pinker.config.attribute = value;
 |**lineDashLength**|integer or float|length of a dash in pixels|
 |**lineDashSpacing**|integer or float|length of space between dashes in pixels|
 |**estimateFontHeight**|function()|returns height of font in pixels|
+
+## License
+
+[MIT License](https://github.com/WithoutHaste/Pinker/blob/master/LICENSE)
+
+## Donate
+
+[Become a patron](https://www.patreon.com/withouthaste) of this and other Without Haste open source projects.
+
+## Version Notes
+
+Uses [Semantic Versioning 2.0.0](https://semver.org/).
+
+[Initial Release - v1.0.0](https://github.com/WithoutHaste/Pinker/releases/tag/v1.0.0)
+- single-file JavaScript library with no dependencies
+- generate code/UML diagrams from plain text
+- supports nested scopes to any level
+- supports arrows across scopes
+- supports aliases
