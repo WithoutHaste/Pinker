@@ -710,6 +710,7 @@ var pinker = pinker || {};
 	};
 	
 	const ArrowTypes = {
+		none: 0,
 		plainArrow: 1,
 		hollowArrow: 2,
 		hollowDiamond: 3,
@@ -720,13 +721,14 @@ var pinker = pinker || {};
 				sourceArrow = sourceArrow.substring(sourceArrow.length-2);
 			switch(sourceArrow)
 			{
+				case "=>":
 				case "->": return this.plainArrow;
 				case "-D":
 				case ":>": return this.hollowArrow;
 				case "-o": return this.hollowDiamond;
 				case "-+": return this.filledDiamond;
 			}
-			return this.plainArrow;
+			return this.none;
 		}
 	};
 	
@@ -739,8 +741,10 @@ var pinker = pinker || {};
 				sourceArrow = sourceArrow.substring(0, 2);
 			switch(sourceArrow)
 			{
+				case "=":
 				case "=>":
 				case "--": return this.dashed;
+				case "-":
 				case "->": 
 				case "-:": 
 				case "-o": 
@@ -987,6 +991,8 @@ var pinker = pinker || {};
 		const diamondCornerC = Point.create(arrowCornerA.x - headlen * Math.cos(angle + Math.PI/6), arrowCornerA.y - headlen * Math.sin(angle + Math.PI/6));
 		switch(arrowType)
 		{
+			case ArrowTypes.none:
+				break;
 			case ArrowTypes.plainArrow:
 				context.beginPath();
 				context.moveTo(end.x, end.y);

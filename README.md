@@ -117,7 +117,7 @@ Solid line: `->`
 
 Dashed line: `=>` or `-->`
 
-Any kind of line can be combined with any kind of arrow.
+Any kind of line can be combined with any kind of arrow. Leave off the arrow-head for a plain line.
 
 ### Single-Level Diagram
 
