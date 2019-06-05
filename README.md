@@ -1,6 +1,6 @@
 # Pinker
 
-A standalone JavaScript library for rendering code/class diagrams on your web page. [View Examples](Examples.html)
+A standalone JavaScript library for rendering code/class diagrams on your web page. [View Examples](withouthaste.com/pinker/index.html)
 
 Pinker gives the user control over the layout of the diagram, so you can render more complicated diagrams.
 
