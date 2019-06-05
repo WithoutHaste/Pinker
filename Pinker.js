@@ -84,10 +84,319 @@ var pinker = pinker || {};
 		updateCanvas(canvasElement, source);
 	};
 	
+	//########################################
+	//## Parsing source data structures
+	//########################################
+	
+	const Source = {
+		//returns the text, with all leading whitespace characters removed from each line
+		unIndent: function(text) {
+			return text.replace(/^\s+/mg,"");
+		},
+		//returns true if this is a section header
+		isSectionHeader: function(term) {
+			return (term.match(/^.+\:$/) != null);
+		},
+		//returns true if term is a scope
+		isScope: function(term) {
+			return (term.match(/^\[.+\]$/) != null);
+		},
+		//returns true if term is an alias
+		isAlias: function(term) {
+			return(term.match(/^\{.+\}$/) != null);
+		},
+		//extracts the header from a section header
+		parseHeader: function(line) {
+			const matches = line.match(/^(.+)\:$/);
+			if(matches == null)
+				return line;
+			return matches[1].trim();
+		},
+		//returns a scope without the enclosing [], if they exist
+		openScope: function(scope) {
+			const matches = scope.match(/^\[(.+)\]$/);
+			if(matches == null)
+				return scope;
+			return matches[1].trim();
+
+		},
+		//returns a new source object
+		create: function(label=null) {
+			return {
+				label: label, //Level 1 has no label
+				alias: null,
+				hasErrors: false,
+				errorMessages: [],
+				layout: null,
+				relations: null,
+				nestedSources: [],
+				validate: function() {
+					if(this.layout == null)
+					{
+						this.hasErrors = true;
+						this.errorMessages.push("No layout section.");
+					}
+					let self = this;
+					this.nestedSources.forEach(function(nestedSource) {
+						nestedSource.validate();
+						if(nestedSource.hasErrors)
+						{
+							self.hasErrors = true;
+							nestedSource.errorMessages.forEach(function(errorMessage) {
+								self.errorMessages.push(`${errorMessage} Section: '${nestedSource.label}'.`);
+							});
+						}
+					});
+				},
+				addSections: function(sections) {
+					let self = this;
+					sections.forEach(function(section) {
+						if(section.isReferenceSection)
+						{
+							let isAlias = (section.reference.match(/^\{.+\}$/) != null);
+							if(isAlias)
+							{
+								let success = self.addAliasedNestedSource(section.reference, section.sections);
+								if(!success)
+								{
+									self.hasErrors = true;
+									self.errorMessages.push(`Cannot find alias '${section.reference}' in any Layouts.`);
+								}
+							}
+							else
+							{
+								self.addNestedSource(section.reference, section.sections);
+							}
+						}
+						else
+						{
+							self.addSection(section);
+						}
+					});
+				},
+				addSection: function(section) {
+					switch(section.header)
+					{
+						case "layout":
+						case "Layout": 
+							if(this.layout != null)
+								return;
+							this.layout = parseLayoutSection(section); 
+							break;
+						case "relations":
+						case "Relations": 
+							if(this.relations != null)
+								return;
+							this.relations = parseRelationsSection(section); 
+							break;
+					}
+				},
+				addNestedSource: function(label, sections) {
+					if(label.length == 0)
+						return; //invalid label
+					
+					const isAlias = (label.match(/^\{.+\}$/) != null);
+					for(let i=0; i < this.nestedSources.length; i++)
+					{
+						let nestedSource = this.nestedSources[i];
+						if(nestedSource.label == label)
+							return; //skip it, it belongs here but we already have one
+						let labelStart = nestedSource.label + ".";
+						if(label.startsWith(labelStart))
+						{
+							let subLabel = label.substring(labelStart.length);
+							nestedSource.addNestedSource(subLabel, sections);
+							return;
+						}
+					}
+					let nestedSource = Source.create(label);
+					nestedSource.addSections(sections);
+					this.nestedSources.push(nestedSource);
+				},
+				//returns true when alias is found
+				addAliasedNestedSource: function(alias, sections) {
+					if(this.alias == alias)
+						return true; //skip it, we already have one
+					let layoutRecord = this.layout.findAlias(alias);
+					if(layoutRecord != null)
+					{
+						let nestedSource = Source.create(layoutRecord.label);
+						nestedSource.alias = alias;
+						nestedSource.addSections(sections);
+						this.nestedSources.push(nestedSource);
+						return true;
+					}
+					for(let i=0; i<this.nestedSoures.length; i++)
+					{
+						let nestedSource = this.nestedSources[i];
+						let result = nestedSource.addAliasesNestedSource(alias, sections);
+						if(result)
+							return true;
+					}
+					return false;
+				}
+			};
+		}
+	};
+	
+	const Section = {
+		//returns normal section object
+		create: function(header) {
+			return {
+				header: header,
+				body: [],
+				isReferenceSection: false
+			};
+		},
+		//returns reference section object
+		createReference: function(reference) {
+			return {
+				reference: reference,
+				sections: [],
+				isReferenceSection: true
+			};
+		},
+		//returns layout section object
+		createLayout: function() {
+			return {
+				rows: [],
+				//returns the matching LayoutRecord, or null
+				findAlias: function(alias) {
+					for(let i=0; i<this.rows.length; i++)
+					{
+						let row = this.rows[i];
+						let result = row.findAlias(alias);
+						if(result != null)
+							return result;
+					}
+					return null;
+				}
+			};
+		},
+		//returns relation section object
+		createRelation: function() {
+			return {
+				records: []
+			};
+		}
+	};
+	
+	const LayoutRow = {
+		//returns array of opened-scopes from source layout row
+		parseScopes: function(line) {
+			if(line == null || line.length == 0)
+				return [];
+			return line.match(/\[(.)+?\]/g);
+		},
+		//returns layout row object
+		create: function() {
+			return {
+				leftAlign: [], //arrays of LayoutRecords
+				rightAlign: [],
+				//returns both left and right aligned LayoutRecords
+				all: function() {
+					return this.leftAlign.concat(this.rightAlign);
+				},
+				//returns the matching LayoutRecord, or null
+				findAlias: function(alias) {
+					let layoutRecords = this.all();
+					for(let i=0; i<layoutRecords.length; i++)
+					{
+						let layoutRecord = layoutRecords[i];
+						if(layoutRecord.alias == alias)
+							return layoutRecord;
+					}
+					return null;
+				}
+			};
+		}
+	};
+		
+	const LayoutRecord = {
+		//returns true if a source layout label has an alias
+		hasAlias: function(label) {
+			return (label.match(/^\{.+\}/) != null);
+		},
+		//returns [alias, label], alias may be null
+		parseAliasFromLabel: function(label) {
+			if(!this.hasAlias(label))
+				return [null, label];
+			const matches = label.match(/^(\{.+\})(.*)$/);
+			return [matches[1], matches[2].trim()];
+		},
+		//returns parsed layout record
+		parse: function(fullLabel) {
+			fullLabel = Source.openScope(fullLabel);
+			const [alias, label] = this.parseAliasFromLabel(fullLabel);
+			return this.create(label, alias);
+		},
+		//returns a layout record
+		create: function(label, alias=null) {
+			return {
+				label: label,
+				alias: alias
+			};
+		}
+	};
+
+	const RelationRecord = {
+		//returns true if source relations line starts with a scope
+		startIsScope: function(line) {
+			return (line.match(/^\[.+?\]/) != null);
+		},
+		//returns true if source relations line starts with an alias
+		startIsAlias: function(line) {
+			return (line.match(/^\{.+?\}/) != null);
+		},
+		//returns the starting scope or alias from a source relations line
+		parseStartTerm: function(line) {
+			if(this.startIsAlias(line))
+				return line.match(/^(\{.+?\})/)[1];
+			else if(this.startIsScope(line))
+				return line.match(/^(\[.+?\])/)[1];
+			else
+				return null;
+		},
+		//returns array of ending scopes or alias from the part of a source relations line after the arrow
+		parseEndTerms: function(partialLine) {
+			let endTerms = [];
+			const fields = partialLine.split(',');
+			fields.forEach(function(field) {
+				field = field.trim();
+				if(Source.isScope(field) || Source.isAlias(field))
+					endTerms.push(field);
+			});
+			return endTerms;
+		},
+		//returns [startScope, arrowType, [endScope,...]] from source relations line
+		parseTerms: function(line) {
+			const startTerm = this.parseStartTerm(line);
+			if(startTerm != null)
+				line = line.substring(startTerm.length);
+			const arrowTerm = line.match(/^(.+?)(\[|\{)/)[1].trim();
+			if(arrowTerm != null)
+				line = line.substring(arrowTerm.length).trim();
+			const endTerms = this.parseEndTerms(line);
+			return [startTerm, arrowTerm, endTerms];
+		},
+		//returns a relation record
+		create: function(startLabel, arrowType, endLabel) {
+			return {
+				startLabel: startLabel,
+				arrowType: arrowType,
+				endLabel: endLabel
+			};
+		}
+	};
+	
+	//########################################
+	//## Parsing source functions
+	//########################################
+	
 	//returns a "source" object
 	function parseSource(sourceText) {
-		const source = createEmptySource();
-		sourceText = removeIndentation(sourceText);
+		const source = Source.create();
+		sourceText = Source.unIndent(sourceText);
 		const sections = parseSections(sourceText);
 		source.addSections(sections);
 		source.validate();
@@ -107,19 +416,19 @@ var pinker = pinker || {};
 			let line = lines[i];
 			if(line.length == 0)
 				continue;
-			if(line.match(/^.+\:$/) == null) //not a normal or reference header
+			if(Source.isSectionHeader(line))
+			{
+				const header = Source.parseHeader(line);
+				currentSection = Section.create(header);
+				sections.push(currentSection);
+				inSection = true;
+			}
+			else
 			{
 				if(inSection)
 				{
 					currentSection.body.push(line);
 				}
-			}
-			else
-			{
-				const header = line.match(/^(.+)\:$/)[1]
-				currentSection = createSection(header);
-				sections.push(currentSection);
-				inSection = true;
 			}
 		}
 		//collapse reference sections
@@ -127,20 +436,20 @@ var pinker = pinker || {};
 		let inReferenceSection = false;
 		let currentReferenceSection = null;
 		sections.forEach(function(section) {
-			if(section.header.match(/^\[.+\]$/) != null) //a reference header
+			if(Source.isScope(section.header))
 			{
-				let header = section.header.match(/^\[(.+)\]$/)[1];
-				currentReferenceSection = createReferenceSection(header);
+				let header = Source.openScope(section.header);
+				currentReferenceSection = Section.createReference(header);
 				collapsedSections.push(currentReferenceSection);
 				inReferenceSection = true;
 			}
-			else if(section.header.match(/^\{.+\}$/) != null) //an alias header
+			else if(Source.isAlias(section.header))
 			{
-				currentReferenceSection = createReferenceSection(section.header);
+				currentReferenceSection = Section.createReference(section.header);
 				collapsedSections.push(currentReferenceSection);
 				inReferenceSection = true;
 			}
-			else //a normal header
+			else
 			{
 				if(inReferenceSection)
 					currentReferenceSection.sections.push(section);
@@ -152,130 +461,8 @@ var pinker = pinker || {};
 		return collapsedSections;
 	}
 	
-	//returns the text, with all leading whitespace characters removed
-	function removeIndentation(text) {
-		return text.replace(/^\s+/mg,"");
-	}
-	
-	function createEmptySource(label=null) {
-		return {
-			label: label, //Level 1 has no label
-			alias: null,
-			hasErrors: false,
-			errorMessages: [],
-			layout: null,
-			relations: null,
-			nestedSources: [],
-			validate: function() {
-				if(this.layout == null)
-				{
-					this.hasErrors = true;
-					this.errorMessages.push("No layout section.");
-				}
-				let self = this;
-				this.nestedSources.forEach(function(nestedSource) {
-					nestedSource.validate();
-					if(nestedSource.hasErrors)
-					{
-						self.hasErrors = true;
-						nestedSource.errorMessages.forEach(function(errorMessage) {
-							self.errorMessages.push(`${errorMessage} Section: '${nestedSource.label}'.`);
-						});
-					}
-				});
-			},
-			addSections: function(sections) {
-				let self = this;
-				sections.forEach(function(section) {
-					if(section.isReferenceSection)
-					{
-						let isAlias = (section.reference.match(/^\{.+\}$/) != null);
-						if(isAlias)
-						{
-							let success = self.addAliasedNestedSource(section.reference, section.sections);
-							if(!success)
-							{
-								self.hasErrors = true;
-								self.errorMessages.push(`Cannot find alias '${section.reference}' in any Layouts.`);
-							}
-						}
-						else
-						{
-							self.addNestedSource(section.reference, section.sections);
-						}
-					}
-					else
-					{
-						self.addSection(section);
-					}
-				});
-			},
-			addSection: function(section) {
-				switch(section.header)
-				{
-					case "layout":
-					case "Layout": 
-						if(this.layout != null)
-							return;
-						this.layout = parseLayoutSection(section); 
-						break;
-					case "relations":
-					case "Relations": 
-						if(this.relations != null)
-							return;
-						this.relations = parseRelationsSection(section); 
-						break;
-				}
-			},
-			addNestedSource: function(label, sections) {
-				if(label.length == 0)
-					return; //invalid label
-				
-				const isAlias = (label.match(/^\{.+\}$/) != null);
-				for(let i=0; i < this.nestedSources.length; i++)
-				{
-					let nestedSource = this.nestedSources[i];
-					if(nestedSource.label == label)
-						return; //skip it, it belongs here but we already have one
-					let labelStart = nestedSource.label + ".";
-					if(label.startsWith(labelStart))
-					{
-						let subLabel = label.substring(labelStart.length);
-						nestedSource.addNestedSource(subLabel, sections);
-						return;
-					}
-				}
-				let nestedSource = createEmptySource(label);
-				nestedSource.addSections(sections);
-				this.nestedSources.push(nestedSource);
-			},
-			//returns true when alias is found
-			addAliasedNestedSource: function(alias, sections) {
-				if(this.alias == alias)
-					return true; //skip it, we already have one
-				let layoutRecord = this.layout.findAlias(alias);
-				if(layoutRecord != null)
-				{
-					let nestedSource = createEmptySource(layoutRecord.label);
-					nestedSource.alias = alias;
-					nestedSource.addSections(sections);
-					this.nestedSources.push(nestedSource);
-					return true;
-				}
-				for(let i=0; i<this.nestedSoures.length; i++)
-				{
-					let nestedSource = this.nestedSources[i];
-					let result = nestedSource.addAliasesNestedSource(alias, sections);
-					if(result)
-						return true;
-				}
-				return false;
-			}
-		};
-	}
-	
 	function parseLayoutSection(section) {
-		let layoutSection = createLayoutSection();
+		let layoutSection = Section.createLayout();
 		section.body.forEach(function(line) {
 			if(line.length == 0)
 				return;
@@ -285,138 +472,38 @@ var pinker = pinker || {};
 	}
 	
 	function parseLayoutRow(line) {
-		let layoutRow = createLayoutRow();
+		let layoutRow = LayoutRow.create();
 		let leftRight = line.split("...");
-		let left = leftRight[0].match(/\[(.)+?\]/g);
-		//TODO lots of code duplication here, maybe let createLayoutRecord handle it
-		//or go through all labels in one loop, with a left/right flag, and pass it to LayoutRow.addRecord() with the flag
+		let left = LayoutRow.parseScopes(leftRight[0]);
 		left.forEach(function(label) {
-			let plainLabel = dereferenceLabel(label).trim();
-			let alias = null;
-			if(plainLabel.match(/^\{.+\}/) != null)
-			{
-				let matches = plainLabel.match(/^(\{.+\})(.+)$/);
-				alias = matches[1];
-				plainLabel = matches[2].trim();
-			}
-			layoutRow.leftAlign.push(createLayoutRecord(plainLabel, alias));
+			layoutRow.leftAlign.push(LayoutRecord.parse(label));
 		});
 		if(leftRight.length > 1)
 		{
-			let right = leftRight[1].match(/\[(.)+?\]/g);
+			let right = LayoutRow.parseScopes(leftRight[1]);
 			right.forEach(function(label) {
-				let plainLabel = dereferenceLabel(label).trim();
-				let alias = null;
-				if(plainLabel.match(/^\{.+\}/) != null)
-				{
-					let matches = plainLabel.match(/^(\{.+\})(.+)$/);
-					alias = matches[1];
-					plainLabel = matches[2].trim();
-				}
-				layoutRow.rightAlign.push(createLayoutRecord(plainLabel, alias));
+				layoutRow.rightAlign.push(LayoutRecord.parse(label));
 			});
 		}
 		return layoutRow;
 	}
 	
 	function parseRelationsSection(section) {
-		let relationsSection = createRelationsSection();
+		let relationsSection = Section.createRelation();
 		section.body.forEach(function(line) {
-			let match = line.match(/([\[\{].*?[\]\}])(.*?)([\[\{].*[\]\}])/); //TODO could match mismatched braces
-			if(match == null)
+			const [startTerm, arrowTerm, endTerms] = RelationRecord.parseTerms(line);
+			if(startTerm == null || arrowTerm == null || endTerms.length == 0)
 				return;
-			let start = match[1];
-			let arrowType = match[2];
-			let ends = match[3].match(/[\[\{].*?[\]\}]/g);
-			ends.forEach(function(end) {
-				relationsSection.relations.push(createRelation(dereferenceLabel(start), arrowType, dereferenceLabel(end)));
+			endTerms.forEach(function(endTerm) {
+				relationsSection.records.push(RelationRecord.create(Source.openScope(startTerm), arrowTerm, Source.openScope(endTerm)));
 			});
 		});
 		return relationsSection;
 	}
 	
-	function createSection(header) {
-		return {
-			header: header,
-			body: [],
-			isReferenceSection: false
-		};
-	}
-	
-	function createReferenceSection(reference) {
-		return {
-			reference: reference,
-			sections: [],
-			isReferenceSection: true
-		};
-	}
-	
-	function createLayoutSection() {
-		return {
-			rows: [],
-			//returns the matching LayoutRecord, or null
-			findAlias: function(alias) {
-				for(let i=0; i<this.rows.length; i++)
-				{
-					let row = this.rows[i];
-					let result = row.findAlias(alias);
-					if(result != null)
-						return result;
-				}
-				return null;
-			}
-		};
-	}
-	
-	function createLayoutRow() {
-		return {
-			leftAlign: [], //arrays of LayoutRecords
-			rightAlign: [],
-			all: function() {
-				return this.leftAlign.concat(this.rightAlign);
-			},
-			//returns the matching LayoutRecord, or null
-			findAlias: function(alias) {
-				let layoutRecords = this.all();
-				for(let i=0; i<layoutRecords.length; i++)
-				{
-					let layoutRecord = layoutRecords[i];
-					if(layoutRecord.alias == alias)
-						return layoutRecord;
-				}
-				return null;
-			}
-		};
-	}
-	
-	function createLayoutRecord(label, alias=null) {
-		return {
-			label: label,
-			alias: alias
-		};
-	}
-	
-	function createRelationsSection() {
-		return {
-			relations: []
-		};
-	}
-	
-	function createRelation(startLabel, arrowType, endLabel) {
-		return {
-			startLabel: startLabel,
-			arrowType: arrowType,
-			endLabel: endLabel
-		};
-	}
-	
-	//remove outer square brackets from text
-	function dereferenceLabel(text) {
-		let matches = text.match(/^\[(.+)\]$/);
-		if(matches == null)
-			return text;
-		return matches[1];
-	}
+	//########################################
+	//########################################
+	//########################################
 	
 	function updateCanvas(canvasElement, source) {
 		let context = canvasElement.getContext('2d');
@@ -478,7 +565,7 @@ var pinker = pinker || {};
 			path += "." + source.label;
 		if(source.relations != null)
 		{
-			source.relations.relations.forEach(function(relation) {
+			source.relations.records.forEach(function(relation) {
 				const startNode = findNode(allNodes, relation.startLabel, path);
 				const endNode = findNode(allNodes, relation.endLabel, path);
 				if(startNode == null || endNode == null)
