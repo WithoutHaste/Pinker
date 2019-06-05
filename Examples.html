@@ -129,13 +129,50 @@ Relations:
 	Layout:
 		[D]
 	Relations:
-		[D]->{C}
+		[D]->{C}.[E.F]
+{C}:
+	Layout:
+		[E]
+{C}.[E]:
+	Layout:
+		[F]
 			</pre>
 			<canvas id='Canvas05'></canvas>
 		</div>
 		<script>
 			var canvas = document.getElementById("Canvas05");
 			var source = document.getElementById("Source05").innerHTML;
+			pinker.draw(canvas, source);
+		</script>
+
+		Definitions
+		<div>
+			<pre id='Source06'>
+Layout:
+	{A}{B}
+Relations:
+	{A}->{B}
+[{A}Long Long Label A]:
+	Define:
+		oneField
+		twoField|
+		getOneField()
+		getTwoField()
+		setTwoField(x, y)
+	Layout:
+		[C]
+[{B}Long Long Label B]:
+	Define:
+		fourField
+		fiveField
+	Layout:
+		[D]
+			</pre>
+			<canvas id='Canvas06'></canvas>
+		</div>
+		<script>
+			var canvas = document.getElementById("Canvas06");
+			var source = document.getElementById("Source06").innerHTML;
 			pinker.draw(canvas, source);
 		</script>
 	</body>

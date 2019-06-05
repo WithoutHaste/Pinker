@@ -127,6 +127,18 @@ var pinker = pinker || {};
 			return matches[1].trim();
 
 		},
+		//returns true if the first term in the path is an alias
+		//returns false if the entire path is one alias
+		pathStartsWithAlias: function(path) {
+			return (path.match(/^\{.+?\}\./) != null);
+		},
+		//returns [alias, remainingPath]
+		splitAliasFromPath: function(path) {
+			if(!this.pathStartsWithAlias(path))
+				return path;
+			let matches = path.match(/^(\{.+?\})\.(.*)$/);
+			return [matches[1], matches[2]];
+		},
 		//returns a new source object
 		create: function(label=null) {
 			return {
@@ -134,6 +146,7 @@ var pinker = pinker || {};
 				alias: null,
 				hasErrors: false,
 				errorMessages: [],
+				define: null,
 				layout: null,
 				relations: null,
 				nestedSources: [],
@@ -160,14 +173,28 @@ var pinker = pinker || {};
 					sections.forEach(function(section) {
 						if(section.isReferenceSection)
 						{
-							let isAlias = (section.reference.match(/^\{.+\}$/) != null);
-							if(isAlias)
+							if(Source.isAlias(section.reference))
 							{
 								let success = self.addAliasedNestedSource(section.reference, section.sections);
 								if(!success)
 								{
 									self.hasErrors = true;
-									self.errorMessages.push(`Cannot find alias '${section.reference}' in any Layouts.`);
+									self.errorMessages.push(`Cannot find alias '${section.reference}'.`);
+								}
+							}
+							else if(Source.pathStartsWithAlias(section.reference))
+							{
+								let [alias, label] = Source.splitAliasFromPath(section.reference);
+								let aliasedSource = self.findAliasedSource(alias);
+								if(aliasedSource == null)
+								{
+									self.hasErrors = true;
+									self.errorMessages.push(`Cannot find alias '${alias}'.`);
+								}
+								else
+								{
+									section.reference = Source.openScope(label);
+									aliasedSource.addSections([section]);
 								}
 							}
 							else
@@ -184,14 +211,23 @@ var pinker = pinker || {};
 				addSection: function(section) {
 					switch(section.header)
 					{
+						case "define":
+						case "Define":
+						case "DEFINE":
+							if(this.define != null)
+								return;
+							this.define = parseDefineSection(section); 
+							break;
 						case "layout":
 						case "Layout": 
+						case "LAYOUT":
 							if(this.layout != null)
 								return;
 							this.layout = parseLayoutSection(section); 
 							break;
 						case "relations":
 						case "Relations": 
+						case "RELATIONS":
 							if(this.relations != null)
 								return;
 							this.relations = parseRelationsSection(section); 
@@ -233,14 +269,27 @@ var pinker = pinker || {};
 						this.nestedSources.push(nestedSource);
 						return true;
 					}
-					for(let i=0; i<this.nestedSoures.length; i++)
+					for(let i=0; i<this.nestedSources.length; i++)
 					{
 						let nestedSource = this.nestedSources[i];
-						let result = nestedSource.addAliasesNestedSource(alias, sections);
+						let result = nestedSource.addAliasedNestedSource(alias, sections);
 						if(result)
 							return true;
 					}
 					return false;
+				},
+				//returns the nested source with this alias
+				findAliasedSource: function(alias) {
+					if(this.alias == alias)
+						return this;
+					for(let i=0; i<this.nestedSources.length; i++)
+					{
+						let nestedSource = this.nestedSources[i];
+						let result = nestedSource.findAliasedSource(alias);
+						if(result != null)
+							return result;
+					}
+					return null;
 				}
 			};
 		}
@@ -261,6 +310,12 @@ var pinker = pinker || {};
 				reference: reference,
 				sections: [],
 				isReferenceSection: true
+			};
+		},
+		//returns define section object
+		createDefine: function() {
+			return {
+				sections: []
 			};
 		},
 		//returns layout section object
@@ -370,7 +425,7 @@ var pinker = pinker || {};
 			const fields = partialLine.split(',');
 			fields.forEach(function(field) {
 				field = field.trim();
-				if(Source.isScope(field) || Source.isAlias(field))
+				if(Source.isScope(field) || Source.isAlias(field) || Source.pathStartsWithAlias(field))
 					endTerms.push(field);
 			});
 			return endTerms;
@@ -450,7 +505,7 @@ var pinker = pinker || {};
 				collapsedSections.push(currentReferenceSection);
 				inReferenceSection = true;
 			}
-			else if(Source.isAlias(section.header))
+			else if(Source.isAlias(section.header) || Source.pathStartsWithAlias(section.header))
 			{
 				currentReferenceSection = Section.createReference(section.header);
 				collapsedSections.push(currentReferenceSection);
@@ -464,8 +519,13 @@ var pinker = pinker || {};
 					collapsedSections.push(section);
 			}
 		});		
-		
 		return collapsedSections;
+	}
+	
+	function parseDefineSection(section) {
+		let defineSection = Section.createDefine();
+console.log(section);		
+		return defineSection;
 	}
 	
 	function parseLayoutSection(section) {
@@ -574,6 +634,7 @@ var pinker = pinker || {};
 				pathPrefix: function() {
 					return this.label + ".";
 				},
+				//returns label based on next part of path matching this
 				findLabel: function(label) {
 					if(label == null)
 						return null;
@@ -899,9 +960,16 @@ var pinker = pinker || {};
 	}
 	
 	function findNode(nodes, label, labelPath) {
-		let isAlias = (label.match(/^\{.+\}$/) != null);
-		if(isAlias)
+		if(Source.isAlias(label))
 			return findNodeAlias(nodes, label);
+		if(Source.pathStartsWithAlias(label))
+		{
+			let [alias, remainingPath] = Source.splitAliasFromPath(label);
+			let node = findNodeAlias(nodes, alias);
+			if(node == null)
+				return null;
+			return node.findLabel(node.pathPrefix() + Source.openScope(remainingPath));
+		}
 		let node = findNodeRelative(nodes, label, labelPath);
 		if(node != null)
 			return node;

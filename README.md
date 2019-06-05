@@ -204,6 +204,42 @@ Relations:
 	
 ```
 
+**Aliases** may be defined in the Layout section, or in a global section. If the alias is defined in the global section, you can use the alias in the Layout section instead of the entire label. If you define the same alias in both places, the global section alias will trump the Layout section alias.
+
+```
+Layout:
+	{A}[B]
+Relations:
+	[B]->{A}
+[{A}Long Long Label]:
+```
+
+A relative reference may start from any **alias**. The syntax is `{A}.[B.C]` where `{A}` is the global alias and `[B.C]` is the rest of the path from that point, with scope `[C]` nested in scope `[B]`.
+
+### Definitions
+
+To include more than a label in a scope, add a **Define** section. This section is optional.
+
+A definition can contain any number of lines of text. This text will be displayed as-is, with no line-wrapping. Empty lines, leading space, and trailing space will be ignored.
+
+The pipe **|** character inserts a horizontal rule between lines of text. It can appear at the end of the previous line, the beginning of the next line, or on its own line.
+
+```
+Layout:
+	[A][B]
+Relations:
+	[B]->[A]
+[A]:
+	Define:
+		+ field01
+		+ field02
+		|+ method01
+		- method02
+[B]:
+	Define:
+		+ field01
+```
+
 ## Configuration
 
 ```
