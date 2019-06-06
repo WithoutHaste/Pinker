@@ -57,18 +57,18 @@ with the examples and link to github</Data>
       </Row>
       <Row>
         <Cell>
-          <Data ss:Type="Number">16</Data>
+          <Data ss:Type="Number">21</Data>
         </Cell>
         <Cell ss:StyleID="paragraph">
-          <Data ss:Type="String">refactor:
-sort out when padding is added
-it's all mixed up and screwy right now</Data>
+          <Data ss:Type="String">working in branch "improve-layout"
+v1.1.0
+general improvements to display</Data>
         </Cell>
         <Cell>
           <Data ss:Type="String">Todo</Data>
         </Cell>
         <Cell>
-          <Data ss:Type="String">Bug</Data>
+          <Data ss:Type="String">Feature</Data>
         </Cell>
         <Cell ss:StyleID="cellShortDate">
           <Data ss:Type="DateTime">2019-06-05T00:00:00.000</Data>
@@ -313,6 +313,28 @@ labels on lines</Data>
       </Row>
       <Row>
         <Cell>
+          <Data ss:Type="Number">16</Data>
+        </Cell>
+        <Cell ss:StyleID="paragraph">
+          <Data ss:Type="String">refactor:
+sort out when padding is added
+it's all mixed up and screwy right now</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Done</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Bug</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-05T00:00:00.000</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-05T00:00:00.000</Data>
+        </Cell>
+      </Row>
+      <Row>
+        <Cell>
           <Data ss:Type="Number">20</Data>
         </Cell>
         <Cell ss:StyleID="paragraph">
@@ -508,7 +530,7 @@ and getting it in the webpage or js when you need it</Data>
           </Data>
         </Cell>
         <Cell>
-          <Data ss:Type="Number">20</Data>
+          <Data ss:Type="Number">21</Data>
         </Cell>
       </Row>
       <Row>
