@@ -829,15 +829,15 @@ var pinker = pinker || {};
 				height: height,
 				type: type,
 				lines: lines,
-				//draw text centered in space
-				drawCentered: function(point, context) {
+				//draw text centered in space (local width may be overridden)
+				drawCentered: function(point, width, context) {
 					context.fillStyle = pinker.config.lineColor;
 					let self = this;
 					let lineHeight = pinker.config.estimateFontHeight();
 					point.y += lineHeight;
 					this.lines.forEach(function(line) {
 						let lineWidth = context.measureText(line).width;
-						context.fillText(line, point.x + ((self.width - lineWidth)/2), point.y);
+						context.fillText(line, point.x + ((width - lineWidth)/2), point.y);
 						point.y += lineHeight;
 					});
 				}
@@ -1007,6 +1007,7 @@ var pinker = pinker || {};
 	function drawNodes(nodes, context) {
 		nodes.forEach(function(node) {
 			const paddingPoint = Point.create(pinker.config.scopePadding);
+			const doublePadding = pinker.config.scopePadding * 2;
 			
 			//outline node
 			context.strokeStyle = pinker.config.lineColor;
@@ -1023,7 +1024,7 @@ var pinker = pinker || {};
 					break;
 			}
 			const labelPoint = node.absolutePoint().plus(node.labelArea.point()).plus(paddingPoint);
-			node.labelLayout.drawCentered(labelPoint, context);
+			node.labelLayout.drawCentered(labelPoint, node.labelArea.width - doublePadding, context);
 			
 			//define area
 			if(node.defineLayout != null)
