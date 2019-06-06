@@ -264,6 +264,67 @@ this line type means Y</Data>
       </Row>
       <Row>
         <Cell>
+          <Data ss:Type="Number">22</Data>
+        </Cell>
+        <Cell ss:StyleID="paragraph">
+          <Data ss:Type="String">support
+more types of lines
+s&gt; for wavy-snake line
+*&gt; for dotted line
+^&gt; for spiky line
+will be most useful after Key is added, so users can encode different data into one diagram</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Todo</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Feature</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-06T00:00:00.000</Data>
+        </Cell>
+      </Row>
+      <Row>
+        <Cell>
+          <Data ss:Type="Number">23</Data>
+        </Cell>
+        <Cell ss:StyleID="paragraph">
+          <Data ss:Type="String">support
+pinker.drawJPEG(parentElement, sourceText);
+that will render the diagram to a JPEG (or other format) and insert the &lt;img&gt; into the parentElement</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Todo</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Feature</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-06T00:00:00.000</Data>
+        </Cell>
+      </Row>
+      <Row>
+        <Cell>
+          <Data ss:Type="Number">24</Data>
+        </Cell>
+        <Cell ss:StyleID="paragraph">
+          <Data ss:Type="String">support
+pinker.draw/render with flags
+flag that says: give me the top-level summary
+meaning: just the top-level nodes, with all relations maintained - so every relation that crosses top-level scope boundaries is simlified to be between those two top-level scopes</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Todo</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Feature</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-06T00:00:00.000</Data>
+        </Cell>
+      </Row>
+      <Row>
+        <Cell>
           <Data ss:Type="Number">14</Data>
         </Cell>
         <Cell ss:StyleID="paragraph">
@@ -530,7 +591,7 @@ and getting it in the webpage or js when you need it</Data>
           </Data>
         </Cell>
         <Cell>
-          <Data ss:Type="Number">21</Data>
+          <Data ss:Type="Number">24</Data>
         </Cell>
       </Row>
       <Row>
