@@ -13,13 +13,15 @@ var pinker = pinker || {};
 		fontSize: 14 //font size in pixels
 		,fontFamily: "Georgia"
 		,scopeMargin: 30 //minimum space around each scope
-		,scopePadding: 10 //minimum space between scope boundary and scope contents
+		,scopePadding: 15 //minimum space between scope boundary and scope contents
 		,canvasPadding: 15 //minimum space between canvas boundary and scopes
 		,backgroundColor: "#FFFFFF" //white
 		,shadeColor: "#EEEEEE" //pale gray
 		,lineColor: "#000000" //black
 		,lineDashLength: 5 //length of a dash in pixels
 		,lineDashSpacing: 3 //length of space between dashes in pixels
+		,favorGoldenRatioLabelSize: true
+		,favorUniformNodeSizes: true
 		,font: function() {
 			return this.fontSize + "px " + this.fontFamily;
 		}
@@ -661,9 +663,11 @@ var pinker = pinker || {};
 				},
 				//expand node width as needed to fit content
 				//expands all areas as needed, too
+				//returns the delta
 				updateWidth(newWidth) {
 					if(this.width >= newWidth)
-						return;
+						return 0;
+					const delta = newWidth - this.width;
 					this.width = newWidth;
 					if(this.labelArea != null)
 						this.labelArea.width = newWidth;
@@ -671,6 +675,23 @@ var pinker = pinker || {};
 						this.defineArea.width = newWidth;
 					if(this.nodeArea != null)
 						this.nodeArea.width = newWidth;
+					return delta;
+				},
+				//expand node height as needed to fit content
+				//expands all areas as needed, too
+				//returns the delta
+				updateHeight(newHeight) {
+					if(this.height >= newHeight)
+						return 0;
+					const delta = newHeight - this.height;
+					this.height = newHeight;
+					if(this.nodeArea != null)
+						this.nodeArea.height += delta;
+					else if(this.defineArea != null)
+						this.defineArea.height += delta;
+					else if(this.labelArea != null)
+						this.labelArea.height += delta;
+					return delta;
 				},
 				pathLabel: function() {
 					if(path == null || path.length == 0)
@@ -832,6 +853,12 @@ var pinker = pinker || {};
 				isHeader: function() {
 					return (this.type == LabelLayout.types.header);
 				},
+				widthHeightRatio: function() {
+					return (width/height);
+				},
+				whToGoldenRatio: function() {
+					return Math.abs(1.6 - this.widthHeightRatio());
+				},
 				//draw text centered in space (local width may be overridden)
 				drawCentered: function(point, width, context) {
 					context.fillStyle = pinker.config.lineColor;
@@ -862,15 +889,39 @@ var pinker = pinker || {};
 		calculateText: function (label, context) {
 			if(label == null || label.length == 0)
 				return this.createEmptyText();
+			if(pinker.config.favorGoldenRatioLabelSize)
+				return this.calculateTextToGoldenRatio(label, context);
+			
 			const wordCount = label.split(" ").length;
-			let labelLayout = null;
+			let layoutLabel = null;
 			for(let wordsPerLine=1; wordsPerLine<=wordCount; wordsPerLine++)
 			{
 				labelLayout = this.calculateWordsPerLine(label, wordsPerLine, context);
 				if(labelLayout.width > labelLayout.height)
+				{
 					return labelLayout;
+				}
 			}
 			return labelLayout;
+		},
+		//returns text-type label layout object, arranged to have a width:height ratio close to 1.6
+		calculateTextToGoldenRatio: function(label, context) {
+			//don't process every possibility - could be a lot
+			//get as close to golden ratio as possible, strongly favoring width > height
+			const wordCount = label.split(" ").length;
+			let selectedLabelLayout = null;
+			let nextLayoutLabel = null;
+			for(let wordsPerLine=1; wordsPerLine<=wordCount; wordsPerLine++)
+			{
+				nextLabelLayout = this.calculateWordsPerLine(label, wordsPerLine, context);
+				if(selectedLabelLayout == null || selectedLabelLayout.whToGoldenRatio() > nextLabelLayout.whToGoldenRatio() || selectedLabelLayout.widthHeightRatio() < 1.2) //1.2 found to be a pleasing tipping point during testing
+				{
+					selectedLabelLayout = nextLabelLayout;
+					continue;
+				}
+				break;
+			}
+			return selectedLabelLayout;
 		},
 		//returns text-type label layout object, with a specific number of words per line
 		calculateWordsPerLine: function(label, wordsPerLine, context) {
@@ -1106,7 +1157,6 @@ var pinker = pinker || {};
 		let nodeRows = [];
 		let allNodes = [];
 		let y = 0;
-		let maxX = 0;
 		//layout as if all are left aligned
 		source.layout.rows.forEach(function(row) {
 			let nodes = []
@@ -1166,12 +1216,18 @@ var pinker = pinker || {};
 				rowHeight = Math.max(rowHeight, node.height);
 				index++;
 			});
-			maxX = Math.max(maxX, x - pinker.config.scopeMargin);
 			y += rowHeight + pinker.config.scopeMargin;
 			nodeRows.push(nodes);
 			allNodes = allNodes.concat(nodes);
 		});
+		//apply resizing rules
+		if(pinker.config.favorUniformNodeSizes)
+		{
+			makeSiblingNodesUniformSizes(allNodes, nodeRows);
+		}
 		//apply right alignment
+		let maxXs = allNodes.map(node => node.x + node.width);
+		let maxX = Math.max(...maxXs);
 		nodeRows.forEach(function(nodes) {
 			nodes.reverse();
 			let right = maxX;
@@ -1183,6 +1239,57 @@ var pinker = pinker || {};
 			});
 		});
 		return allNodes;
+	}
+	
+	//if nodes are close in size, make them all the same size - adjust placements
+	//TODO: NOT IMPLEMENTED if nodes are widely different in size, divide them into subsets of sizes
+	function makeSiblingNodesUniformSizes(allNodes, nodeRows) {
+		const variance = 0.3;
+		//widths
+		let widths = allNodes.map(node => node.width);
+		let minWidth = Math.min(...widths);
+		let maxWidth = Math.max(...widths);
+		if(1 - (minWidth / maxWidth) <= variance)
+		{
+			nodeRows.forEach(function(row) {
+				for(let i=0; i<row.length; i++)
+				{
+					let node = row[i];
+					let delta = node.updateWidth(maxWidth);
+					if(delta == 0)
+						continue;
+					for(let j=i+1; j<row.length; j++) //push right-hand row-siblings to the right
+					{
+						row[j].x += delta;
+					}
+				}
+			});
+		}
+		//heights
+		let heights = allNodes.map(node => node.height);
+		let minHeight = Math.min(...heights);
+		let maxHeight = Math.max(...heights);
+		if(1 - (minHeight / maxHeight) <= variance)
+		{
+			for(let r=0; r<nodeRows.length; r++)
+			{
+				let row = nodeRows[r];
+				const rowHeight = Math.max(...row.map(node => node.height));
+				const rowHeightDelta = maxHeight - rowHeight;
+				for(let i=0; i<row.length; i++)
+				{
+					let node = row[i];
+					node.updateHeight(maxHeight);
+				}
+				for(let r2=r+1; r2<nodeRows.length; r2++) //push all lower rows down
+				{
+					let row2 = nodeRows[r2];
+					row2.forEach(function(node) {
+						node.y += rowHeightDelta;
+					});
+				}
+			}
+		}
 	}
 	
 	function findNode(nodes, label, labelPath) {
