@@ -862,16 +862,45 @@ var pinker = pinker || {};
 		calculateText: function (label, context) {
 			if(label == null || label.length == 0)
 				return this.createEmptyText();
+			const wordCount = label.split(" ").length;
+			let labelLayout = null;
+			for(let wordsPerLine=1; wordsPerLine<=wordCount; wordsPerLine++)
+			{
+				labelLayout = this.calculateWordsPerLine(label, wordsPerLine, context);
+				if(labelLayout.width > labelLayout.height)
+					return labelLayout;
+			}
+			return labelLayout;
+		},
+		//returns text-type label layout object, with a specific number of words per line
+		calculateWordsPerLine: function(label, wordsPerLine, context) {
 			context.font = pinker.config.font();
 			let wordHeight = pinker.config.estimateFontHeight();
 			let width = 0;
 			let height = 0;
-			let words = label.split(" ");
-			words.forEach(function(word) {
-				width = Math.max(width, context.measureText(word).width);
+			let lines = this.splitIntoWordsPerLine(label, wordsPerLine);
+			lines.forEach(function(line) {
+				width = Math.max(width, context.measureText(line).width);
 				height += wordHeight;
 			});
-			return this.createText(width, height, words);
+			return this.createText(width, height, lines);
+		},
+		//divide text into units of size wordsPerLine
+		//fills lines from last to first
+		splitIntoWordsPerLine: function(text, wordsPerLine) {
+			let words = text.split(" ");
+			let results = [];
+			while(words.length > 0)
+			{
+				if(words.length <= wordsPerLine)
+				{
+					results.unshift(words.join(" "));
+					break;
+				}
+				let segment = words.splice(words.length - wordsPerLine, wordsPerLine);
+				results.unshift(segment.join(" "));
+			}
+			return results;
 		},
 		//returns header-type label layout object
 		calculateHeader: function (label, context) {
