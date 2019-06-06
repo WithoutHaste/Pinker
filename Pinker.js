@@ -829,6 +829,9 @@ var pinker = pinker || {};
 				height: height,
 				type: type,
 				lines: lines,
+				isHeader: function() {
+					return (this.type == LabelLayout.types.header);
+				},
 				//draw text centered in space (local width may be overridden)
 				drawCentered: function(point, width, context) {
 					context.fillStyle = pinker.config.lineColor;
@@ -889,6 +892,9 @@ var pinker = pinker || {};
 				height: height,
 				point: function() {
 					return Point.create(this.x, this.y);
+				},
+				centerY: function(point) {
+					return this.y + point.y + (this.height/2);
 				},
 				//draw background and outline of area
 				fillAndOutline: function(point, backgroundColor, lineColor, context) {
@@ -1214,17 +1220,33 @@ var pinker = pinker || {};
 		else if(startNode.isBelow(endNode))
 			start.y = startNode.absoluteY;
 		if(startNode.isLeftOf(endNode))
+		{
 			start.x = startNode.absoluteX + startNode.width;
+			if(startNode.labelLayout.isHeader())
+				start.y = startNode.labelArea.centerY(startNode.absolutePoint());
+		}
 		else if(startNode.isRightOf(endNode))
+		{
 			start.x = startNode.absoluteX;
+			if(startNode.labelLayout.isHeader())
+				start.y = startNode.labelArea.centerY(startNode.absolutePoint());
+		}
 		if(endNode.isAbove(startNode))
 			end.y = endNode.absoluteY + endNode.height;
 		else if(endNode.isBelow(startNode))
 			end.y = endNode.absoluteY;
 		if(endNode.isLeftOf(startNode))
+		{
 			end.x = endNode.absoluteX + endNode.width;
+			if(endNode.labelLayout.isHeader())
+				end.y = endNode.labelArea.centerY(endNode.absolutePoint());
+		}
 		else if(endNode.isRightOf(startNode))
+		{
 			end.x = endNode.absoluteX;
+			if(endNode.labelLayout.isHeader())
+				end.y = endNode.labelArea.centerY(endNode.absolutePoint());
+		}
 		drawArrow(start, end, arrowType, lineType, context);
 	}
 	
