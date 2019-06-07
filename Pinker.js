@@ -13,13 +13,14 @@ var pinker = pinker || {};
 		fontSize: 14 //font size in pixels
 		,fontFamily: "Georgia"
 		,scopeMargin: 30 //minimum space around each scope
-		,scopePadding: 15 //minimum space between scope boundary and scope contents
+		,scopePadding: 10 //minimum space between scope boundary and scope contents
 		,canvasPadding: 15 //minimum space between canvas boundary and scopes
 		,backgroundColor: "#FFFFFF" //white
 		,shadeColor: "#EEEEEE" //pale gray
 		,lineColor: "#000000" //black
 		,lineDashLength: 5 //length of a dash in pixels
 		,lineDashSpacing: 3 //length of space between dashes in pixels
+		,arrowHeadLength: 15 //length of arrow head in pixels
 		,favorGoldenRatioLabelSize: true
 		,favorUniformNodeSizes: true
 		,font: function() {
@@ -1384,40 +1385,51 @@ var pinker = pinker || {};
 			if(endNode.labelLayout.isHeader())
 				end.y = endNode.labelArea.centerY(endNode.absolutePoint());
 		}
-		drawArrow(start, end, arrowType, lineType, context);
+		drawLine(start, end, lineType, context);
+		drawArrow(start, end, arrowType, context);
 	}
 	
-	function drawArrow(start, end, arrowType, lineType, context) {
-		var headlen = 10; // length of head in pixels TODO move to config calculation based on scopeMargin
-		var angle = Math.atan2(end.y - start.y, end.x - start.x);
-		//line
+	function drawLine(start, end, lineType, context) {
 		context.beginPath();
+		context.strokeStyle = pinker.config.lineColor;
 		switch(lineType)
 		{
-			case LineTypes.solid: context.setLineDash([]); break;
-			case LineTypes.dashed: context.setLineDash([pinker.config.lineDashLength, pinker.config.lineDashSpacing]); break;
+			case LineTypes.solid: 
+				context.setLineDash([]); 
+				break;
+			case LineTypes.dashed: 
+				context.setLineDash([pinker.config.lineDashLength, pinker.config.lineDashSpacing]); 
+				break;
 		}
 		context.moveTo(start.x, start.y);
 		context.lineTo(end.x, end.y);
 		context.stroke();
-		//arrow
+	}
+	
+	function drawArrow(start, end, arrowType, context) {
+		const headLength = pinker.config.arrowHeadLength;
+		const angle = Math.atan2(end.y - start.y, end.x - start.x);
+		
+		if(arrowType == ArrowTypes.none)
+			return;
+		
 		context.setLineDash([]); //solid line
-		const arrowCornerA = Point.create(end.x - headlen * Math.cos(angle - Math.PI/6), end.y - headlen * Math.sin(angle - Math.PI/6));
-		const arrowCornerB = Point.create(end.x - headlen * Math.cos(angle + Math.PI/6), end.y - headlen * Math.sin(angle + Math.PI/6));
-		const diamondCornerC = Point.create(arrowCornerA.x - headlen * Math.cos(angle + Math.PI/6), arrowCornerA.y - headlen * Math.sin(angle + Math.PI/6));
-		switch(arrowType)
+		if(arrowType == ArrowTypes.plainArrow || arrowType == ArrowTypes.hollowArrow)
 		{
-			case ArrowTypes.none:
-				break;
-			case ArrowTypes.plainArrow:
+			const triangleSideLength = headLength * 2 / Math.sqrt(3); //see equilateral triangle geometry
+			const arrowCornerA = Point.create(end.x - triangleSideLength * Math.cos(angle - Math.PI/6), end.y - triangleSideLength * Math.sin(angle - Math.PI/6));
+			const arrowCornerB = Point.create(end.x - triangleSideLength * Math.cos(angle + Math.PI/6), end.y - triangleSideLength * Math.sin(angle + Math.PI/6));
+			if(arrowType == ArrowTypes.plainArrow)
+			{
 				context.beginPath();
 				context.moveTo(end.x, end.y);
 				context.lineTo(arrowCornerA.x, arrowCornerA.y);
 				context.moveTo(end.x, end.y);
 				context.lineTo(arrowCornerB.x, arrowCornerB.y);
 				context.stroke();
-				break;
-			case ArrowTypes.hollowArrow:
+			}
+			else if(arrowType == ArrowTypes.hollowArrow)
+			{
 				//hollow center covers line
 				context.fillStyle = pinker.config.backgroundColor;
 				context.beginPath();
@@ -1433,8 +1445,16 @@ var pinker = pinker || {};
 				context.lineTo(arrowCornerB.x, arrowCornerB.y);
 				context.lineTo(end.x, end.y);
 				context.stroke();
-				break;
-			case ArrowTypes.hollowDiamond:
+			}
+		}
+		else if(arrowType == ArrowTypes.hollowDiamond || arrowType == ArrowTypes.filledDiamond)
+		{
+			const triangleSideLength = (headLength/2) * 2 / Math.sqrt(3); //see equilateral triangle geometry
+			const arrowCornerA = Point.create(end.x - triangleSideLength * Math.cos(angle - Math.PI/6), end.y - triangleSideLength * Math.sin(angle - Math.PI/6));
+			const arrowCornerB = Point.create(end.x - triangleSideLength * Math.cos(angle + Math.PI/6), end.y - triangleSideLength * Math.sin(angle + Math.PI/6));
+			const diamondCornerC = Point.create(arrowCornerA.x - triangleSideLength * Math.cos(angle + Math.PI/6), arrowCornerA.y - triangleSideLength * Math.sin(angle + Math.PI/6));
+			if(arrowType == ArrowTypes.hollowDiamond)
+			{
 				//hollow center covers line
 				context.fillStyle = pinker.config.backgroundColor;
 				context.beginPath();
@@ -1452,8 +1472,9 @@ var pinker = pinker || {};
 				context.lineTo(arrowCornerB.x, arrowCornerB.y);
 				context.lineTo(end.x, end.y);
 				context.stroke();
-				break;
-			case ArrowTypes.filledDiamond:
+			}
+			else if(arrowType == ArrowTypes.filledDiamond)
+			{
 				//solid center covers line
 				context.fillStyle = pinker.config.lineColor;
 				context.beginPath();
@@ -1471,7 +1492,7 @@ var pinker = pinker || {};
 				context.lineTo(arrowCornerB.x, arrowCornerB.y);
 				context.lineTo(end.x, end.y);
 				context.stroke();
-				break;
+			}
 		}
 	}	
 

@@ -248,6 +248,7 @@ pinker.config.attribute = value;
 |**lineColor**|string, like "#000000"|line and text color|
 |**lineDashLength**|integer or float|length of a dash in pixels|
 |**lineDashSpacing**|integer or float|length of space between dashes in pixels|
+|**arrowHeadLength**|integer or float|length of arrow head in pixels|
 |**estimateFontHeight**|function()|returns height of font in pixels|
 |**favorGoldenRatioLabelSize**|boolean|should multi-line labels be arranged with a width:height ratio close to 1.6?|
 |**favorUniformNodeSizes**|boolean|should sibling-nodes be resized to appear similar?|
