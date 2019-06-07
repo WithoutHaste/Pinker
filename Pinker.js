@@ -859,12 +859,13 @@ var pinker = pinker || {};
 				whToGoldenRatio: function() {
 					return Math.abs(1.6 - this.widthHeightRatio());
 				},
-				//draw text centered in space (local width may be overridden)
-				drawCentered: function(point, width, context) {
+				//draw text centered in space (local width/height may be overridden)
+				drawCentered: function(point, width, height, context) {
 					context.fillStyle = pinker.config.lineColor;
 					let self = this;
 					let lineHeight = pinker.config.estimateFontHeight();
-					point.y += lineHeight;
+					let extraHeight = height - this.height;
+					point.y += lineHeight + (extraHeight/2);
 					this.lines.forEach(function(line) {
 						let lineWidth = context.measureText(line).width;
 						context.fillText(line, point.x + ((width - lineWidth)/2), point.y);
@@ -1110,7 +1111,7 @@ var pinker = pinker || {};
 					break;
 			}
 			const labelPoint = node.absolutePoint().plus(node.labelArea.point()).plus(paddingPoint);
-			node.labelLayout.drawCentered(labelPoint, node.labelArea.width - doublePadding, context);
+			node.labelLayout.drawCentered(labelPoint, node.labelArea.width - doublePadding, node.labelArea.height - doublePadding, context);
 			
 			//define area
 			if(node.defineLayout != null)
