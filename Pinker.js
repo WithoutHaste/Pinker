@@ -714,6 +714,9 @@ var pinker = pinker || {};
 						y: this.absoluteY + (this.height / 2)
 					};
 				},
+				bottom: function() {
+					return this.absoluteY + this.height;
+				},
 				setAbsoluteLocations: function(deltaX=0, deltaY=0) {
 					this.absoluteX = this.x + deltaX;
 					this.absoluteY = this.y + deltaY;
@@ -722,17 +725,42 @@ var pinker = pinker || {};
 						nestedNode.setAbsoluteLocations(self.absoluteX + self.nodeArea.x + pinker.config.scopePadding, self.absoluteY + self.nodeArea.y + pinker.config.scopePadding);
 					});
 				},
+				//one node does not extend left or right past the other node
+				isVerticallyCongruent: function(otherNode) {
+					//TODO add left() and right() and top() and bottom() to node object, after refactor x/y names
+					return ((this.absoluteX >= otherNode.absoluteX && this.absoluteX + this.width <= otherNode.absoluteX + otherNode.width)
+						|| (otherNode.absoluteX >= this.absoluteX && otherNode.absoluteX + otherNode.width <= this.absoluteX + this.width));
+				},
+				//one node does not extend up or down past the other node
+				isHorizontallyCongruent: function(otherNode) {
+					return ((this.absoluteY >= otherNode.absoluteY && this.absoluteY + this.height <= otherNode.absoluteY + otherNode.height)
+						|| (otherNode.absoluteY >= this.absoluteY && otherNode.absoluteY + otherNode.height <= this.absoluteY + this.height));
+				},
+				hasVerticalOverlap: function(otherNode) {
+					let minY = Math.max(this.absoluteY, otherNode.absoluteY);
+					let maxY = Math.min(this.absoluteY + this.height, otherNode.absoluteY + otherNode.height);
+					return (minY < maxY);
+				},
+				hasHorizontalOverlap: function(otherNode) {
+					let minX = Math.max(this.absoluteX, otherNode.absoluteX);
+					let maxX = Math.min(this.absoluteX + this.width, otherNode.absoluteX + otherNode.width);
+					return (minX < maxX);
+				},
 				isAbove: function(otherNode) {
-					return (this.absoluteY + this.height < otherNode.absoluteY);
+					return (this.hasHorizontalOverlap(otherNode)
+						&& this.absoluteY + this.height < otherNode.absoluteY);
 				},
 				isBelow: function(otherNode) {
-					return (this.absoluteY > otherNode.absoluteY + otherNode.height);
+					return (this.hasHorizontalOverlap(otherNode)
+						&& this.absoluteY > otherNode.absoluteY + otherNode.height);
 				},
 				isLeftOf: function(otherNode) {
-					return (this.absoluteX + this.width < otherNode.absoluteX);
+					return (this.hasVerticalOverlap(otherNode)
+						&& this.absoluteX + this.width < otherNode.absoluteX);
 				},
 				isRightOf: function(otherNode) {
-					return (this.absoluteX > otherNode.absoluteX + otherNode.width);
+					return (this.hasVerticalOverlap(otherNode)
+						&& this.absoluteX > otherNode.absoluteX + otherNode.width);
 				},
 				pathPrefix: function() {
 					return this.label + ".";
@@ -977,6 +1005,9 @@ var pinker = pinker || {};
 				},
 				centerY: function(point) {
 					return this.y + point.y + (this.height/2);
+				},
+				bottom: function(point) {
+					return this.y + point.y + this.height;
 				},
 				//draw background and outline of area
 				fillAndOutline: function(point, backgroundColor, lineColor, context) {
@@ -1351,8 +1382,62 @@ var pinker = pinker || {};
 	}
 	
 	function drawArrowBetweenNodes(startNode, endNode, arrowType, lineType, context) {
+		const [startPoint, endPoint] = arrangeLineBetweenNodes(startNode, endNode);
+		drawLine(startPoint, endPoint, lineType, context);
+		drawArrow(startPoint, endPoint, arrowType, context);
+	}
+	
+	//returns [startPoint, endPoint]
+	function arrangeLineBetweenNodes(startNode, endNode) {
 		let start = startNode.absoluteCenter();
 		let end = endNode.absoluteCenter();
+		
+		if(startNode.isAbove(endNode))
+		{
+			const minX = Math.max(startNode.absoluteX, endNode.absoluteX);
+			const maxX = Math.min(startNode.absoluteX + startNode.width, endNode.absoluteX + endNode.width);
+			const middleX = (minX + maxX) / 2;
+			start = Point.create(middleX, startNode.absoluteY + startNode.height);
+			end = Point.create(middleX, endNode.absoluteY);
+			return [start, end];
+		}
+		if(startNode.isBelow(endNode))
+		{
+			const minX = Math.max(startNode.absoluteX, endNode.absoluteX);
+			const maxX = Math.min(startNode.absoluteX + startNode.width, endNode.absoluteX + endNode.width);
+			const middleX = (minX + maxX) / 2;
+			start = Point.create(middleX, startNode.absoluteY);
+			end = Point.create(middleX, endNode.absoluteY + endNode.height);
+			return [start, end];
+		}
+		if(startNode.isLeftOf(endNode))
+		{
+			const minY = Math.max(startNode.absoluteY, endNode.absoluteY);
+			const maxY = Math.min(
+				(startNode.labelLayout.isHeader()) ? startNode.labelArea.bottom(startNode.absolutePoint()) : startNode.bottom(),
+				(endNode.labelLayout.isHeader()) ? endNode.labelArea.bottom(endNode.absolutePoint()) : endNode.bottom()
+			);
+			const middleY = (minY + maxY) / 2;
+			start = Point.create(startNode.absoluteX + startNode.width, middleY);
+			end = Point.create(endNode.absoluteX, middleY);
+			return [start, end];
+		}
+		if(startNode.isRightOf(endNode))
+		{
+			const minY = Math.max(startNode.absoluteY, endNode.absoluteY);
+			const maxY = Math.min(
+				(startNode.labelLayout.isHeader()) ? startNode.labelArea.bottom(startNode.absolutePoint()) : startNode.bottom(),
+				(endNode.labelLayout.isHeader()) ? endNode.labelArea.bottom(endNode.absolutePoint()) : endNode.bottom()
+			);
+			const middleY = (minY + maxY) / 2;
+			start = Point.create(startNode.absoluteX, middleY);
+			end = Point.create(endNode.absoluteX + endNode.width, middleY);
+			return [start, end];
+		}
+		
+		
+		
+		
 		if(startNode.isAbove(endNode))
 			start.y = startNode.absoluteY + startNode.height;
 		else if(startNode.isBelow(endNode))
@@ -1385,8 +1470,7 @@ var pinker = pinker || {};
 			if(endNode.labelLayout.isHeader())
 				end.y = endNode.labelArea.centerY(endNode.absolutePoint());
 		}
-		drawLine(start, end, lineType, context);
-		drawArrow(start, end, arrowType, context);
+		return [start, end];
 	}
 	
 	function drawLine(start, end, lineType, context) {
