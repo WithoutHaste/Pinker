@@ -642,34 +642,29 @@ var pinker = pinker || {};
 		//returns node object
 		create: function(label, alias=null, path=null, isRightAlign=false) {
 			return {
-				relativeX: null,
-				relativeY: null,
-				width: null,
-				height: null,
-				path: path, //full path from root to parent scope
+				relativeArea: null, //location and dimensions relative to parent node
+				absoluteArea: null, //location and dimensions on canvas
 				label: label, //simple label of node within scope
 				alias: alias,
+				path: path, //full path from root to parent scope
 				labelLayout: null,
-				labelArea: null,
+				labelArea: null, //location and dimensions relative to this node
 				defineLayout: null,
-				defineArea: null,
-				nodeArea: null,
+				defineArea: null, //location and dimensions relative to this node
+				nodeArea: null, //location and dimensions relative to this node
 				nodes: [],
-				isRightAlign: isRightAlign,
-				setLocation: function(x, y, width, height) {
-					this.relativeX = x;
-					this.relativeY = y;
-					this.width = width;
-					this.height = height;
+				isRightAlign: isRightAlign, //TODO this temporary data should not be stored here
+				setRelativeArea: function(x, y, width, height) {
+					this.relativeArea = Area.create(x, y, width, height);
 				},
 				//expand node width as needed to fit content
 				//expands all areas as needed, too
 				//returns the delta
 				updateWidth(newWidth) {
-					if(this.width >= newWidth)
+					if(this.relativeArea.width >= newWidth)
 						return 0;
-					const delta = newWidth - this.width;
-					this.width = newWidth;
+					const delta = newWidth - this.relativeArea.width;
+					this.relativeArea.width = newWidth;
 					if(this.labelArea != null)
 						this.labelArea.width = newWidth;
 					if(this.defineArea != null)
@@ -682,10 +677,10 @@ var pinker = pinker || {};
 				//expands all areas as needed, too
 				//returns the delta
 				updateHeight(newHeight) {
-					if(this.height >= newHeight)
+					if(this.relativeHeight >= newHeight)
 						return 0;
-					const delta = newHeight - this.height;
-					this.height = newHeight;
+					const delta = newHeight - this.relativeArea.height;
+					this.relativeArea.height = newHeight;
 					if(this.nodeArea != null)
 						this.nodeArea.height += delta;
 					else if(this.defineArea != null)
@@ -699,68 +694,12 @@ var pinker = pinker || {};
 						return label;
 					return path + "." + label;
 				},
-				center: function() {
-					return {
-						x: this.relativeX + (this.width / 2),
-						y: this.relativeY + (this.height / 2)
-					};
-				},
-				absolutePoint: function() {
-					return Point.create(this.absoluteX, this.absoluteY);
-				},
-				absoluteCenter: function() {
-					return {
-						x: this.absoluteX + (this.width / 2),
-						y: this.absoluteY + (this.height / 2)
-					};
-				},
-				bottom: function() {
-					return this.absoluteY + this.height;
-				},
-				setAbsoluteLocations: function(deltaX=0, deltaY=0) {
-					this.absoluteX = this.relativeX + deltaX;
-					this.absoluteY = this.relativeY + deltaY;
+				setAbsoluteAreas: function(deltaX=0, deltaY=0) {
+					this.absoluteArea = Area.create(this.relativeArea.x + deltaX, this.relativeArea.y + deltaY, this.relativeArea.width, this.relativeArea.height);
 					let self = this;
 					this.nodes.forEach(function(nestedNode) {
-						nestedNode.setAbsoluteLocations(self.absoluteX + self.nodeArea.x + pinker.config.scopePadding, self.absoluteY + self.nodeArea.y + pinker.config.scopePadding);
+						nestedNode.setAbsoluteAreas(self.absoluteArea.x + self.nodeArea.x + pinker.config.scopePadding, self.absoluteArea.y + self.nodeArea.y + pinker.config.scopePadding);
 					});
-				},
-				//one node does not extend left or right past the other node
-				isVerticallyCongruent: function(otherNode) {
-					//TODO add left() and right() and top() and bottom() to node object, after refactor x/y names
-					return ((this.absoluteX >= otherNode.absoluteX && this.absoluteX + this.width <= otherNode.absoluteX + otherNode.width)
-						|| (otherNode.absoluteX >= this.absoluteX && otherNode.absoluteX + otherNode.width <= this.absoluteX + this.width));
-				},
-				//one node does not extend up or down past the other node
-				isHorizontallyCongruent: function(otherNode) {
-					return ((this.absoluteY >= otherNode.absoluteY && this.absoluteY + this.height <= otherNode.absoluteY + otherNode.height)
-						|| (otherNode.absoluteY >= this.absoluteY && otherNode.absoluteY + otherNode.height <= this.absoluteY + this.height));
-				},
-				hasVerticalOverlap: function(otherNode) {
-					let minY = Math.max(this.absoluteY, otherNode.absoluteY);
-					let maxY = Math.min(this.absoluteY + this.height, otherNode.absoluteY + otherNode.height);
-					return (minY < maxY);
-				},
-				hasHorizontalOverlap: function(otherNode) {
-					let minX = Math.max(this.absoluteX, otherNode.absoluteX);
-					let maxX = Math.min(this.absoluteX + this.width, otherNode.absoluteX + otherNode.width);
-					return (minX < maxX);
-				},
-				isAbove: function(otherNode) {
-					return (this.hasHorizontalOverlap(otherNode)
-						&& this.absoluteY + this.height < otherNode.absoluteY);
-				},
-				isBelow: function(otherNode) {
-					return (this.hasHorizontalOverlap(otherNode)
-						&& this.absoluteY > otherNode.absoluteY + otherNode.height);
-				},
-				isLeftOf: function(otherNode) {
-					return (this.hasVerticalOverlap(otherNode)
-						&& this.absoluteX + this.width < otherNode.absoluteX);
-				},
-				isRightOf: function(otherNode) {
-					return (this.hasVerticalOverlap(otherNode)
-						&& this.absoluteX > otherNode.absoluteX + otherNode.width);
 				},
 				pathPrefix: function() {
 					return this.label + ".";
@@ -993,7 +932,7 @@ var pinker = pinker || {};
 	};
 	
 	const Area = {
-		//returns area object, relative to enclosing node
+		//returns area object
 		create: function(x, y, width, height) {
 			return {
 				x: x,
@@ -1003,22 +942,83 @@ var pinker = pinker || {};
 				point: function() {
 					return Point.create(this.x, this.y);
 				},
-				centerY: function(point) {
-					return this.y + point.y + (this.height/2);
+				top: function(relativePoint=null) {
+					if(relativePoint == null)
+						return this.y;
+					return this.y + relativePoint.y;
 				},
-				bottom: function(point) {
-					return this.y + point.y + this.height;
+				bottom: function(relativePoint=null) {
+					if(relativePoint == null)
+						return this.y + this.height;
+					return this.y + relativePoint.y + this.height;
+				},
+				left: function(relativePoint=null) {
+					if(relativePoint == null)
+						return this.x;
+					return this.x + relativePoint.x;
+				},
+				right: function(relativePoint=null) {
+					if(relativePoint == null)
+						return this.x + this.width;
+					return this.x + relativePoint.x + this.width;
+				},
+				center: function(relativePoint=null) {
+					if(relativePoint == null)
+						return Point.create(this.x + (this.width / 2), this.y + (this.height / 2));
+					return Point.create(
+						this.x + relativePoint.x + (this.width / 2),
+						this.y + relativePoint.y + (this.height / 2)
+					);
+				},
+				//one area does not extend left or right past the other area
+				isVerticallyCongruent: function(otherNode) {
+					return ((this.left() >= otherNode.left() && this.right() <= otherNode.right())
+						|| (otherNode.left() >= this.left() && otherNode.right() <= this.right()));
+				},
+				//one area does not extend up or down past the other area
+				isHorizontallyCongruent: function(otherNode) {
+					return ((this.top() >= otherNode.top() && this.bottom() <= otherNode.bottom())
+						|| (otherNode.top() >= this.top() && otherNode.bottom() <= this.bottom()));
+				},
+				hasVerticalOverlap: function(otherNode) {
+					let minY = Math.max(this.top(), otherNode.top());
+					let maxY = Math.min(this.bottom(), otherNode.bottom());
+					return (minY < maxY);
+				},
+				hasHorizontalOverlap: function(otherNode) {
+					let minX = Math.max(this.left(), otherNode.left());
+					let maxX = Math.min(this.right(), otherNode.right());
+					return (minX < maxX);
+				},
+				isAbove: function(otherNode) {
+					return (this.hasHorizontalOverlap(otherNode)
+						&& this.bottom() < otherNode.top());
+				},
+				isBelow: function(otherNode) {
+					return (this.hasHorizontalOverlap(otherNode)
+						&& this.top() > otherNode.bottom());
+				},
+				isLeftOf: function(otherNode) {
+					return (this.hasVerticalOverlap(otherNode)
+						&& this.right() < otherNode.left());
+				},
+				isRightOf: function(otherNode) {
+					return (this.hasVerticalOverlap(otherNode)
+						&& this.left() > otherNode.right());
 				},
 				//draw background and outline of area
-				fillAndOutline: function(point, backgroundColor, lineColor, context) {
+				fillAndOutline: function(relativePoint, backgroundColor, lineColor, context) {
 					context.fillStyle = backgroundColor;
-					context.fillRect(point.x + this.x, point.y + this.y, this.width, this.height);
-					this.outline(point, lineColor, context);
+					context.fillRect(this.x + relativePoint.x, this.y + relativePoint.y, this.width, this.height);
+					this.outline(relativePoint, lineColor, context);
 				},
 				//draw outline of area
-				outline: function(point, lineColor, context) {
+				outline: function(relativePoint, lineColor, context) {
 					context.strokeStyle = lineColor;
-					context.strokeRect(point.x + this.x, point.y + this.y, this.width, this.height);
+					if(relativePoint == null)
+						context.strokeRect(this.x, this.y, this.width, this.height);
+					else
+						context.strokeRect(this.x + relativePoint.x, this.y + relativePoint.y, this.width, this.height);
 				}
 
 			};
@@ -1106,7 +1106,7 @@ var pinker = pinker || {};
 		const nodes = convertLayoutToNodes(source, context);
 		//calculate final locations
 		nodes.forEach(function(node) {
-			node.setAbsoluteLocations(pinker.config.canvasPadding, pinker.config.canvasPadding);
+			node.setAbsoluteAreas(pinker.config.canvasPadding, pinker.config.canvasPadding);
 		});
 
 		let dimensions = calculateCanvasDimensions(nodes);
@@ -1125,37 +1125,40 @@ var pinker = pinker || {};
 	
 	function drawNodes(nodes, context) {
 		nodes.forEach(function(node) {
-			const paddingPoint = Point.create(pinker.config.scopePadding);
-			const doublePadding = pinker.config.scopePadding * 2;
-			
-			//outline node
-			context.strokeStyle = pinker.config.lineColor;
-			context.strokeRect(node.absoluteX, node.absoluteY, node.width, node.height);
-
-			//label area
-			context.font = pinker.config.font();
-			switch(node.labelLayout.type)
-			{
-				case LabelLayout.types.text: 
-					break;
-				case LabelLayout.types.header:
-					node.labelArea.fillAndOutline(node.absolutePoint(), pinker.config.shadeColor, pinker.config.lineColor, context);
-					break;
-			}
-			const labelPoint = node.absolutePoint().plus(node.labelArea.point()).plus(paddingPoint);
-			node.labelLayout.drawCentered(labelPoint, node.labelArea.width - doublePadding, node.labelArea.height - doublePadding, context);
-			
-			//define area
-			if(node.defineLayout != null)
-			{
-				node.defineArea.outline(node.absolutePoint(), pinker.config.lineColor, context);
-				const definePoint = node.absolutePoint().plus(node.defineArea.point()).plus(paddingPoint);
-				node.defineLayout.draw(definePoint, context);
-			}
-
-			//node area
-			drawNodes(node.nodes, context);
+			drawNode(node, context);
 		});
+	}
+	
+	function drawNode(node, context) {
+		const paddingPoint = Point.create(pinker.config.scopePadding);
+		const doublePadding = pinker.config.scopePadding * 2;
+		
+		//outline node
+		node.absoluteArea.outline(null, pinker.config.lineColor, context);
+
+		//label area
+		switch(node.labelLayout.type)
+		{
+			case LabelLayout.types.text: 
+				break;
+			case LabelLayout.types.header:
+				node.labelArea.fillAndOutline(node.absoluteArea.point(), pinker.config.shadeColor, pinker.config.lineColor, context);
+				break;
+		}
+		context.font = pinker.config.font();
+		const labelPoint = node.absoluteArea.point().plus(node.labelArea.point()).plus(paddingPoint);
+		node.labelLayout.drawCentered(labelPoint, node.labelArea.width - doublePadding, node.labelArea.height - doublePadding, context);
+		
+		//define area
+		if(node.defineLayout != null)
+		{
+			node.defineArea.outline(node.absoluteArea.point(), pinker.config.lineColor, context);
+			const definePoint = node.absoluteArea.point().plus(node.defineArea.point()).plus(paddingPoint);
+			node.defineLayout.draw(definePoint, context);
+		}
+
+		//node area
+		drawNodes(node.nodes, context);
 	}
 	
 	function drawRelations(source, allNodes, context, path=null) {
@@ -1221,16 +1224,18 @@ var pinker = pinker || {};
 				{
 					node.labelLayout = LabelLayout.calculateText(node.label, context);
 				}
-				node.setLocation(x, y, node.labelLayout.width + doublePadding, node.labelLayout.height + doublePadding);
-				node.labelArea = Area.create(0, 0, node.width, node.height);
+				let width = node.labelLayout.width + doublePadding;
+				let height = node.labelLayout.height + doublePadding;
+				node.setRelativeArea(x, y, width, height);
+				node.labelArea = Area.create(0, 0, width, height);
 
 				//add define area
 				if(relatedDefine != null)
 				{
 					node.defineLayout = DefineLayout.parse(relatedDefine, context);
 					node.updateWidth(node.defineLayout.width + doublePadding);
-					node.defineArea = Area.create(0, node.height, node.width, node.defineLayout.height + doublePadding);
-					node.height += node.defineArea.height;
+					node.defineArea = Area.create(0, node.relativeArea.height, node.relativeArea.width, node.defineLayout.height + doublePadding);
+					node.relativeArea.height += node.defineArea.height;
 				}
 
 				//add node area
@@ -1239,14 +1244,14 @@ var pinker = pinker || {};
 					node.nodes = nestedNodes;
 					const nodeDimensions = calculateCanvasDimensions(nestedNodes);
 					node.updateWidth(nodeDimensions.width + doublePadding);
-					node.nodeArea = Area.create(0, node.height, node.width, nodeDimensions.height + doublePadding);
-					node.height += node.nodeArea.height;
+					node.nodeArea = Area.create(0, node.relativeArea.height, node.relativeArea.width, nodeDimensions.height + doublePadding);
+					node.relativeArea.height += node.nodeArea.height;
 				}
 
 				nodes.push(node);
 
-				x += node.width + pinker.config.scopeMargin;
-				rowHeight = Math.max(rowHeight, node.height);
+				x += node.relativeArea.width + pinker.config.scopeMargin;
+				rowHeight = Math.max(rowHeight, node.relativeArea.height);
 				index++;
 			});
 			y += rowHeight + pinker.config.scopeMargin;
@@ -1259,7 +1264,7 @@ var pinker = pinker || {};
 			makeSiblingNodesUniformSizes(allNodes, nodeRows);
 		}
 		//apply right alignment
-		let maxXs = allNodes.map(node => node.relativeX + node.width);
+		let maxXs = allNodes.map(node => node.relativeArea.right());
 		let maxX = Math.max(...maxXs);
 		nodeRows.forEach(function(nodes) {
 			nodes.reverse();
@@ -1267,8 +1272,8 @@ var pinker = pinker || {};
 			nodes.forEach(function(node) {
 				if(!node.isRightAlign)
 					return;
-				node.relativeX = right - node.width;
-				right -= node.width - pinker.config.scopeMargin;
+				node.relativeArea.x = right - node.relativeArea.width;
+				right -= node.relativeArea.width - pinker.config.scopeMargin;
 			});
 		});
 		return allNodes;
@@ -1279,7 +1284,7 @@ var pinker = pinker || {};
 	function makeSiblingNodesUniformSizes(allNodes, nodeRows) {
 		const variance = 0.3;
 		//widths
-		let widths = allNodes.map(node => node.width);
+		let widths = allNodes.map(node => node.relativeArea.width);
 		let minWidth = Math.min(...widths);
 		let maxWidth = Math.max(...widths);
 		if(1 - (minWidth / maxWidth) <= variance)
@@ -1293,13 +1298,13 @@ var pinker = pinker || {};
 						continue;
 					for(let j=i+1; j<row.length; j++) //push right-hand row-siblings to the right
 					{
-						row[j].relativeX += delta;
+						row[j].relativeArea.x += delta;
 					}
 				}
 			});
 		}
 		//heights
-		let heights = allNodes.map(node => node.height);
+		let heights = allNodes.map(node => node.relativeArea.height);
 		let minHeight = Math.min(...heights);
 		let maxHeight = Math.max(...heights);
 		if(1 - (minHeight / maxHeight) <= variance)
@@ -1307,7 +1312,7 @@ var pinker = pinker || {};
 			for(let r=0; r<nodeRows.length; r++)
 			{
 				let row = nodeRows[r];
-				const rowHeight = Math.max(...row.map(node => node.height));
+				const rowHeight = Math.max(...row.map(node => node.relativeArea.height));
 				const rowHeightDelta = maxHeight - rowHeight;
 				for(let i=0; i<row.length; i++)
 				{
@@ -1318,7 +1323,7 @@ var pinker = pinker || {};
 				{
 					let row2 = nodeRows[r2];
 					row2.forEach(function(node) {
-						node.y += rowHeightDelta;
+						node.relativeArea.y += rowHeightDelta;
 					});
 				}
 			}
@@ -1375,8 +1380,8 @@ var pinker = pinker || {};
 		let width = 0;
 		let height = 0;
 		nodes.forEach(function(node) {
-			width = Math.max(width, node.relativeX + node.width);
-			height = Math.max(height, node.relativeY + node.height);
+			width = Math.max(width, node.relativeArea.right());
+			height = Math.max(height, node.relativeArea.bottom());
 		});
 		return Dimension.create(width, height);
 	}
@@ -1389,87 +1394,74 @@ var pinker = pinker || {};
 	
 	//returns [startPoint, endPoint]
 	function arrangeLineBetweenNodes(startNode, endNode) {
-		let start = startNode.absoluteCenter();
-		let end = endNode.absoluteCenter();
+		const startArea = startNode.absoluteArea;
+		const endArea = endNode.absoluteArea;
+		let start = startArea.center();
+		let end = endArea.center();
 		
-		if(startNode.isAbove(endNode))
+		if(startArea.isAbove(endArea))
 		{
-			const minX = Math.max(startNode.absoluteX, endNode.absoluteX);
-			const maxX = Math.min(startNode.absoluteX + startNode.width, endNode.absoluteX + endNode.width);
+			const minX = Math.max(startArea.left(), endArea.left());
+			const maxX = Math.min(startArea.right(), endArea.right());
 			const middleX = (minX + maxX) / 2;
-			start = Point.create(middleX, startNode.absoluteY + startNode.height);
-			end = Point.create(middleX, endNode.absoluteY);
+			start = Point.create(middleX, startArea.bottom());
+			end = Point.create(middleX, endArea.top());
 			return [start, end];
 		}
-		if(startNode.isBelow(endNode))
+		if(startArea.isBelow(endArea))
 		{
-			const minX = Math.max(startNode.absoluteX, endNode.absoluteX);
-			const maxX = Math.min(startNode.absoluteX + startNode.width, endNode.absoluteX + endNode.width);
+			const minX = Math.max(startArea.left(), endArea.left());
+			const maxX = Math.min(startArea.right(), endArea.right());
 			const middleX = (minX + maxX) / 2;
-			start = Point.create(middleX, startNode.absoluteY);
-			end = Point.create(middleX, endNode.absoluteY + endNode.height);
+			start = Point.create(middleX, startArea.top());
+			end = Point.create(middleX, endArea.bottom());
 			return [start, end];
 		}
-		if(startNode.isLeftOf(endNode))
+		if(startArea.isLeftOf(endArea))
 		{
-			const minY = Math.max(startNode.absoluteY, endNode.absoluteY);
+			const minY = Math.max(startArea.top(), endArea.top());
 			const maxY = Math.min(
-				(startNode.labelLayout.isHeader()) ? startNode.labelArea.bottom(startNode.absolutePoint()) : startNode.bottom(),
-				(endNode.labelLayout.isHeader()) ? endNode.labelArea.bottom(endNode.absolutePoint()) : endNode.bottom()
+				(startNode.labelLayout.isHeader()) ? startNode.labelArea.bottom(startNode.absoluteArea.point()) : startArea.bottom(),
+				(endNode.labelLayout.isHeader())   ? endNode.labelArea.bottom(endNode.absoluteArea.point())     : endArea.bottom()
 			);
 			const middleY = (minY + maxY) / 2;
-			start = Point.create(startNode.absoluteX + startNode.width, middleY);
-			end = Point.create(endNode.absoluteX, middleY);
+			start = Point.create(startArea.right(), middleY);
+			end = Point.create(endArea.left(), middleY);
 			return [start, end];
 		}
-		if(startNode.isRightOf(endNode))
+		if(startArea.isRightOf(endArea))
 		{
-			const minY = Math.max(startNode.absoluteY, endNode.absoluteY);
+			const minY = Math.max(startArea.top(), endArea.top());
 			const maxY = Math.min(
-				(startNode.labelLayout.isHeader()) ? startNode.labelArea.bottom(startNode.absolutePoint()) : startNode.bottom(),
-				(endNode.labelLayout.isHeader()) ? endNode.labelArea.bottom(endNode.absolutePoint()) : endNode.bottom()
+				(startNode.labelLayout.isHeader()) ? startNode.labelArea.bottom(startNode.absoluteArea.point()) : startArea.bottom(),
+				(endNode.labelLayout.isHeader())   ? endNode.labelArea.bottom(endNode.absoluteArea.point())     : endArea.bottom()
 			);
 			const middleY = (minY + maxY) / 2;
-			start = Point.create(startNode.absoluteX, middleY);
-			end = Point.create(endNode.absoluteX + endNode.width, middleY);
+			start = Point.create(startArea.left(), middleY);
+			end = Point.create(endArea.right(), middleY);
 			return [start, end];
 		}
-		
-		
-		
-		
-		if(startNode.isAbove(endNode))
-			start.y = startNode.absoluteY + startNode.height;
-		else if(startNode.isBelow(endNode))
-			start.y = startNode.absoluteY;
-		if(startNode.isLeftOf(endNode))
-		{
-			start.x = startNode.absoluteX + startNode.width;
-			if(startNode.labelLayout.isHeader())
-				start.y = startNode.labelArea.centerY(startNode.absolutePoint());
-		}
-		else if(startNode.isRightOf(endNode))
-		{
-			start.x = startNode.absoluteX;
-			if(startNode.labelLayout.isHeader())
-				start.y = startNode.labelArea.centerY(startNode.absolutePoint());
-		}
-		if(endNode.isAbove(startNode))
-			end.y = endNode.absoluteY + endNode.height;
-		else if(endNode.isBelow(startNode))
-			end.y = endNode.absoluteY;
-		if(endNode.isLeftOf(startNode))
-		{
-			end.x = endNode.absoluteX + endNode.width;
-			if(endNode.labelLayout.isHeader())
-				end.y = endNode.labelArea.centerY(endNode.absolutePoint());
-		}
-		else if(endNode.isRightOf(startNode))
-		{
-			end.x = endNode.absoluteX;
-			if(endNode.labelLayout.isHeader())
-				end.y = endNode.labelArea.centerY(endNode.absolutePoint());
-		}
+
+		if(startArea.isAbove(endArea))
+			start.y = startArea.bottom();
+		else if(startArea.isBelow(endArea))
+			start.y = startArea.top();
+
+		if(startArea.isLeftOf(endArea))
+			start.x = startArea.right();
+		else if(startArea.isRightOf(endArea))
+			start.x = startArea.left();
+
+		if(endArea.isAbove(startArea))
+			end.y = endArea.bottom();
+		else if(endArea.isBelow(startArea))
+			end.y = endArea.top();
+
+		if(endArea.isLeftOf(startArea))
+			end.x = endArea.right();
+		else if(endArea.isRightOf(startArea))
+			end.x = endArea.left();
+
 		return [start, end];
 	}
 	

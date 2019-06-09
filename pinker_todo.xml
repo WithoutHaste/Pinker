@@ -76,43 +76,6 @@ general improvements to display, mainly arrows</Data>
       </Row>
       <Row>
         <Cell>
-          <Data ss:Type="Number">3</Data>
-        </Cell>
-        <Cell ss:StyleID="paragraph">
-          <Data ss:Type="String">refactor
-node.x/y to node.relativeX/Y
-node.absoluteX/Y to node.x/y</Data>
-        </Cell>
-        <Cell>
-          <Data ss:Type="String">Todo</Data>
-        </Cell>
-        <Cell>
-          <Data ss:Type="String">Task</Data>
-        </Cell>
-        <Cell ss:StyleID="cellShortDate">
-          <Data ss:Type="DateTime">2019-06-04T00:00:00.000</Data>
-        </Cell>
-      </Row>
-      <Row>
-        <Cell>
-          <Data ss:Type="Number">25</Data>
-        </Cell>
-        <Cell ss:StyleID="paragraph">
-          <Data ss:Type="String">move all Area logic from Node into Area
-Node will start from new Area object</Data>
-        </Cell>
-        <Cell>
-          <Data ss:Type="String">Todo</Data>
-        </Cell>
-        <Cell>
-          <Data ss:Type="String">Task</Data>
-        </Cell>
-        <Cell ss:StyleID="cellShortDate">
-          <Data ss:Type="DateTime">2019-06-09T00:00:00.000</Data>
-        </Cell>
-      </Row>
-      <Row>
-        <Cell>
           <Data ss:Type="Number">17</Data>
         </Cell>
         <Cell ss:StyleID="paragraph">
@@ -388,6 +351,49 @@ labels on lines</Data>
         </Cell>
         <Cell ss:StyleID="header">
           <Data ss:Type="String">Done</Data>
+        </Cell>
+      </Row>
+      <Row>
+        <Cell>
+          <Data ss:Type="Number">25</Data>
+        </Cell>
+        <Cell ss:StyleID="paragraph">
+          <Data ss:Type="String">move all Area logic from Node into Area
+Node will start from new Area object</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Done</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Task</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-09T00:00:00.000</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-09T00:00:00.000</Data>
+        </Cell>
+      </Row>
+      <Row>
+        <Cell>
+          <Data ss:Type="Number">3</Data>
+        </Cell>
+        <Cell ss:StyleID="paragraph">
+          <Data ss:Type="String">refactor
+node.x/y to node.relativeX/Y
+node.absoluteX/Y to node.x/y</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Done</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Task</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-04T00:00:00.000</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-09T00:00:00.000</Data>
         </Cell>
       </Row>
       <Row>
