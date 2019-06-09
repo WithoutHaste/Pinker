@@ -642,8 +642,8 @@ var pinker = pinker || {};
 		//returns node object
 		create: function(label, alias=null, path=null, isRightAlign=false) {
 			return {
-				x: null,
-				y: null,
+				relativeX: null,
+				relativeY: null,
 				width: null,
 				height: null,
 				path: path, //full path from root to parent scope
@@ -657,8 +657,8 @@ var pinker = pinker || {};
 				nodes: [],
 				isRightAlign: isRightAlign,
 				setLocation: function(x, y, width, height) {
-					this.x = x;
-					this.y = y;
+					this.relativeX = x;
+					this.relativeY = y;
 					this.width = width;
 					this.height = height;
 				},
@@ -701,8 +701,8 @@ var pinker = pinker || {};
 				},
 				center: function() {
 					return {
-						x: this.x + (this.width / 2),
-						y: this.y + (this.height / 2)
+						x: this.relativeX + (this.width / 2),
+						y: this.relativeY + (this.height / 2)
 					};
 				},
 				absolutePoint: function() {
@@ -718,8 +718,8 @@ var pinker = pinker || {};
 					return this.absoluteY + this.height;
 				},
 				setAbsoluteLocations: function(deltaX=0, deltaY=0) {
-					this.absoluteX = this.x + deltaX;
-					this.absoluteY = this.y + deltaY;
+					this.absoluteX = this.relativeX + deltaX;
+					this.absoluteY = this.relativeY + deltaY;
 					let self = this;
 					this.nodes.forEach(function(nestedNode) {
 						nestedNode.setAbsoluteLocations(self.absoluteX + self.nodeArea.x + pinker.config.scopePadding, self.absoluteY + self.nodeArea.y + pinker.config.scopePadding);
@@ -1259,7 +1259,7 @@ var pinker = pinker || {};
 			makeSiblingNodesUniformSizes(allNodes, nodeRows);
 		}
 		//apply right alignment
-		let maxXs = allNodes.map(node => node.x + node.width);
+		let maxXs = allNodes.map(node => node.relativeX + node.width);
 		let maxX = Math.max(...maxXs);
 		nodeRows.forEach(function(nodes) {
 			nodes.reverse();
@@ -1267,7 +1267,7 @@ var pinker = pinker || {};
 			nodes.forEach(function(node) {
 				if(!node.isRightAlign)
 					return;
-				node.x = right - node.width;
+				node.relativeX = right - node.width;
 				right -= node.width - pinker.config.scopeMargin;
 			});
 		});
@@ -1293,7 +1293,7 @@ var pinker = pinker || {};
 						continue;
 					for(let j=i+1; j<row.length; j++) //push right-hand row-siblings to the right
 					{
-						row[j].x += delta;
+						row[j].relativeX += delta;
 					}
 				}
 			});
@@ -1375,8 +1375,8 @@ var pinker = pinker || {};
 		let width = 0;
 		let height = 0;
 		nodes.forEach(function(node) {
-			width = Math.max(width, node.x + node.width);
-			height = Math.max(height, node.y + node.height);
+			width = Math.max(width, node.relativeX + node.width);
+			height = Math.max(height, node.relativeY + node.height);
 		});
 		return Dimension.create(width, height);
 	}

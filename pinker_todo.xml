@@ -62,7 +62,7 @@ with the examples and link to github</Data>
         <Cell ss:StyleID="paragraph">
           <Data ss:Type="String">working in branch "improve-layout"
 v1.1.0
-general improvements to display</Data>
+general improvements to display, mainly arrows</Data>
         </Cell>
         <Cell>
           <Data ss:Type="String">Todo</Data>
@@ -91,6 +91,24 @@ node.absoluteX/Y to node.x/y</Data>
         </Cell>
         <Cell ss:StyleID="cellShortDate">
           <Data ss:Type="DateTime">2019-06-04T00:00:00.000</Data>
+        </Cell>
+      </Row>
+      <Row>
+        <Cell>
+          <Data ss:Type="Number">25</Data>
+        </Cell>
+        <Cell ss:StyleID="paragraph">
+          <Data ss:Type="String">move all Area logic from Node into Area
+Node will start from new Area object</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Todo</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Task</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-09T00:00:00.000</Data>
         </Cell>
       </Row>
       <Row>
@@ -591,7 +609,7 @@ and getting it in the webpage or js when you need it</Data>
           </Data>
         </Cell>
         <Cell>
-          <Data ss:Type="Number">24</Data>
+          <Data ss:Type="Number">25</Data>
         </Cell>
       </Row>
       <Row>
