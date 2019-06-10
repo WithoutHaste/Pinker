@@ -1535,6 +1535,7 @@ var pinker = pinker || {};
 		else
 			path += "." + source.label;
 
+		let rowIndex = 0;
 		let nodeRows = [];
 		let allNodes = [];
 		let y = 0;
@@ -1550,6 +1551,7 @@ var pinker = pinker || {};
 				const isRightAlign = (index >= leftAlignCount);
 				
 				let node = Node.create(layoutRecord.label, layoutRecord.alias, path, isRightAlign);
+				node.rowIndex = rowIndex;
 
 				const relatedSource = source.findLabeledSource(layoutRecord.label);
 				let relatedDefine = null;
@@ -1601,12 +1603,13 @@ var pinker = pinker || {};
 			});
 			y += rowHeight + pinker.config.scopeMargin;
 			nodeRows.push(nodes);
+			rowIndex++;
 			allNodes = allNodes.concat(nodes);
 		});
 		//apply resizing rules
 		if(pinker.config.favorUniformNodeSizes)
 		{
-			makeSiblingNodesUniformSizes(allNodes, nodeRows);
+			makeSiblingNodesUniformSizes(allNodes);
 		}
 		//apply right alignment
 		let maxXs = allNodes.map(node => node.relativeArea.right());
@@ -1625,53 +1628,73 @@ var pinker = pinker || {};
 	}
 	
 	//if nodes are close in size, make them all the same size - adjust placements
-	//TODO: NOT IMPLEMENTED if nodes are widely different in size, divide them into subsets of sizes
-	function makeSiblingNodesUniformSizes(allNodes, nodeRows) {
+	//if nodes are wildly different in size, divide them into subsets of sizes
+	function makeSiblingNodesUniformSizes(allNodes) {
+		if(allNodes.length == 0)
+			return;
 		const variance = 0.3;
 		//widths
-		let widths = allNodes.map(node => node.relativeArea.width);
-		let minWidth = Math.min(...widths);
-		let maxWidth = Math.max(...widths);
-		if(1 - (minWidth / maxWidth) <= variance)
+		let nodesByWidth = allNodes.slice(0);
+		nodesByWidth.sort(function(a, b) { return b.relativeArea.width - a.relativeArea.width; }); //sort into descending width order
+		let maxWidth = nodesByWidth[0].relativeArea.width;
+		for(let i=0; i<nodesByWidth.length; i++)
 		{
-			nodeRows.forEach(function(row) {
-				for(let i=0; i<row.length; i++)
-				{
-					let node = row[i];
-					let delta = node.updateWidth(maxWidth);
-					if(delta == 0)
-						continue;
-					for(let j=i+1; j<row.length; j++) //push right-hand row-siblings to the right
-					{
-						row[j].relativeArea.x += delta;
-					}
-				}
-			});
+			let node = nodesByWidth[i];
+			let minWidth = node.relativeArea.width;
+			if(1 - (minWidth / maxWidth) <= variance) //widen this node to match max
+			{
+				let delta = node.updateWidth(maxWidth);
+				allNodes.forEach(function(otherNode) {
+					if(otherNode.rowIndex != node.rowIndex)
+						return;
+					if(otherNode.relativeArea.left() <= node.relativeArea.left())
+						return;
+					otherNode.relativeArea.x += delta;
+				});
+			}
+			else //set a new max width
+			{
+				maxWidth = minWidth;
+			}
 		}
 		//heights
-		let heights = allNodes.map(node => node.relativeArea.height);
-		let minHeight = Math.min(...heights);
-		let maxHeight = Math.max(...heights);
-		if(1 - (minHeight / maxHeight) <= variance)
-		{
-			for(let r=0; r<nodeRows.length; r++)
+		let maxHeightsPerRow = []; //array[rowIndex] = max height of row
+		let newMaxHeightsPerRow = [];
+		allNodes.forEach(function(node) {
+			while(maxHeightsPerRow.length <= node.rowIndex)
 			{
-				let row = nodeRows[r];
-				const rowHeight = Math.max(...row.map(node => node.relativeArea.height));
-				const rowHeightDelta = maxHeight - rowHeight;
-				for(let i=0; i<row.length; i++)
-				{
-					let node = row[i];
-					node.updateHeight(maxHeight);
-				}
-				for(let r2=r+1; r2<nodeRows.length; r2++) //push all lower rows down
-				{
-					let row2 = nodeRows[r2];
-					row2.forEach(function(node) {
-						node.relativeArea.y += rowHeightDelta;
-					});
-				}
+				maxHeightsPerRow.push(0);
+				newMaxHeightsPerRow.push(0);
 			}
+			maxHeightsPerRow[node.rowIndex] = Math.max(maxHeightsPerRow[node.rowIndex], node.relativeArea.height);
+		});
+		let nodesByHeight = allNodes.slice(0);
+		nodesByHeight.sort(function(a, b) { return b.relativeArea.height - a.relativeArea.height; }); //sort into descending height order
+		let maxHeight = nodesByHeight[0].relativeArea.height;
+		for(let i=0; i<nodesByHeight.length; i++)
+		{
+			let node = nodesByHeight[i];
+			let minHeight = node.relativeArea.height;
+			if(1 - (minHeight / maxHeight) <= variance) //heighten this node to match max
+			{
+				node.updateHeight(maxHeight);
+				newMaxHeightsPerRow[node.rowIndex] = Math.max(newMaxHeightsPerRow[node.rowIndex], node.relativeArea.height);
+			}
+			else //set a new max height
+			{
+				maxHeight = minHeight;
+			}
+		}
+		for(let rowIndex=0; rowIndex<maxHeightsPerRow.length; rowIndex++)
+		{
+			if(maxHeightsPerRow[rowIndex] >= newMaxHeightsPerRow[rowIndex])
+				continue;
+			let delta = newMaxHeightsPerRow[rowIndex] - maxHeightsPerRow[rowIndex];
+			allNodes.forEach(function(node) {
+				if(node.rowIndex <= rowIndex)
+					return;
+				node.relativeArea.y += delta;
+			});
 		}
 	}
 
