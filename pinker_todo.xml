@@ -57,25 +57,6 @@ with the examples and link to github</Data>
       </Row>
       <Row>
         <Cell>
-          <Data ss:Type="Number">21</Data>
-        </Cell>
-        <Cell ss:StyleID="paragraph">
-          <Data ss:Type="String">working in branch "improve-layout"
-v1.1.0
-general improvements to display, mainly arrows</Data>
-        </Cell>
-        <Cell>
-          <Data ss:Type="String">Todo</Data>
-        </Cell>
-        <Cell>
-          <Data ss:Type="String">Feature</Data>
-        </Cell>
-        <Cell ss:StyleID="cellShortDate">
-          <Data ss:Type="DateTime">2019-06-05T00:00:00.000</Data>
-        </Cell>
-      </Row>
-      <Row>
-        <Cell>
           <Data ss:Type="Number">17</Data>
         </Cell>
         <Cell ss:StyleID="paragraph">
@@ -359,6 +340,28 @@ labels on lines</Data>
         </Cell>
         <Cell ss:StyleID="header">
           <Data ss:Type="String">Done</Data>
+        </Cell>
+      </Row>
+      <Row>
+        <Cell>
+          <Data ss:Type="Number">21</Data>
+        </Cell>
+        <Cell ss:StyleID="paragraph">
+          <Data ss:Type="String">working in branch "improve-layout"
+v1.1.0
+general improvements to display, mainly arrows</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Done</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Feature</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-05T00:00:00.000</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-10T00:00:00.000</Data>
         </Cell>
       </Row>
       <Row>
