@@ -246,9 +246,14 @@ pinker.config.attribute = value;
 |**backgroundColor**|string, like "#FFFFFF"|diagram background color|
 |**shadeColor**|string, like "#FFFFFF"|accent color|
 |**lineColor**|string, like "#000000"|line and text color|
+|**lineWeight**|integer or float|line weight of lowest-level scopes in pixels|
 |**lineDashLength**|integer or float|length of a dash in pixels|
 |**lineDashSpacing**|integer or float|length of space between dashes in pixels|
+|**arrowHeadArea**|integer or float|pixels-squared area of an arrow head|
 |**estimateFontHeight**|function()|returns height of font in pixels|
+|**lineSpacing**|function()|returns padding distance between lines of text in pixels|
+|**favorGoldenRatioLabelSize**|boolean|should multi-line labels be arranged with a width:height ratio close to 1.6?|
+|**favorUniformNodeSizes**|boolean|should sibling-nodes be resized to appear similar?|
 
 ## License
 
@@ -261,6 +266,8 @@ pinker.config.attribute = value;
 ## Version Notes
 
 Uses [Semantic Versioning 2.0.0](https://semver.org/).
+
+To see what version you are using: `let v = pinker.version;`
 
 [Initial Release - v1.0.0](https://github.com/WithoutHaste/Pinker/releases/tag/v1.0.0)
 - single-file JavaScript library with no dependencies
