@@ -269,7 +269,18 @@ Uses [Semantic Versioning 2.0.0](https://semver.org/).
 
 To see what version you are using: `let v = pinker.version;`
 
-[Initial Release - v1.0.0](https://github.com/WithoutHaste/Pinker/releases/tag/v1.0.0)
+[Improved Layout - v1.1.0](https://github.com/WithoutHaste/Pinker/releases/tag/v1.1.0)  
+- favor horizontal/vertical lines over angled lines
+- favor golden-ratio labels
+- favor more homogeneous scope sizes
+- update plain arrow head for visibility
+- update arrow head sizes to be more regular
+- clean up define-section layout
+- center sub-diagrams in each scope
+- move more layout control into `pinker.config`
+- refactoring
+
+[Initial Release - v1.0.0](https://github.com/WithoutHaste/Pinker/releases/tag/v1.0.0)  
 - single-file JavaScript library with no dependencies
 - generate code/UML diagrams from plain text
 - supports nested scopes to any level
