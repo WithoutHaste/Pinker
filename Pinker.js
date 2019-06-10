@@ -674,7 +674,12 @@ var pinker = pinker || {};
 					if(this.defineArea != null)
 						this.defineArea.width = newWidth;
 					if(this.nodeArea != null)
+					{
+						let nodeAreaDelta = newWidth - this.nodeArea.width;
 						this.nodeArea.width = newWidth;
+						this.nodeArea.paddingLeft += (nodeAreaDelta/2);
+						this.nodeArea.paddingRight += (nodeAreaDelta/2);
+					}
 					return delta;
 				},
 				//expand node height as needed to fit content
@@ -686,7 +691,11 @@ var pinker = pinker || {};
 					const delta = newHeight - this.relativeArea.height;
 					this.relativeArea.height = newHeight;
 					if(this.nodeArea != null)
+					{
 						this.nodeArea.height += delta;
+						this.nodeArea.paddingTop += (delta/2);
+						this.nodeArea.paddingBottom += (delta/2);
+					}
 					else if(this.defineArea != null)
 						this.defineArea.height += delta;
 					else if(this.labelArea != null)
@@ -702,7 +711,7 @@ var pinker = pinker || {};
 					this.absoluteArea = Area.create(this.relativeArea.x + deltaX, this.relativeArea.y + deltaY, this.relativeArea.width, this.relativeArea.height);
 					let self = this;
 					this.nodes.forEach(function(nestedNode) {
-						nestedNode.setAbsoluteAreas(self.absoluteArea.x + self.nodeArea.x + pinker.config.scopePadding, self.absoluteArea.y + self.nodeArea.y + pinker.config.scopePadding);
+						nestedNode.setAbsoluteAreas(self.absoluteArea.x + self.nodeArea.x + self.nodeArea.paddingLeft, self.absoluteArea.y + self.nodeArea.y + self.nodeArea.paddingTop);
 					});
 				},
 				pathPrefix: function() {
@@ -943,6 +952,16 @@ var pinker = pinker || {};
 				y: y,
 				width: width,
 				height: height,
+				paddingLeft: 0,
+				paddingRight: 0,
+				paddingTop: 0,
+				paddingBottom: 0,
+				setPadding: function(padding) {
+					this.paddingLeft = padding;
+					this.paddingRight = padding;
+					this.paddingTop = padding;
+					this.paddingBottom = padding;
+				},
 				point: function() {
 					return Point.create(this.x, this.y);
 				},
@@ -1547,6 +1566,7 @@ var pinker = pinker || {};
 			const leftAlignCount = row.leftAlign.length;
 			let index = 0;
 			row.all().forEach(function(layoutRecord) {
+				const singlePadding = pinker.config.scopePadding;
 				const doublePadding = pinker.config.scopePadding * 2;
 				const isRightAlign = (index >= leftAlignCount);
 				
@@ -1592,6 +1612,8 @@ var pinker = pinker || {};
 					const nodeDimensions = calculateCanvasDimensions(nestedNodes);
 					node.updateWidth(nodeDimensions.width + doublePadding);
 					node.nodeArea = Area.create(0, node.relativeArea.height, node.relativeArea.width, nodeDimensions.height + doublePadding);
+					node.nodeArea.paddingLeft = node.nodeArea.paddingRight = ((node.nodeArea.width - nodeDimensions.width) / 2);
+					node.nodeArea.paddingTop = node.nodeArea.paddingBottom = ((node.nodeArea.height - nodeDimensions.height) / 2);
 					node.relativeArea.height += node.nodeArea.height;
 				}
 
