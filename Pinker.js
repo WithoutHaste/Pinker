@@ -338,6 +338,8 @@ var pinker = pinker || {};
 				lines: [],
 				//append line, do not allow two pipes in a row
 				addLine: function(line) {
+					if(line == null || line.length == 0)
+						return;
 					if(line == this.pipe && this.lines.length > 0 && this.lines[this.lines.length-1] == this.pipe)
 						return;
 					this.lines.push(line);
@@ -577,6 +579,7 @@ var pinker = pinker || {};
 		let defineSection = Section.createDefine();
 		const pipe = defineSection.pipe;
 		section.body.forEach(function(line) {
+			line = line.trim();
 			if(line == null || line.length == 0)
 				return;
 			if(line.startsWith(pipe))
@@ -586,13 +589,13 @@ var pinker = pinker || {};
 			}
 			if(line.endsWith(pipe))
 			{
-				line = line.substring(0, line.length - pipe.length);
+				line = line.substring(0, line.length - pipe.length).trim();
 				defineSection.addLine(line);
 				defineSection.addLine(pipe);
 			}
 			else
 			{
-				defineSection.lines.push(line);
+				defineSection.addLine(line);
 			}
 		});
 		return defineSection;
