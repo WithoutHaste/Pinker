@@ -381,6 +381,27 @@ labels on lines</Data>
       </Row>
       <Row>
         <Cell>
+          <Data ss:Type="Number">29</Data>
+        </Cell>
+        <Cell ss:StyleID="paragraph">
+          <Data ss:Type="String">bottom-most scopes have config.lineWeight
+line weight increases for each enclosing scope</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Done</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Display</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-10T00:00:00.000</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-10T00:00:00.000</Data>
+        </Cell>
+      </Row>
+      <Row>
+        <Cell>
           <Data ss:Type="Number">26</Data>
         </Cell>
         <Cell ss:StyleID="paragraph">
@@ -682,7 +703,7 @@ and getting it in the webpage or js when you need it</Data>
           </Data>
         </Cell>
         <Cell>
-          <Data ss:Type="Number">28</Data>
+          <Data ss:Type="Number">29</Data>
         </Cell>
       </Row>
       <Row>

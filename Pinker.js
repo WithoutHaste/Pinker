@@ -755,6 +755,15 @@ var pinker = pinker || {};
 							return result;
 					}
 					return null;
+				},
+				//returns depth of nested diagrams
+				//default of 1, for no nested diagrams
+				getMaxDepth: function() {
+					let maxDepth = 1;
+					this.nodes.forEach(function(node) {
+						maxDepth = Math.max(maxDepth, node.getMaxDepth() + 1);
+					});
+					return maxDepth;
 				}
 			};
 		}
@@ -1088,15 +1097,15 @@ var pinker = pinker || {};
 					return null;
 				},
 				//draw background and outline of area
-				fillAndOutline: function(relativePoint, backgroundColor, lineColor, context) {
+				fillAndOutline: function(relativePoint, backgroundColor, lineColor, lineWeight, context) {
 					context.fillStyle = backgroundColor;
 					context.fillRect(this.x + relativePoint.x, this.y + relativePoint.y, this.width, this.height);
-					this.outline(relativePoint, lineColor, context);
+					this.outline(relativePoint, lineColor, lineWeight, context);
 				},
 				//draw outline of area
-				outline: function(relativePoint, lineColor, context) {
+				outline: function(relativePoint, lineColor, lineWeight, context) {
 					context.strokeStyle = lineColor;
-					context.lineWidth = pinker.config.lineWeight;
+					context.lineWidth = lineWeight;
 					if(relativePoint == null)
 						context.strokeRect(this.x, this.y, this.width, this.height);
 					else
@@ -1467,10 +1476,13 @@ var pinker = pinker || {};
 		const context = canvasElement.getContext('2d');
 
 		const nodes = convertLayoutToNodes(source, context);
+		let maxDepth = 1;
 		//calculate final locations
+		//find max depth of diagram
 		nodes.forEach(function(node) {
 			node.setAbsoluteAreas(pinker.config.canvasPadding, pinker.config.canvasPadding);
-		});
+			maxDepth = Math.max(maxDepth, node.getMaxDepth());
+		});		
 
 		let dimensions = calculateCanvasDimensions(nodes);
 		dimensions.width += pinker.config.canvasPadding * 2;
@@ -1482,24 +1494,25 @@ var pinker = pinker || {};
 		context.fillStyle = pinker.config.backgroundColor;
 		context.fillRect(0, 0, dimensions.width, dimensions.height);
 		
-		drawNodes(nodes, context);
+		drawNodes(nodes, maxDepth, context);
 		
 		const paths = convertRelationsToPaths(source, nodes);
 		drawPathObjects(paths, context);
 	}
 	
-	function drawNodes(nodes, context) {
+	function drawNodes(nodes, maxDepth, context) {
 		nodes.forEach(function(node) {
-			drawNode(node, context);
+			drawNode(node, maxDepth, context);
 		});
 	}
 	
-	function drawNode(node, context) {
+	function drawNode(node, maxDepth, context) {
 		const paddingPoint = Point.create(pinker.config.scopePadding);
 		const doublePadding = pinker.config.scopePadding * 2;
+		const lineWeight = pinker.config.lineWeight + ((maxDepth-1) * 0.33);
 		
 		//outline node
-		node.absoluteArea.outline(null, pinker.config.lineColor, context);
+		node.absoluteArea.outline(null, pinker.config.lineColor, lineWeight, context);
 
 		//label area
 		switch(node.labelLayout.type)
@@ -1507,7 +1520,7 @@ var pinker = pinker || {};
 			case LabelLayout.types.text: 
 				break;
 			case LabelLayout.types.header:
-				node.labelArea.fillAndOutline(node.absoluteArea.point(), pinker.config.shadeColor, pinker.config.lineColor, context);
+				node.labelArea.fillAndOutline(node.absoluteArea.point(), pinker.config.shadeColor, pinker.config.lineColor, lineWeight, context);
 				break;
 		}
 		context.font = pinker.config.font();
@@ -1517,13 +1530,13 @@ var pinker = pinker || {};
 		//define area
 		if(node.defineLayout != null)
 		{
-			node.defineArea.outline(node.absoluteArea.point(), pinker.config.lineColor, context);
+			node.defineArea.outline(node.absoluteArea.point(), pinker.config.lineColor, lineWeight, context);
 			const definePoint = node.absoluteArea.point().plus(node.defineArea.point()).plus(paddingPoint);
 			node.defineLayout.draw(definePoint, (node.defineArea.width - node.defineLayout.width)/2, context);
 		}
 
 		//node area
-		drawNodes(node.nodes, context);
+		drawNodes(node.nodes, maxDepth - 1, context);
 	}
 	
 	function drawPathObjects(paths, context) {
