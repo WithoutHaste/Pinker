@@ -249,7 +249,7 @@ pinker.config.attribute = value;
 |**lineWeight**|integer or float|line weight of lowest-level scopes in pixels|
 |**lineDashLength**|integer or float|length of a dash in pixels|
 |**lineDashSpacing**|integer or float|length of space between dashes in pixels|
-|**arrowHeadLength**|integer or float|length of arrow head in pixels|
+|**arrowHeadArea**|integer or float|pixels-squared area of an arrow head|
 |**estimateFontHeight**|function()|returns height of font in pixels|
 |**lineSpacing**|function()|returns padding distance between lines of text in pixels|
 |**favorGoldenRatioLabelSize**|boolean|should multi-line labels be arranged with a width:height ratio close to 1.6?|

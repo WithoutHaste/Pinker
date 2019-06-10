@@ -21,7 +21,7 @@ var pinker = pinker || {};
 		,lineWeight: 1 //line weight in pixels
 		,lineDashLength: 5 //length of a dash in pixels
 		,lineDashSpacing: 3 //length of space between dashes in pixels
-		,arrowHeadLength: 15 //length of arrow head in pixels
+		,arrowHeadArea: 50 //pixels-squared area of an arrow head
 		,font: function() {
 			return this.fontSize + "px " + this.fontFamily;
 		}
@@ -1426,9 +1426,10 @@ var pinker = pinker || {};
 	const ArrowTypes = {
 		none: 0,
 		plainArrow: 1,
-		hollowArrow: 2,
-		hollowDiamond: 3,
-		filledDiamond: 4,
+		filledArrow: 2,
+		hollowArrow: 3,
+		hollowDiamond: 4,
+		filledDiamond: 5,
 		//converts source arrow to arrow type
 		convert: function(sourceArrow) {
 			if(sourceArrow.length > 2)
@@ -1436,7 +1437,7 @@ var pinker = pinker || {};
 			switch(sourceArrow)
 			{
 				case "=>":
-				case "->": return this.plainArrow;
+				case "->": return this.filledArrow;
 				case "-D":
 				case ":>": return this.hollowArrow;
 				case "-o": return this.hollowDiamond;
@@ -1941,17 +1942,35 @@ var pinker = pinker || {};
 			displayError(`drawArrow: start and/or end point is null. Start: ${start} End: ${end}.`);
 			return;
 		}
-		const headLength = pinker.config.arrowHeadLength;
-		const angle = Math.atan2(end.y - start.y, end.x - start.x);
-		
 		if(arrowType == ArrowTypes.none)
 			return;
-		
+
+		const headArea = pinker.config.arrowHeadArea;
+		const angle = Math.atan2(end.y - start.y, end.x - start.x);
 		context.lineWidth = pinker.config.lineWeight;
 		context.setLineDash([]); //solid line
-		if(arrowType == ArrowTypes.plainArrow || arrowType == ArrowTypes.hollowArrow)
+		if(arrowType == ArrowTypes.filledArrow)
 		{
-			const triangleSideLength = headLength * 2 / Math.sqrt(3); //see equilateral triangle geometry
+			//see isosceles triangle geometry
+			const baseToHeightRatio = 1.5;
+			const base = Math.sqrt((2 * headArea) / baseToHeightRatio);
+			const height = base * baseToHeightRatio;
+			const triangleSideLength = Math.sqrt(Math.pow(base/2, 2) + Math.pow(height, 2));
+			const isoscelesAngle = Math.asin((base / 2) / triangleSideLength);
+			const arrowCornerA = Point.create(end.x - triangleSideLength * Math.cos(angle - isoscelesAngle), end.y - triangleSideLength * Math.sin(angle - isoscelesAngle));
+			const arrowCornerB = Point.create(end.x - triangleSideLength * Math.cos(angle + isoscelesAngle), end.y - triangleSideLength * Math.sin(angle + isoscelesAngle));
+
+			context.fillStyle = pinker.config.lineColor;
+			context.beginPath();
+			context.moveTo(end.x, end.y);
+			context.lineTo(arrowCornerA.x, arrowCornerA.y);
+			context.lineTo(arrowCornerB.x, arrowCornerB.y);
+			context.lineTo(end.x, end.y);
+			context.fill();
+		}
+		else if(arrowType == ArrowTypes.plainArrow || arrowType == ArrowTypes.hollowArrow)
+		{
+			const triangleSideLength = Math.sqrt(headArea * 4 / Math.sqrt(3)); //see equilateral triangle geometry
 			const arrowCornerA = Point.create(end.x - triangleSideLength * Math.cos(angle - Math.PI/6), end.y - triangleSideLength * Math.sin(angle - Math.PI/6));
 			const arrowCornerB = Point.create(end.x - triangleSideLength * Math.cos(angle + Math.PI/6), end.y - triangleSideLength * Math.sin(angle + Math.PI/6));
 			if(arrowType == ArrowTypes.plainArrow)
@@ -1984,7 +2003,7 @@ var pinker = pinker || {};
 		}
 		else if(arrowType == ArrowTypes.hollowDiamond || arrowType == ArrowTypes.filledDiamond)
 		{
-			const triangleSideLength = (headLength/2) * 2 / Math.sqrt(3); //see equilateral triangle geometry
+			const triangleSideLength = Math.sqrt((headArea/2) * 4 / Math.sqrt(3)); //see equilateral triangle geometry
 			const arrowCornerA = Point.create(end.x - triangleSideLength * Math.cos(angle - Math.PI/6), end.y - triangleSideLength * Math.sin(angle - Math.PI/6));
 			const arrowCornerB = Point.create(end.x - triangleSideLength * Math.cos(angle + Math.PI/6), end.y - triangleSideLength * Math.sin(angle + Math.PI/6));
 			const diamondCornerC = Point.create(arrowCornerA.x - triangleSideLength * Math.cos(angle + Math.PI/6), arrowCornerA.y - triangleSideLength * Math.sin(angle + Math.PI/6));
