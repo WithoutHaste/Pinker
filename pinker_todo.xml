@@ -76,6 +76,23 @@ general improvements to display, mainly arrows</Data>
       </Row>
       <Row>
         <Cell>
+          <Data ss:Type="Number">26</Data>
+        </Cell>
+        <Cell ss:StyleID="paragraph">
+          <Data ss:Type="String">center sub-diagrams within nodes</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Todo</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Feature - Low</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-09T00:00:00.000</Data>
+        </Cell>
+      </Row>
+      <Row>
+        <Cell>
           <Data ss:Type="Number">17</Data>
         </Cell>
         <Cell ss:StyleID="paragraph">
@@ -615,7 +632,7 @@ and getting it in the webpage or js when you need it</Data>
           </Data>
         </Cell>
         <Cell>
-          <Data ss:Type="Number">25</Data>
+          <Data ss:Type="Number">26</Data>
         </Cell>
       </Row>
       <Row>

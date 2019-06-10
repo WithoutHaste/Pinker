@@ -1006,6 +1006,39 @@ var pinker = pinker || {};
 					return (this.hasVerticalOverlap(otherNode)
 						&& this.left() > otherNode.right());
 				},
+				//returns array of area corner as Point objects
+				//order: topLeft, topRight, bottomRight, bottomLeft
+				corners: function() {
+					return [
+						Point.create(this.left(), this.top()),
+						Point.create(this.right(), this.top()),
+						Point.create(this.right(), this.bottom()),
+						Point.create(this.left(), this.bottom())
+					];
+				},
+				//returns array of area boundaries as Line objects
+				//order: top, right, bottom, left
+				edges: function() {
+					const corners = this.corners();
+					return [
+						Line.create(corners[0], corners[1]),
+						Line.create(corners[1], corners[2]),
+						Line.create(corners[2], corners[3]),
+						Line.create(corners[3], corners[0])
+					];
+				},
+				//return intersection point between Area boundary and line
+				//assumes exactly one intersection point, but returns NULL if none is found
+				getIntersection: function(line) {
+					const edges = this.edges();
+					for(let i=0; i<edges.length; i++)
+					{
+						let intersection = edges[i].intersection(line);
+						if(intersection != null)
+							return intersection;
+					}
+					return null;
+				},
 				//draw background and outline of area
 				fillAndOutline: function(relativePoint, backgroundColor, lineColor, context) {
 					context.fillStyle = backgroundColor;
@@ -1035,6 +1068,124 @@ var pinker = pinker || {};
 		}
 	};
 	
+	const Line = {
+		//returns intersection point between a vertical line and a horizontal line
+		intersectionVerticalHorizontal: function(verticalLine, horizontalLine) {
+			let intersect = Point.create(verticalLine.startPoint.x, horizontalLine.startPoint.y);
+			if(!Range.ordered(horizontalLine.minX(), intersect.x, horizontalLine.maxX()))
+				return null;
+			if(!Range.ordered(verticalLine.minY(), intersect.y, verticalLine.maxY()))
+				return null;
+			return intersect;
+		},
+		//returns intersection point between a vertical line and an angled line (neither vertical nor horizontal)
+		intersectionVerticalAngled: function(verticalLine, angledLine) {
+			let intersect = Point.create(verticalLine.minX(), angledLine.solveY(verticalLine.minX()));
+			if(!Range.ordered(verticalLine.minY(), intersect.y, verticalLine.maxY()))
+				return null;
+			if(!Range.ordered(angledLine.minX(), intersect.x, angledLine.maxX()))
+				return null;
+			if(!Range.ordered(angledLine.minY(), intersect.y, angledLine.maxX()))
+				return null;
+			return intersect;
+		},
+		//returns intersection point between a horizontal line and an angled line (neither vertical nor horizontal)
+		intersectionHorizontalAngled: function(horizontalLine, angledLine) {
+			let intersect = Point.create(angledLine.solveX(horizontalLine.minY()), horizontalLine.minY());
+			if(!Range.ordered(horizontalLine.minX(), intersect.x, horizontalLine.maxX()))
+				return null;
+			if(!Range.ordered(angledLine.minX(), intersect.x, angledLine.maxX()))
+				return null;
+			if(!Range.ordered(angledLine.minY(), intersect.y, angledLine.maxY()))
+				return null;
+			return intersect;
+		},
+		//returns intersection point between two angled lines (neither vertical nor horizontal)
+		intersectionAngledAngled: function(lineA, lineB) {
+			let x = ((lineB.yIntercept() - lineA.yIntercept()) / (lineA.slope() - lineB.slope()));
+			let y = lineA.solveY(x);
+			let intersect = Point.create(x, y);
+			if(!Range.ordered(lineA.minX(), intersect.x, lineA.maxX()))
+				return null;
+			if(!Range.ordered(lineA.minY(), intersect.y, lineA.maxX()))
+				return null;
+			if(!Range.ordered(lineB.minX(), intersect.x, lineB.maxX()))
+				return null;
+			if(!Range.ordered(lineB.minY(), intersect.y, lineB.maxX()))
+				return null;
+			return intersect;
+		},
+		//returns line object
+		create: function(startPoint, endPoint) {
+			return {
+				startPoint: startPoint,
+				endPoint: endPoint,
+				slope: function() {
+					return ((endPoint.y - startPoint.y) / (endPoint.x - startPoint.x));
+				},
+				yIntercept: function() {
+					//y = mx + b
+					//b = y - mx
+					return (startPoint.y - (this.slope() * startPoint.x));
+				},
+				solveX: function(y) {
+					return ((y - this.yIntercept()) / this.slope());
+				},
+				solveY: function(x) {
+					return ((this.slope() * x) + this.yIntercept());
+				},
+				isVertical: function() {
+					return (startPoint.x == endPoint.x);
+				},
+				isHorizontal: function() {
+					return (startPoint.y == endPoint.y);
+				},
+				minX: function() {
+					return Math.min(this.startPoint.x, this.endPoint.x);
+				},
+				maxX: function() {
+					return Math.max(this.startPoint.x, this.endPoint.x);
+				},
+				minY: function() {
+					return Math.min(this.startPoint.y, this.endPoint.y);
+				},
+				maxY: function() {
+					return Math.max(this.startPoint.y, this.endPoint.y);
+				},
+				//returns overlap point of lines, or null
+				intersection: function(otherLine) {
+					if(this.isVertical())
+					{
+						if(otherLine.isVertical())
+							return null;
+						else if(otherLine.isHorizontal())
+							return Line.intersectionVerticalHorizontal(this, otherLine);
+						else
+							return Line.intersectionVerticalAngled(this, otherLine);
+					}
+					else if(this.isHorizontal())
+					{
+						if(otherLine.isVertical())
+							return Line.intersectionVerticalHorizontal(otherLine, this);
+						else if(otherLine.isHorizontal())
+							return null;
+						else
+							return Line.intersectionHorizontalAngled(this, otherLine);
+					}
+					else
+					{
+						if(otherLine.isVertical())
+							return Line.intersectionVerticalAngled(otherLine, this);
+						else if(otherLine.isHorizontal())
+							return Line.intersectionHorizontalAngled(otherLine, this);
+						else
+							return Line.intersectionAngledAngled(this, otherLine);
+					}
+				}
+			};
+		}
+	};
+	
 	const Point = {
 		//returns point object
 		create: function(x, y=null) {
@@ -1048,6 +1199,13 @@ var pinker = pinker || {};
 					return Point.create(this.x + deltaPoint.x, this.y + deltaPoint.y);
 				}
 			};
+		}
+	};
+	
+	const Range = {
+		//returns true if values are ordered min to max - equality is allowed
+		ordered: function(a, b, c) {
+			return (a <= b && b <= c);
 		}
 	};
 	
@@ -1441,27 +1599,15 @@ var pinker = pinker || {};
 			end = Point.create(endArea.right(), middleY);
 			return [start, end];
 		}
-
-		if(startArea.isAbove(endArea))
-			start.y = startArea.bottom();
-		else if(startArea.isBelow(endArea))
-			start.y = startArea.top();
-
-		if(startArea.isLeftOf(endArea))
-			start.x = startArea.right();
-		else if(startArea.isRightOf(endArea))
-			start.x = startArea.left();
-
-		if(endArea.isAbove(startArea))
-			end.y = endArea.bottom();
-		else if(endArea.isBelow(startArea))
-			end.y = endArea.top();
-
-		if(endArea.isLeftOf(startArea))
-			end.x = endArea.right();
-		else if(endArea.isRightOf(startArea))
-			end.x = endArea.left();
-
+		
+		let line = Line.create(start, end);
+		start = startNode.absoluteArea.getIntersection(line);
+		end = endNode.absoluteArea.getIntersection(line);
+		//stop-gap for errors - better to show some line than none
+		if(start == null)
+			start = startArea.center();
+		if(end == null)
+			end = endArea.center();
 		return [start, end];
 	}
 	
