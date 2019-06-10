@@ -1010,6 +1010,22 @@ var pinker = pinker || {};
 					return (this.hasVerticalOverlap(otherNode)
 						&& this.left() > otherNode.right());
 				},
+				isBelowRightOf: function(otherNode) {
+					return (!this.isBelow(otherNode) && !this.isRightOf(otherNode)
+						&& this.left() > otherNode.left() && this.top() > otherNode.top());
+				},
+				isBelowLeftOf: function(otherNode) {
+					return (!this.isBelow(otherNode) && !this.isLeftOf(otherNode)
+						&& this.left() < otherNode.left() && this.top() > otherNode.top());
+				},
+				isAboveRightOf: function(otherNode) {
+					return (!this.isAbove(otherNode) && !this.isRightOf(otherNode)
+						&& this.left() > otherNode.left() && this.top() < otherNode.top());
+				},
+				isAboveLeftOf: function(otherNode) {
+					return (!this.isAbove(otherNode) && !this.isLeftOf(otherNode)
+						&& this.left() < otherNode.left() && this.top() < otherNode.top());
+				},
 				//returns array of area corner as Point objects
 				//order: topLeft, topRight, bottomRight, bottomLeft
 				corners: function() {
@@ -1361,6 +1377,9 @@ var pinker = pinker || {};
 					if(newMin > newMax)
 						return null;
 					return Range.create(newMin, newMax);
+				},
+				clone: function() {
+					return Range.create(this.min, this.max);
 				}
 			};
 		}
@@ -1792,7 +1811,24 @@ var pinker = pinker || {};
 			path.points.push(PotentialPoint.create(Range.create(endArea.right()), rangeY));
 			return path;
 		}
+		/*
+		if(startArea.isAboveLeftOf(endArea))
+		{
+			let rangeAX = Range.create(startArea.right());
+			let rangeAY = Range.create(startArea.top(), startArea.bottom()); //TODO consider if startArea is a header (mayne I need an ideal range within the total possible range?)
+			let rangeBX = Range.create(startArea.right(), endArea.left());
+			let rangeCY = Range.create(endArea.top(), endArea.bottom()); //TODO consider if endArea is a header
+			let rangeDX = Range.create(endArea.left());
+
+			path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
+			path.points.push(PotentialPoint.create(rangeBX.clone(), rangeAY.clone()));
+			path.points.push(PotentialPoint.create(rangeBX.clone(), rangeCY.clone()));
+			path.points.push(PotentialPoint.create(rangeDX.clone(), rangeCY.clone()));
+			return path;
+		}
+		*/
 		
+		//fallback: straight line between nodes
 		let line = Line.create(start, end);
 		start = startNode.absoluteArea.getIntersection(line);
 		end = endNode.absoluteArea.getIntersection(line);
