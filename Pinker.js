@@ -1637,14 +1637,15 @@ var pinker = pinker || {};
 		let maxXs = allNodes.map(node => node.relativeArea.right());
 		let maxX = Math.max(...maxXs);
 		nodeRows.forEach(function(nodes) {
-			nodes.reverse();
 			let right = maxX;
-			nodes.forEach(function(node) {
+			for(let i=nodes.length-1; i>=0; i--)
+			{
+				let node = nodes[i];
 				if(!node.isRightAlign)
-					return;
+					break;
 				node.relativeArea.x = right - node.relativeArea.width;
-				right -= node.relativeArea.width - pinker.config.scopeMargin;
-			});
+				right -= (node.relativeArea.width + pinker.config.scopeMargin);
+			}
 		});
 		return allNodes;
 	}
