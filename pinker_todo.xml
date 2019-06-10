@@ -95,6 +95,24 @@ pull each [label] off the list one at a time</Data>
       </Row>
       <Row>
         <Cell>
+          <Data ss:Type="Number">27</Data>
+        </Cell>
+        <Cell ss:StyleID="paragraph">
+          <Data ss:Type="String">instead of config.arrowLength, use config.arrowArea
+so that arrow and diamond will have same area and will appear more harmonious next to each other</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Todo</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Display</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-10T00:00:00.000</Data>
+        </Cell>
+      </Row>
+      <Row>
+        <Cell>
           <Data ss:Type="Number">18</Data>
         </Cell>
         <Cell ss:StyleID="paragraph">
@@ -285,6 +303,31 @@ meaning: just the top-level nodes, with all relations maintained - so every rela
         </Cell>
         <Cell ss:StyleID="cellShortDate">
           <Data ss:Type="DateTime">2019-06-06T00:00:00.000</Data>
+        </Cell>
+      </Row>
+      <Row>
+        <Cell>
+          <Data ss:Type="Number">28</Data>
+        </Cell>
+        <Cell ss:StyleID="paragraph">
+          <Data ss:Type="String">support
+more column control in Layout
+possibly:
+[A][B] | [C] | [D]
+[F] | | [G]
+where pipe delineates columns, and groups of nodes are horizontally centered in their column
+...[F] indicates right-align in column
+[F]... indicates left-align in column
+whitespace not required, whitespace will be ignored</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Todo</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Feature</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-10T00:00:00.000</Data>
         </Cell>
       </Row>
       <Row>
@@ -639,7 +682,7 @@ and getting it in the webpage or js when you need it</Data>
           </Data>
         </Cell>
         <Cell>
-          <Data ss:Type="Number">26</Data>
+          <Data ss:Type="Number">28</Data>
         </Cell>
       </Row>
       <Row>
