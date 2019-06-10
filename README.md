@@ -246,7 +246,7 @@ pinker.config.attribute = value;
 |**backgroundColor**|string, like "#FFFFFF"|diagram background color|
 |**shadeColor**|string, like "#FFFFFF"|accent color|
 |**lineColor**|string, like "#000000"|line and text color|
-|**lineWeight**|integer or float|line weight in pixels|
+|**lineWeight**|integer or float|line weight of lowest-level scopes in pixels|
 |**lineDashLength**|integer or float|length of a dash in pixels|
 |**lineDashSpacing**|integer or float|length of space between dashes in pixels|
 |**arrowHeadLength**|integer or float|length of arrow head in pixels|
