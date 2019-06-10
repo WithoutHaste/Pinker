@@ -267,6 +267,8 @@ pinker.config.attribute = value;
 
 Uses [Semantic Versioning 2.0.0](https://semver.org/).
 
+To see what version you are using: `let v = pinker.version;`
+
 [Initial Release - v1.0.0](https://github.com/WithoutHaste/Pinker/releases/tag/v1.0.0)
 - single-file JavaScript library with no dependencies
 - generate code/UML diagrams from plain text
