@@ -88,6 +88,10 @@ var pinker = pinker || {};
 		updateCanvas(canvasElement, source);
 	};
 	
+	function displayError(message) {
+		console.log("Pinker Error: " + message);
+	}
+	
 	//########################################
 	//## Parsing source data structures
 	//########################################
@@ -1068,6 +1072,124 @@ var pinker = pinker || {};
 		}
 	};
 	
+	const Path = {
+		//returns path object
+		//all lines are vertical or horizontal
+		create: function() {
+			return {
+				points: [], //array of potential point objects
+				isPath: true,
+				//adjust ranges so adjacent points agree about possible x/y values
+				startsHorizontal: function() {
+					if(this.points.length == 0)
+						return true;
+					return this.points[0].stableX();
+				},
+				clean: function() {
+					if(this.points.length < 2)
+						return;
+					let horizontalLine = this.startsHorizontal();
+					for(let i=1; i<this.points.length; i++)
+					{
+						let previousPoint = this.points[i-1];
+						let currentPoint = this.points[i];
+						if(horizontalLine)
+						{
+							let rangeIntersect = previousPoint.rangeY.intersect(currentPoint.rangeY);
+							if(rangeIntersect == null)
+							{
+								//TODO what to do if there is no intersection?
+							}
+							previousPoint.rangeY = rangeIntersect;
+							currentPoint.rangeY = rangeIntersect;
+						}
+						else
+						{
+							let rangeIntersect = previousPoint.rangeX.intersect(currentPoint.rangeX);
+							if(rangeIntersect == null)
+							{
+								//TODO what to do if there is no intersection?
+							}
+							previousPoint.rangeX = rangeIntersect;
+							currentPoint.rangeX = rangeIntersect;
+						}
+						horizontalLine = !horizontalLine;
+					}
+				},
+				//returns array of normal points
+				//turn potential points into points, taking the middle-path of potential paths
+				stablePoints: function() {
+					this.clean();
+					let result = [];
+					let previousStablePoint = null;
+					let horizontalLine = this.startsHorizontal();
+					for(let i=0; i<this.points.length; i++)
+					{
+						let point = this.points[i];
+						let stablePoint = (horizontalLine) ? point.toStablePointHorizontal(previousStablePoint) : point.toStablePointVertical(previousStablePoint);
+						result.push(stablePoint);
+						previousStablePoint = stablePoint;
+						if(i > 0)
+							horizontalLine = !horizontalLine;
+					}
+					return result;
+				},
+				//returns lines generated from stable points
+				lines: function() {
+					let stablePoints = this.stablePoints();
+					let result = [];
+					for(let i=1; i<stablePoints.length; i++)
+					{
+						result.push(Line.create(stablePoints[i-1], stablePoints[i]));
+					}
+					return result;
+				}
+			};
+		}
+	};
+	
+	const PotentialPoint = {
+		create: function(rangeX, rangeY) {
+			return {
+				rangeX: rangeX,
+				rangeY: rangeY,
+				middleX: function() {
+					return this.rangeX.middle();
+				},
+				middleY: function() {
+					return this.rangeY.middle();
+				},
+				middlePoint: function() {
+					return Point.create(this.middleX(), this.middleY());
+				},
+				stableX: function() {
+					return (this.rangeX.min == this.rangeX.max);
+				},
+				stableY: function() {
+					return (this.rangeY.min == this.rangeY.max);
+				},
+				//convert potential point to stable/normal point in relation to anchorPoint
+				//anchorPoint to result will form a horizontal line
+				toStablePointHorizontal: function(anchorPoint=null) {
+					if(anchorPoint == null)
+						return this.middlePoint();
+					if(!this.rangeY.includes(anchorPoint.y))
+						return null;
+					return Point.create(this.middleX(), anchorPoint.y);
+				},
+				//convert potential point to stable/normal point in relation to anchorPoint
+				//anchorPoint to result will form a vertical line
+				toStablePointVertical: function(anchorPoint=null) {
+					if(anchorPoint == null)
+						return this.middlePoint();
+					if(!this.rangeX.includes(anchorPoint.x))
+						return null;
+					return Point.create(anchorPoint.x, this.middleY());
+				}
+			};
+		}
+	};
+	
 	const Line = {
 		//returns intersection point between a vertical line and a horizontal line
 		intersectionVerticalHorizontal: function(verticalLine, horizontalLine) {
@@ -1120,6 +1242,7 @@ var pinker = pinker || {};
 			return {
 				startPoint: startPoint,
 				endPoint: endPoint,
+				isLine: true,
 				slope: function() {
 					return ((endPoint.y - startPoint.y) / (endPoint.x - startPoint.x));
 				},
@@ -1187,6 +1310,14 @@ var pinker = pinker || {};
 	};
 	
 	const Point = {
+		//returns true if points are on horizontal line
+		horizontal: function(pointA, pointB) {
+			return (pointA.y == pointB.y);
+		},
+		//returns true if points are on vertical line
+		vertical: function(pointA, pointB) {
+			return (pointA.x == pointB.x);
+		},
 		//returns point object
 		create: function(x, y=null) {
 			if(y == null)
@@ -1206,6 +1337,32 @@ var pinker = pinker || {};
 		//returns true if values are ordered min to max - equality is allowed
 		ordered: function(a, b, c) {
 			return (a <= b && b <= c);
+		},
+		//returns range object
+		create: function(min, max=null) {
+			if(max == null)
+				max = min;
+			return {
+				min: min,
+				max: max,
+				//return middle of range
+				middle: function() {
+					return ((min + max) / 2);
+				},
+				//return true if value is within range
+				includes: function(value) {
+					return (min <= value && value <= max);
+				},
+				//returns the intersection between two ranges
+				//returns null if there is no intersection
+				intersect: function(otherRange) {
+					let newMin = Math.max(this.min, otherRange.min);
+					let newMax = Math.min(this.max, otherRange.max);
+					if(newMin > newMax)
+						return null;
+					return Range.create(newMin, newMax);
+				}
+			};
 		}
 	};
 	
@@ -1278,7 +1435,9 @@ var pinker = pinker || {};
 		context.fillRect(0, 0, dimensions.width, dimensions.height);
 		
 		drawNodes(nodes, context);
-		drawRelations(source, nodes, context);
+		
+		const paths = convertRelationsToPaths(source, nodes);
+		drawPathObjects(paths, context);
 	}
 	
 	function drawNodes(nodes, context) {
@@ -1319,24 +1478,33 @@ var pinker = pinker || {};
 		drawNodes(node.nodes, context);
 	}
 	
-	function drawRelations(source, allNodes, context, path=null) {
-		if(path == null || path.length == 0)
-			path = source.label;
-		else
-			path += "." + source.label;
-		if(source.relate != null)
-		{
-			source.relate.records.forEach(function(relation) {
-				const startNode = findNode(allNodes, relation.startLabel, path);
-				const endNode = findNode(allNodes, relation.endLabel, path);
-				if(startNode == null || endNode == null)
-					return;
-				drawArrowBetweenNodes(startNode, endNode, ArrowTypes.convert(relation.arrowType), LineTypes.convert(relation.arrowType), context);
-			});
-		}
-		source.nestedSources.forEach(function(nestedSource) {
-			drawRelations(nestedSource, allNodes, context, path);
+	function drawPathObjects(paths, context) {
+		paths.forEach(function(path) {
+			if(path.isPath == true)
+				drawPathObject(path, context);
+			else
+			{
+				drawLineObject(path, context);
+			}
 		});
+	}
+	
+	function drawPathObject(path, context) {
+		let lines = path.lines();
+		for(let i=0; i<lines.length; i++)
+		{
+			let line = lines[i];
+			drawLine(line.startPoint, line.endPoint, path.lineType, context);
+			if(i == lines.length - 1)
+			{
+				drawArrow(line.startPoint, line.endPoint, path.arrowType, context);
+			}
+		}
+	}
+	
+	function drawLineObject(line, context) {
+		drawLine(line.startPoint, line.endPoint, line.lineType, context);
+		drawArrow(line.startPoint, line.endPoint, line.arrowType, context);
 	}
 	
 	function convertLayoutToNodes(source, context, path=null) {
@@ -1487,7 +1655,31 @@ var pinker = pinker || {};
 			}
 		}
 	}
-	
+
+	//returns mixed array of Paths and Lines
+	function convertRelationsToPaths(source, allNodes, path=null) {
+		let result = [];
+		if(path == null || path.length == 0)
+			path = source.label;
+		else
+			path += "." + source.label;
+		if(source.relate != null)
+		{
+			source.relate.records.forEach(function(relation) {
+				const startNode = findNode(allNodes, relation.startLabel, path);
+				const endNode = findNode(allNodes, relation.endLabel, path);
+				if(startNode == null || endNode == null)
+					return;
+				result.push(arrangePathBetweenNodes(startNode, endNode, allNodes, relation));
+			});
+		}
+		source.nestedSources.forEach(function(nestedSource) {
+			let nestedResult = convertRelationsToPaths(nestedSource, allNodes, path);
+			result = result.concat(nestedResult);
+		});
+		return result;
+	}
+
 	function findNode(nodes, label, labelPath) {
 		if(Source.isAlias(label))
 			return findNodeAlias(nodes, label);
@@ -1544,36 +1736,37 @@ var pinker = pinker || {};
 		return Dimension.create(width, height);
 	}
 	
-	function drawArrowBetweenNodes(startNode, endNode, arrowType, lineType, context) {
-		const [startPoint, endPoint] = arrangeLineBetweenNodes(startNode, endNode);
-		drawLine(startPoint, endPoint, lineType, context);
-		drawArrow(startPoint, endPoint, arrowType, context);
-	}
-	
-	//returns [startPoint, endPoint]
-	function arrangeLineBetweenNodes(startNode, endNode) {
+	//returns Path object from start to end
+	//can return Line object for default angled lines
+	function arrangePathBetweenNodes(startNode, endNode, allNodes, relation) {
 		const startArea = startNode.absoluteArea;
 		const endArea = endNode.absoluteArea;
 		let start = startArea.center();
 		let end = endArea.center();
 		
+		let path = Path.create();
+		path.lineType = LineTypes.convert(relation.arrowType);
+		path.arrowType = ArrowTypes.convert(relation.arrowType);
+		
 		if(startArea.isAbove(endArea))
 		{
-			const minX = Math.max(startArea.left(), endArea.left());
-			const maxX = Math.min(startArea.right(), endArea.right());
-			const middleX = (minX + maxX) / 2;
-			start = Point.create(middleX, startArea.bottom());
-			end = Point.create(middleX, endArea.top());
-			return [start, end];
+			let rangeX = Range.create(
+				Math.max(startArea.left(), endArea.left()),
+				Math.min(startArea.right(), endArea.right())
+			);
+			path.points.push(PotentialPoint.create(rangeX, Range.create(startArea.bottom())));
+			path.points.push(PotentialPoint.create(rangeX, Range.create(endArea.top())));
+			return path;
 		}
 		if(startArea.isBelow(endArea))
 		{
-			const minX = Math.max(startArea.left(), endArea.left());
-			const maxX = Math.min(startArea.right(), endArea.right());
-			const middleX = (minX + maxX) / 2;
-			start = Point.create(middleX, startArea.top());
-			end = Point.create(middleX, endArea.bottom());
-			return [start, end];
+			let rangeX = Range.create(
+				Math.max(startArea.left(), endArea.left()),
+				Math.min(startArea.right(), endArea.right())
+			);
+			path.points.push(PotentialPoint.create(rangeX, Range.create(startArea.top())));
+			path.points.push(PotentialPoint.create(rangeX, Range.create(endArea.bottom())));
+			return path;
 		}
 		if(startArea.isLeftOf(endArea))
 		{
@@ -1582,10 +1775,10 @@ var pinker = pinker || {};
 				(startNode.labelLayout.isHeader()) ? startNode.labelArea.bottom(startNode.absoluteArea.point()) : startArea.bottom(),
 				(endNode.labelLayout.isHeader())   ? endNode.labelArea.bottom(endNode.absoluteArea.point())     : endArea.bottom()
 			);
-			const middleY = (minY + maxY) / 2;
-			start = Point.create(startArea.right(), middleY);
-			end = Point.create(endArea.left(), middleY);
-			return [start, end];
+			let rangeY = Range.create(minY, maxY);
+			path.points.push(PotentialPoint.create(Range.create(startArea.right()), rangeY));
+			path.points.push(PotentialPoint.create(Range.create(endArea.left()), rangeY));
+			return path;
 		}
 		if(startArea.isRightOf(endArea))
 		{
@@ -1594,10 +1787,10 @@ var pinker = pinker || {};
 				(startNode.labelLayout.isHeader()) ? startNode.labelArea.bottom(startNode.absoluteArea.point()) : startArea.bottom(),
 				(endNode.labelLayout.isHeader())   ? endNode.labelArea.bottom(endNode.absoluteArea.point())     : endArea.bottom()
 			);
-			const middleY = (minY + maxY) / 2;
-			start = Point.create(startArea.left(), middleY);
-			end = Point.create(endArea.right(), middleY);
-			return [start, end];
+			let rangeY = Range.create(minY, maxY);
+			path.points.push(PotentialPoint.create(Range.create(startArea.left()), rangeY));
+			path.points.push(PotentialPoint.create(Range.create(endArea.right()), rangeY));
+			return path;
 		}
 		
 		let line = Line.create(start, end);
@@ -1608,10 +1801,18 @@ var pinker = pinker || {};
 			start = startArea.center();
 		if(end == null)
 			end = endArea.center();
-		return [start, end];
+		let resultLine = Line.create(start, end);
+		resultLine.lineType = LineTypes.convert(relation.arrowType);
+		resultLine.arrowType = ArrowTypes.convert(relation.arrowType);
+		return resultLine;
 	}
 	
 	function drawLine(start, end, lineType, context) {
+		if(start == null || end == null)
+		{
+			displayError(`drawLine: start and/or end point is null. Start: ${start} End: ${end}.`);
+			return;
+		}
 		context.beginPath();
 		context.strokeStyle = pinker.config.lineColor;
 		switch(lineType)
@@ -1629,6 +1830,11 @@ var pinker = pinker || {};
 	}
 	
 	function drawArrow(start, end, arrowType, context) {
+		if(start == null || end == null)
+		{
+			displayError(`drawArrow: start and/or end point is null. Start: ${start} End: ${end}.`);
+			return;
+		}
 		const headLength = pinker.config.arrowHeadLength;
 		const angle = Math.atan2(end.y - start.y, end.x - start.x);
 		
