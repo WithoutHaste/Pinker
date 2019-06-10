@@ -18,17 +18,21 @@ var pinker = pinker || {};
 		,backgroundColor: "#FFFFFF" //white
 		,shadeColor: "#EEEEEE" //pale gray
 		,lineColor: "#000000" //black
+		,lineWeight: 1 //line weight in pixels
 		,lineDashLength: 5 //length of a dash in pixels
 		,lineDashSpacing: 3 //length of space between dashes in pixels
 		,arrowHeadLength: 15 //length of arrow head in pixels
-		,favorGoldenRatioLabelSize: true
-		,favorUniformNodeSizes: true
 		,font: function() {
 			return this.fontSize + "px " + this.fontFamily;
 		}
 		,estimateFontHeight: function() {
 			return this.fontSize;
 		}
+		,lineSpacing: function() {
+			return this.estimateFontHeight() * 0.4;
+		}
+		,favorGoldenRatioLabelSize: true
+		,favorUniformNodeSizes: true
 	};
 
 	//render all sources onto new canvases
@@ -785,7 +789,7 @@ var pinker = pinker || {};
 				//calculates and set dimensions
 				calculateDimensions: function(context) {
 					let lineHeight = pinker.config.estimateFontHeight();
-					let lineSpacing = lineHeight / 3; //TODO move to config
+					let lineSpacing = pinker.config.lineSpacing();
 					this.width = 0;
 					this.height = 0;
 					context.font = pinker.config.font();
@@ -797,11 +801,12 @@ var pinker = pinker || {};
 					}
 				},
 				//draw lines on context
-				draw: function(point, context) {
+				draw: function(point, lineWidthPadding, context) {
 					context.fillStyle = pinker.config.lineColor;
 					context.strokeStyle = pinker.config.lineColor;
+					context.lineWidth = pinker.config.lineWeight / 2;
 					let lineHeight = pinker.config.estimateFontHeight();
-					let lineSpacing = lineHeight / 3; //TODO move to config
+					let lineSpacing = pinker.config.lineSpacing();
 					point.y += lineHeight;
 					for(let i=0; i<this.lines.length; i++)
 					{
@@ -809,9 +814,10 @@ var pinker = pinker || {};
 						context.fillText(line, point.x, point.y);
 						if(this.horizontalRuleIndexes.includes(i+1))
 						{
+							let lineY = point.y + (lineSpacing * 0.9);
 							context.beginPath();
-							context.moveTo(point.x, point.y + (lineSpacing * 0.85)); //TODO better definition of where line should be, also make it thinner?
-							context.lineTo(point.x + this.width, point.y + (lineSpacing * 0.85));
+							context.moveTo(point.x - lineWidthPadding, lineY);
+							context.lineTo(point.x + this.width + lineWidthPadding, lineY);
 							context.closePath();
 							context.stroke();
 						}
@@ -1090,6 +1096,7 @@ var pinker = pinker || {};
 				//draw outline of area
 				outline: function(relativePoint, lineColor, context) {
 					context.strokeStyle = lineColor;
+					context.lineWidth = pinker.config.lineWeight;
 					if(relativePoint == null)
 						context.strokeRect(this.x, this.y, this.width, this.height);
 					else
@@ -1512,7 +1519,7 @@ var pinker = pinker || {};
 		{
 			node.defineArea.outline(node.absoluteArea.point(), pinker.config.lineColor, context);
 			const definePoint = node.absoluteArea.point().plus(node.defineArea.point()).plus(paddingPoint);
-			node.defineLayout.draw(definePoint, context);
+			node.defineLayout.draw(definePoint, (node.defineArea.width - node.defineLayout.width)/2, context);
 		}
 
 		//node area
@@ -1893,6 +1900,7 @@ var pinker = pinker || {};
 	}
 	
 	function drawLine(start, end, lineType, context) {
+		context.lineWidth = pinker.config.lineWeight;
 		if(start == null || end == null)
 		{
 			displayError(`drawLine: start and/or end point is null. Start: ${start} End: ${end}.`);
@@ -1926,6 +1934,7 @@ var pinker = pinker || {};
 		if(arrowType == ArrowTypes.none)
 			return;
 		
+		context.lineWidth = pinker.config.lineWeight;
 		context.setLineDash([]); //solid line
 		if(arrowType == ArrowTypes.plainArrow || arrowType == ArrowTypes.hollowArrow)
 		{
