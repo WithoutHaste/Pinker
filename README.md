@@ -254,6 +254,7 @@ pinker.config.attribute = value;
 |**lineSpacing**|function()|returns padding distance between lines of text in pixels|
 |**favorGoldenRatioLabelSize**|boolean|should multi-line labels be arranged with a width:height ratio close to 1.6?|
 |**favorUniformNodeSizes**|boolean|should sibling-nodes be resized to appear similar?|
+|**useSmartArrows**|boolean|instead of drawing straight lines between scopes, draw arrows to route around scopes|
 
 ## License
 

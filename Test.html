@@ -195,13 +195,14 @@ Layout:
 		[{G}Financial Data Mapper][{H}Financial Database]
 	Relate:
 		{G}->{H},{F}
-		{G}-:>{E}
+		{G}-:>{E},{H}
 [Controller]:
 	Layout:
 		[{I}Financial Report Controller]
 		[{J}Financial Report Presenter (Interface)]
 	Relate:
 		{I}->{A},{B},{C},{J}
+		{I}-D{J}
 		{J}->{C}
 [Screen Presenter]:
 	Layout:

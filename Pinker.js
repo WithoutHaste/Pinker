@@ -33,6 +33,7 @@ var pinker = pinker || {};
 		}
 		,favorGoldenRatioLabelSize: true
 		,favorUniformNodeSizes: true
+		,useSmartArrows: true
 	};
 
 	//render all sources onto new canvases
@@ -1137,7 +1138,27 @@ var pinker = pinker || {};
 				startsHorizontal: function() {
 					if(this.points.length == 0)
 						return true;
-					return this.points[0].stableX();
+					return (this.points[0].stableX() && this.points[0].rangeY.middle() == this.points[1].rangeY.middle());
+				},
+				//returns true if paths are partially coincident
+				//TODO assumes both paths are just straight lines
+				isCoincident: function(otherPath) {
+					if(this.startsHorizontal() != otherPath.startsHorizontal())
+						return false;
+					//possible paths that would currently end up not coincident, could still be pushed into coincidence by these changes
+					//so checking for paths that have an intersecting range of possible positions
+					if(this.startsHorizontal())
+					{
+						const intersectX = this.points[0].rangeX.sum(this.points[1].rangeX).intersect(otherPath.points[0].rangeX.sum(otherPath.points[1].rangeX));
+						const intersectY = this.points[0].rangeY.intersect(otherPath.points[0].rangeY);
+						return (intersectX != null && intersectY != null);
+					}
+					else
+					{
+						const intersectX = this.points[0].rangeX.intersect(otherPath.points[0].rangeX);
+						const intersectY = this.points[0].rangeY.sum(this.points[1].rangeY).intersect(otherPath.points[0].rangeY.sum(otherPath.points[1].rangeY));
+						return (intersectX != null && intersectY != null);
+					}
 				},
 				clean: function() {
 					if(this.points.length < 2)
@@ -1153,6 +1174,7 @@ var pinker = pinker || {};
 							if(rangeIntersect == null)
 							{
 								//TODO what to do if there is no intersection?
+								displayError(`Path.clean: horizontal line: no range intersection found between Y values ${JSON.stringify(previousPoint.rangeY)} and ${JSON.stringify(currentPoint.rangeY)}.`);
 							}
 							previousPoint.rangeY = rangeIntersect;
 							currentPoint.rangeY = rangeIntersect;
@@ -1163,6 +1185,7 @@ var pinker = pinker || {};
 							if(rangeIntersect == null)
 							{
 								//TODO what to do if there is no intersection?
+								displayError(`Path.clean: vertical line: no range intersection found between X values ${JSON.stringify(previousPoint.rangeX)} and ${JSON.stringify(currentPoint.rangeX)}.`);
 							}
 							previousPoint.rangeX = rangeIntersect;
 							currentPoint.rangeX = rangeIntersect;
@@ -1401,11 +1424,14 @@ var pinker = pinker || {};
 				max: max,
 				//return middle of range
 				middle: function() {
-					return ((min + max) / 2);
+					return ((this.min + this.max) / 2);
+				},
+				span: function() {
+					return (this.max - this.min);
 				},
 				//return true if value is within range
 				includes: function(value) {
-					return (min <= value && value <= max);
+					return (this.min <= value && value <= this.max);
 				},
 				//returns the intersection between two ranges
 				//returns null if there is no intersection
@@ -1415,6 +1441,13 @@ var pinker = pinker || {};
 					if(newMin > newMax)
 						return null;
 					return Range.create(newMin, newMax);
+				},
+				//returns a range that covers everything in both ranges, even if they were not contiguous
+				sum: function(otherRange) {
+					return Range.create(
+						Math.min(this.min, otherRange.min),
+						Math.max(this.max, otherRange.max)
+					);
 				},
 				clone: function() {
 					return Range.create(this.min, this.max);
@@ -1498,6 +1531,7 @@ var pinker = pinker || {};
 		drawNodes(nodes, maxDepth, context);
 		
 		const paths = convertRelationsToPaths(source, nodes);
+		unCoincidePaths(paths);
 		drawPathObjects(paths, context);
 	}
 	
@@ -1543,7 +1577,9 @@ var pinker = pinker || {};
 	function drawPathObjects(paths, context) {
 		paths.forEach(function(path) {
 			if(path.isPath == true)
+			{
 				drawPathObject(path, context);
+			}
 			else
 			{
 				drawLineObject(path, context);
@@ -1768,6 +1804,86 @@ var pinker = pinker || {};
 		});
 		return result;
 	}
+	
+	//check for coincident paths and separate them
+	function unCoincidePaths(paths) {
+		const sets = getCoincidentPathSets(paths);
+		sets.forEach(function(set) {
+			if(set[0].startsHorizontal())
+			{
+				//all paths could have a different range of possible positions
+				//for now, try the easiest math and just don't move the paths if that doesn't work
+				let rangeY = set[0].points[0].rangeY;
+				set.forEach(function(path) {
+					rangeY = rangeY.sum(path.points[0].rangeY);
+				});
+				const unitSpan = (rangeY.span() / (set.length + 1));
+				let y = rangeY.min + unitSpan;
+				set.forEach(function(path) {
+					if(!path.points[0].rangeY.includes(y))
+						return;
+					if(!path.points[1].rangeY.includes(y))
+						return;
+					path.points[0].rangeY = Range.create(y);
+					path.points[1].rangeY = Range.create(y);
+					y += unitSpan;
+				});
+			}
+			else
+			{
+				let rangeX = set[0].points[0].rangeX;
+				set.forEach(function(path) {
+					rangeX = rangeX.sum(path.points[0].rangeX);
+				});
+				const unitSpan = (rangeX.span() / (set.length + 1));
+				let x = rangeX.min + unitSpan;
+				set.forEach(function(path) {
+					if(!path.points[0].rangeX.includes(x))
+						return;
+					if(!path.points[1].rangeX.includes(x))
+						return;
+					path.points[0].rangeX = Range.create(x);
+					path.points[1].rangeX = Range.create(x);
+					x += unitSpan;
+				});
+			}
+		});
+	}
+	
+	//divide paths into sets where a set contains paths that are coincident
+	//filters out lines
+	function getCoincidentPathSets(paths) {
+		const sets = []; //each element is an array representing one set
+		//partially coincident paths count, so it is possible to have a set where not every pair of paths is coincident
+		//TODO only handles straight paths so far
+		paths.forEach(function(path) {
+			if(!path.isPath)
+				return;
+			if(path.points.length > 2)
+				return;
+			let foundMatch = false;
+			for(let s=0; s<sets.length; s++)
+			{
+				const set = sets[s];
+				for(let i=0; i<set.length; i++)
+				{
+					if(path.isCoincident(set[i]))
+					{
+						set.push(path);
+						foundMatch = true;
+						break;
+					}
+				}
+				if(foundMatch)
+					break;
+			}
+			if(!foundMatch)
+			{
+				sets.push([path]);
+			}
+		});
+		return sets.filter(set => set.length > 1);
+	}
 
 	function findNode(nodes, label, labelPath) {
 		if(Source.isAlias(label))
@@ -1882,19 +1998,22 @@ var pinker = pinker || {};
 			return path;
 		}
 		/*
-		if(startArea.isAboveLeftOf(endArea))
+		if(pinker.config.useSmartArrows)
 		{
-			let rangeAX = Range.create(startArea.right());
-			let rangeAY = Range.create(startArea.top(), startArea.bottom()); //TODO consider if startArea is a header (mayne I need an ideal range within the total possible range?)
-			let rangeBX = Range.create(startArea.right(), endArea.left());
-			let rangeCY = Range.create(endArea.top(), endArea.bottom()); //TODO consider if endArea is a header
-			let rangeDX = Range.create(endArea.left());
+			if(startArea.isAboveLeftOf(endArea))
+			{
+				let rangeAX = Range.create(startArea.right());
+				let rangeAY = Range.create(startArea.top(), startArea.bottom()); //TODO consider if startArea is a header (maybe I need an ideal range within the total possible range?)
+				let rangeBX = Range.create(startArea.right(), endArea.left());
+				let rangeCY = Range.create(endArea.top(), endArea.bottom()); //TODO consider if endArea is a header
+				let rangeDX = Range.create(endArea.left());
 
-			path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
-			path.points.push(PotentialPoint.create(rangeBX.clone(), rangeAY.clone()));
-			path.points.push(PotentialPoint.create(rangeBX.clone(), rangeCY.clone()));
-			path.points.push(PotentialPoint.create(rangeDX.clone(), rangeCY.clone()));
-			return path;
+				path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
+				path.points.push(PotentialPoint.create(rangeBX.clone(), rangeAY.clone()));
+				path.points.push(PotentialPoint.create(rangeBX.clone(), rangeCY.clone()));
+				path.points.push(PotentialPoint.create(rangeDX.clone(), rangeCY.clone()));
+				return path;
+			}
 		}
 		*/
 		
