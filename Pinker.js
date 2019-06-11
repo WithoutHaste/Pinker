@@ -1638,8 +1638,11 @@ var pinker = pinker || {};
 				let nestedNodes = [];
 				if(relatedSource != null)
 				{
-					nestedNodes = convertLayoutToNodes(relatedSource, context, path);
 					relatedDefine = relatedSource.define;
+					nestedNodes = convertLayoutToNodes(relatedSource, context, path);
+					nestedNodes.forEach(function(nestedNode) {
+						nestedNode.parentNode = node;
+					});
 				}
 				
 				//start with just a label filling entire node
