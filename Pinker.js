@@ -1127,6 +1127,16 @@ var pinker = pinker || {};
 		}
 	};
 	
+	const PossiblePaths = {
+		//returns possible paths object
+		create: function() {
+			return {
+				paths: [],
+				isPossiblePaths: true
+			};
+		}
+	};
+	
 	const Path = {
 		//returns path object
 		//all lines are vertical or horizontal
@@ -1530,7 +1540,8 @@ var pinker = pinker || {};
 		
 		drawNodes(nodes, maxDepth, context);
 		
-		const paths = convertRelationsToPaths(source, nodes);
+		const possiblePaths = convertRelationsToPaths(source, nodes);
+		const paths = selectPathsFromPossibles(possiblePaths);
 		unCoincidePaths(paths);
 		drawPathObjects(paths, context);
 	}
@@ -1784,7 +1795,7 @@ var pinker = pinker || {};
 		}
 	}
 
-	//returns mixed array of Paths and Lines
+	//returns mixed array of PossiblePaths and Lines
 	function convertRelationsToPaths(source, allNodes, path=null) {
 		let result = [];
 		if(path == null || path.length == 0)
@@ -1798,7 +1809,10 @@ var pinker = pinker || {};
 				const endNode = findNode(allNodes, relation.endLabel, path);
 				if(startNode == null || endNode == null)
 					return;
-				result.push(arrangePathBetweenNodes(startNode, endNode, allNodes, relation));
+				const possiblePaths = arrangePathBetweenNodes(startNode, endNode, allNodes, relation);
+				possiblePaths.startNode = startNode;
+				possiblePaths.endNode = endNode;
+				result.push(possiblePaths);
 			});
 		}
 		source.nestedSources.forEach(function(nestedSource) {
@@ -1807,6 +1821,22 @@ var pinker = pinker || {};
 		});
 		return result;
 	}
+	
+	//returns mixed array of Paths and Lines
+	function selectPathsFromPossibles(possiblePaths) {
+		const result = [];
+		possiblePaths.forEach(function(possiblePath) {
+			if(possiblePath.isPossiblePaths)
+			{
+				result.push(possiblePath.paths[0]); //TODO simplistic solution to establish design
+			}
+			else
+			{
+				result.push(possiblePath);
+			}
+		});
+		return result;
+	}	
 	
 	//check for coincident paths and separate them
 	function unCoincidePaths(paths) {
@@ -1949,12 +1979,14 @@ var pinker = pinker || {};
 	function arrangePathBetweenNodes(startNode, endNode, allNodes, relation) {
 		const startArea = startNode.absoluteArea;
 		const endArea = endNode.absoluteArea;
-		let start = startArea.center();
-		let end = endArea.center();
-		
+		const lineType = LineTypes.convert(relation.arrowType);
+		const arrowType = ArrowTypes.convert(relation.arrowType);
+
+		let possiblePaths = PossiblePaths.create();
 		let path = Path.create();
-		path.lineType = LineTypes.convert(relation.arrowType);
-		path.arrowType = ArrowTypes.convert(relation.arrowType);
+		path.lineType = lineType;
+		path.arrowType = arrowType;
+		possiblePaths.paths.push(path);
 		
 		if(startArea.isAbove(endArea))
 		{
@@ -1964,7 +1996,7 @@ var pinker = pinker || {};
 			);
 			path.points.push(PotentialPoint.create(rangeX, Range.create(startArea.bottom())));
 			path.points.push(PotentialPoint.create(rangeX, Range.create(endArea.top())));
-			return path;
+			return possiblePaths;
 		}
 		if(startArea.isBelow(endArea))
 		{
@@ -1974,7 +2006,7 @@ var pinker = pinker || {};
 			);
 			path.points.push(PotentialPoint.create(rangeX, Range.create(startArea.top())));
 			path.points.push(PotentialPoint.create(rangeX, Range.create(endArea.bottom())));
-			return path;
+			return possiblePaths;
 		}
 		if(startArea.isLeftOf(endArea))
 		{
@@ -1986,7 +2018,7 @@ var pinker = pinker || {};
 			let rangeY = Range.create(minY, maxY);
 			path.points.push(PotentialPoint.create(Range.create(startArea.right()), rangeY));
 			path.points.push(PotentialPoint.create(Range.create(endArea.left()), rangeY));
-			return path;
+			return possiblePaths;
 		}
 		if(startArea.isRightOf(endArea))
 		{
@@ -1998,7 +2030,7 @@ var pinker = pinker || {};
 			let rangeY = Range.create(minY, maxY);
 			path.points.push(PotentialPoint.create(Range.create(startArea.left()), rangeY));
 			path.points.push(PotentialPoint.create(Range.create(endArea.right()), rangeY));
-			return path;
+			return possiblePaths;
 		}
 		/*
 		if(pinker.config.useSmartArrows)
@@ -2015,12 +2047,14 @@ var pinker = pinker || {};
 				path.points.push(PotentialPoint.create(rangeBX.clone(), rangeAY.clone()));
 				path.points.push(PotentialPoint.create(rangeBX.clone(), rangeCY.clone()));
 				path.points.push(PotentialPoint.create(rangeDX.clone(), rangeCY.clone()));
-				return path;
+				return possiblePaths;
 			}
 		}
 		*/
 		
 		//fallback: straight line between nodes
+		let start = startArea.center();
+		let end = endArea.center();
 		let line = Line.create(start, end);
 		start = startNode.absoluteArea.getIntersection(line);
 		end = endNode.absoluteArea.getIntersection(line);
@@ -2030,8 +2064,8 @@ var pinker = pinker || {};
 		if(end == null)
 			end = endArea.center();
 		let resultLine = Line.create(start, end);
-		resultLine.lineType = LineTypes.convert(relation.arrowType);
-		resultLine.arrowType = ArrowTypes.convert(relation.arrowType);
+		resultLine.lineType = lineType;
+		resultLine.arrowType = arrowType;
 		return resultLine;
 	}
 	
