@@ -13,7 +13,8 @@ var pinker = pinker || {};
 		fontSize: 14 //font size in pixels
 		,fontFamily: "Georgia"
 		,scopeMargin: 30 //minimum space around each scope
-		,scopePadding: 10 //minimum space between scope boundary and scope contents
+		,scopePadding: 15 //minimum space between scope boundary and nested scopes
+		,labelPadding: 10 //minimum space between scope boundary and text areas
 		,canvasPadding: 15 //minimum space between canvas boundary and scopes
 		,backgroundColor: "#FFFFFF" //white
 		,shadeColor: "#EEEEEE" //pale gray
@@ -1474,8 +1475,8 @@ var pinker = pinker || {};
 	}
 	
 	function drawNode(node, maxDepth, context) {
-		const paddingPoint = Point.create(pinker.config.scopePadding);
-		const doublePadding = pinker.config.scopePadding * 2;
+		const paddingPoint = Point.create(pinker.config.labelPadding);
+		const doublePadding = pinker.config.labelPadding * 2;
 		const lineWeight = pinker.config.lineWeight + ((maxDepth-1) * 0.33);
 		
 		//outline node
@@ -1527,8 +1528,8 @@ var pinker = pinker || {};
 			const leftAlignCount = row.leftAlign.length;
 			let index = 0;
 			row.all().forEach(function(layoutRecord) {
-				const singlePadding = pinker.config.scopePadding;
-				const doublePadding = pinker.config.scopePadding * 2;
+				const doubleLabelPadding = pinker.config.labelPadding * 2;
+				const doubleScopePadding = pinker.config.scopePadding * 2;
 				const isRightAlign = (index >= leftAlignCount);
 				
 				let node = Node.create(layoutRecord.label, layoutRecord.alias, path, isRightAlign);
@@ -1555,8 +1556,8 @@ var pinker = pinker || {};
 				{
 					node.labelLayout = LabelLayout.calculateText(node.label, context);
 				}
-				let width = node.labelLayout.width + doublePadding;
-				let height = node.labelLayout.height + doublePadding;
+				let width = node.labelLayout.width + doubleLabelPadding;
+				let height = node.labelLayout.height + doubleLabelPadding;
 				node.setRelativeArea(x, y, width, height);
 				node.labelArea = Area.create(0, 0, width, height);
 
@@ -1564,8 +1565,8 @@ var pinker = pinker || {};
 				if(relatedDefine != null)
 				{
 					node.defineLayout = DefineLayout.parse(relatedDefine, context);
-					node.updateWidth(node.defineLayout.width + doublePadding);
-					node.defineArea = Area.create(0, node.relativeArea.height, node.relativeArea.width, node.defineLayout.height + doublePadding);
+					node.updateWidth(node.defineLayout.width + doubleLabelPadding);
+					node.defineArea = Area.create(0, node.relativeArea.height, node.relativeArea.width, node.defineLayout.height + doubleLabelPadding);
 					node.relativeArea.height += node.defineArea.height;
 				}
 
@@ -1574,8 +1575,8 @@ var pinker = pinker || {};
 				{
 					node.nodes = nestedNodes;
 					const nodeDimensions = calculateCanvasDimensions(nestedNodes);
-					node.updateWidth(nodeDimensions.width + doublePadding);
-					node.nodeArea = Area.create(0, node.relativeArea.height, node.relativeArea.width, nodeDimensions.height + doublePadding);
+					node.updateWidth(nodeDimensions.width + doubleScopePadding);
+					node.nodeArea = Area.create(0, node.relativeArea.height, node.relativeArea.width, nodeDimensions.height + doubleScopePadding);
 					node.nodeArea.paddingLeft = node.nodeArea.paddingRight = ((node.nodeArea.width - nodeDimensions.width) / 2);
 					node.nodeArea.paddingTop = node.nodeArea.paddingBottom = ((node.nodeArea.height - nodeDimensions.height) / 2);
 					node.relativeArea.height += node.nodeArea.height;
@@ -2461,8 +2462,8 @@ var pinker = pinker || {};
 			const lineType = LineTypes.convert(relation.arrowType);
 			const arrowType = ArrowTypes.convert(relation.arrowType);
 			
-			const minBuffer = 5; //TODO constant
-			const defaultSpan = Math.min(pinker.config.canvasPadding, pinker.config.scopePadding, pinker.config.scopeMargin / 2); //space at edge of scope, or space between scopes (shared)
+			const minBuffer = 2;
+			const defaultSpan = Math.min(pinker.config.canvasPadding, pinker.config.scopePadding, pinker.config.scopeMargin / 2) - (2 * minBuffer); //space at edge of scope, or space between scopes (shared)
 
 			let possiblePaths = PossiblePaths.create();
 			
