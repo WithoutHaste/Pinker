@@ -1341,9 +1341,16 @@ var pinker = pinker || {};
 			return (a <= b && b <= c);
 		},
 		//returns range object
+		//will swap min/max to put them in correct order
 		create: function(min, max=null) {
 			if(max == null)
 				max = min;
+			else if(max < min)
+			{
+				const temp = max;
+				max = min;
+				min = temp;
+			}
 			return {
 				min: min,
 				max: max,
@@ -2176,7 +2183,7 @@ var pinker = pinker || {};
 						if(this.crossesArea(node.absoluteArea))
 							return true;
 					}
-					if(!this.connectsSiblingNodes)
+					if(!this.connectsSiblingNodes())
 					{
 						const endSiblings = (this.endNode.parentNode == null) ? topLevelNodes : this.endNode.parentNode.nodes;
 						for(let i=0; i<endSiblings.length; i++)
@@ -2486,9 +2493,9 @@ var pinker = pinker || {};
 				possiblePaths.paths.push(secondPath);
 				let rangeAX = Range.create(startArea.right());
 				let rangeAY = Range.create(startArea.top(), startArea.bottom());
-				let rangeBX = Range.create(startArea.right() + minBuffer, startArea.right() + minBuffer + defaultSpan);
 				let rangeCY = Range.create(endArea.top(), endArea.bottom());
 				let rangeDX = Range.create(endArea.right());
+				let rangeBX = Range.create(Math.max(startArea.right(), endArea.right()) + minBuffer, Math.max(startArea.right(), endArea.right()) + minBuffer + defaultSpan);
 				secondPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
 				secondPath.points.push(PotentialPoint.create(rangeBX, rangeAY));
 				secondPath.points.push(PotentialPoint.create(rangeBX, rangeCY));
@@ -2513,9 +2520,9 @@ var pinker = pinker || {};
 				possiblePaths.paths.push(secondPath);
 				let rangeAX = Range.create(startArea.left());
 				let rangeAY = Range.create(startArea.top(), startArea.bottom());
-				let rangeBX = Range.create(startArea.left() - minBuffer - defaultSpan, startArea.left() - minBuffer);
 				let rangeCY = Range.create(endArea.top(), endArea.bottom());
 				let rangeDX = Range.create(endArea.left());
+				let rangeBX = Range.create(Math.min(startArea.left(), endArea.left()) - minBuffer - defaultSpan, Math.min(startArea.left(), endArea.left()) - minBuffer);
 				secondPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
 				secondPath.points.push(PotentialPoint.create(rangeBX, rangeAY));
 				secondPath.points.push(PotentialPoint.create(rangeBX, rangeCY));
@@ -2529,10 +2536,9 @@ var pinker = pinker || {};
 				let path = Path.create(Path.types.straight, lineType, arrowType, startNode, endNode);
 				possiblePaths.paths.push(path);
 				const minY = Math.max(startArea.top(), endArea.top());
-				const maxY = Math.min(
-					(startNode.labelLayout.isHeader()) ? startNode.labelArea.bottom(startNode.absoluteArea.point()) : startArea.bottom(),
-					(endNode.labelLayout.isHeader())   ? endNode.labelArea.bottom(endNode.absoluteArea.point())     : endArea.bottom()
-				);
+				const maxY = (startNode.labelLayout.isHeader() && endNode.labelLayout.isHeader()) ? 
+					Math.min(startNode.labelArea.bottom(startNode.absoluteArea.point()), endNode.labelArea.bottom(endNode.absoluteArea.point())) :
+					Math.min(startArea.bottom(), endArea.bottom());
 				let rangeY = Range.create(minY, maxY);
 				path.points.push(PotentialPoint.create(Range.create(startArea.right()), rangeY));
 				path.points.push(PotentialPoint.create(Range.create(endArea.left()), rangeY));
@@ -2542,9 +2548,9 @@ var pinker = pinker || {};
 				possiblePaths.paths.push(secondPath);
 				let rangeAX = Range.create(startArea.left(), startArea.right());
 				let rangeAY = Range.create(startArea.top());
-				let rangeBY = Range.create(startArea.top() - minBuffer - defaultSpan, startArea.top() - minBuffer);
 				let rangeCX = Range.create(endArea.left(), endArea.right());
 				let rangeDY = Range.create(endArea.top());
+				let rangeBY = Range.create(Math.min(startArea.top(), endArea.top()) - minBuffer - defaultSpan, Math.min(startArea.top(), endArea.top()) - minBuffer);
 				secondPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
 				secondPath.points.push(PotentialPoint.create(rangeAX, rangeBY));
 				secondPath.points.push(PotentialPoint.create(rangeCX, rangeBY));
@@ -2558,10 +2564,9 @@ var pinker = pinker || {};
 				let path = Path.create(Path.types.straight, lineType, arrowType, startNode, endNode);
 				possiblePaths.paths.push(path);
 				const minY = Math.max(startArea.top(), endArea.top());
-				const maxY = Math.min(
-					(startNode.labelLayout.isHeader()) ? startNode.labelArea.bottom(startNode.absoluteArea.point()) : startArea.bottom(),
-					(endNode.labelLayout.isHeader())   ? endNode.labelArea.bottom(endNode.absoluteArea.point())     : endArea.bottom()
-				);
+				const maxY = (startNode.labelLayout.isHeader() && endNode.labelLayout.isHeader()) ? 
+					Math.min(startNode.labelArea.bottom(startNode.absoluteArea.point()), endNode.labelArea.bottom(endNode.absoluteArea.point())) :
+					Math.min(startArea.bottom(), endArea.bottom());
 				let rangeY = Range.create(minY, maxY);
 				path.points.push(PotentialPoint.create(Range.create(startArea.left()), rangeY));
 				path.points.push(PotentialPoint.create(Range.create(endArea.right()), rangeY));
@@ -2571,9 +2576,9 @@ var pinker = pinker || {};
 				possiblePaths.paths.push(secondPath);
 				let rangeAX = Range.create(startArea.left(), startArea.right());
 				let rangeAY = Range.create(startArea.bottom());
-				let rangeBY = Range.create(startArea.bottom() + minBuffer, startArea.bottom() + minBuffer + defaultSpan);
 				let rangeCX = Range.create(endArea.left(), endArea.right());
 				let rangeDY = Range.create(endArea.bottom());
+				let rangeBY = Range.create(Math.max(startArea.bottom(), endArea.bottom()) + minBuffer, Math.max(startArea.bottom(), endArea.bottom()) + minBuffer + defaultSpan);
 				secondPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
 				secondPath.points.push(PotentialPoint.create(rangeAX, rangeBY));
 				secondPath.points.push(PotentialPoint.create(rangeCX, rangeBY));
