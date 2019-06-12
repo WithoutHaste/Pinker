@@ -1126,224 +1126,7 @@ var pinker = pinker || {};
 			};
 		}
 	};
-	
-	const PossiblePaths = {
-		//returns possible paths object
-		create: function() {
-			return {
-				paths: [],
-				isPossiblePaths: true
-			};
-		}
-	};
-	
-	const Path = {
-		//classification of Path shapes
-		//at least, how the shape started - may become more complicated to route around nodes
-		types: {
-			// vertical or horizontal
-			straight: 1,
-			// -- a "C" shape
-			//  | curlLeft, curlRight, curlOver, or curlUnder
-			// --
-			curl: 2,
-			// --- an "L" shape
-			//   | elbowRightDown, elbowRightUp, elbowLeftDown, or elbowLeftUp
-			//   |
-			elbow: 3,
-			// --- a "Z" shape
-			//   | zigzagRightDown, zigzagRightUp, zigzagLeftDown, or zigzagLeftUp
-			//   ---
-			zigzag: 4
-		},
-		//returns path object
-		//all lines are vertical or horizontal
-		create: function(pathType, lineType, arrowType, startNode, endNode) {
-			return {
-				points: [], //array of potential point objects
-				type: pathType,
-				lineType: lineType,
-				arrowType: arrowType,
-				startNode: startNode,
-				endNode: endNode,
-				isPath: true,
-				connectsSiblingNodes: function() {
-					return (this.startNode.parentNode == this.endNode.parentNode
-						|| (this.startNode.parentNode == null && this.endNode.parentNode == null));
-				},
-				//returns true if path completely crosses a sibling node of startNode or endNode
-				//topLevelNodes: parent-less nodes, in case one of these nodes are at the top level
-				crossesAnySiblingNode: function(topLevelNodes) {
-					const startSiblings = (this.startNode.parentNode == null) ? topLevelNodes : this.startNode.parentNode.nodes;
-					for(let i=0; i<startSiblings.length; i++)
-					{
-						let node = startSiblings[i];
-						if(this.crossesArea(node.absoluteArea))
-							return true;
-					}
-					if(!this.connectsSiblingNodes)
-					{
-						const endSiblings = (this.endNode.parentNode == null) ? topLevelNodes : this.endNode.parentNode.nodes;
-						for(let i=0; i<endSiblings.length; i++)
-						{
-							let node = endSiblings[i];
-							if(this.crossesArea(node.absoluteArea))
-								return true;
-						}
-					}
-				},
-				//returns true if path MUST cross entirely across the area
-				//assumes all lines are horizontal or vertical
-				//TODO only handles straight paths so far
-				crossesArea: function(area) {
-					if(this.startsHorizontal())
-					{
-						return (
-							this.points[0].rangeX.min <= area.left() && this.points[1].rangeX.max >= area.right()
-							&& this.points[0].rangeY.min >= area.top() && this.points[0].rangeY.max <= area.bottom()
-						);
-					}
-					else
-					{
-						return (
-							this.points[0].rangeY.min <= area.top() && this.points[1].rangeY.max >= area.bottom()
-							&& this.points[0].rangeX.min >= area.left() && this.points[0].rangeX.max <= area.right()
-						);
-					}
-				},
-				//adjust ranges so adjacent points agree about possible x/y values
-				startsHorizontal: function() {
-					if(this.points.length == 0)
-						return true;
-					return (this.points[0].stableX() && this.points[0].rangeY.middle() == this.points[1].rangeY.middle());
-				},
-				//returns true if paths are partially coincident
-				//TODO assumes both paths are just straight lines
-				isCoincident: function(otherPath) {
-					if(this.startsHorizontal() != otherPath.startsHorizontal())
-						return false;
-					//possible paths that would currently end up not coincident, could still be pushed into coincidence by these changes
-					//so checking for paths that have an intersecting range of possible positions
-					if(this.startsHorizontal())
-					{
-						const intersectX = this.points[0].rangeX.sum(this.points[1].rangeX).intersect(otherPath.points[0].rangeX.sum(otherPath.points[1].rangeX));
-						const intersectY = this.points[0].rangeY.intersect(otherPath.points[0].rangeY);
-						return (intersectX != null && intersectY != null);
-					}
-					else
-					{
-						const intersectX = this.points[0].rangeX.intersect(otherPath.points[0].rangeX);
-						const intersectY = this.points[0].rangeY.sum(this.points[1].rangeY).intersect(otherPath.points[0].rangeY.sum(otherPath.points[1].rangeY));
-						return (intersectX != null && intersectY != null);
-					}
-				},
-				clean: function() {
-					if(this.points.length < 2)
-						return;
-					let horizontalLine = this.startsHorizontal();
-					for(let i=1; i<this.points.length; i++)
-					{
-						let previousPoint = this.points[i-1];
-						let currentPoint = this.points[i];
-						if(horizontalLine)
-						{
-							let rangeIntersect = previousPoint.rangeY.intersect(currentPoint.rangeY);
-							if(rangeIntersect == null)
-							{
-								//TODO what to do if there is no intersection?
-								displayError(`Path.clean: horizontal line: no range intersection found between Y values ${JSON.stringify(previousPoint.rangeY)} and ${JSON.stringify(currentPoint.rangeY)}.`);
-							}
-							previousPoint.rangeY = rangeIntersect;
-							currentPoint.rangeY = rangeIntersect;
-						}
-						else
-						{
-							let rangeIntersect = previousPoint.rangeX.intersect(currentPoint.rangeX);
-							if(rangeIntersect == null)
-							{
-								//TODO what to do if there is no intersection?
-								displayError(`Path.clean: vertical line: no range intersection found between X values ${JSON.stringify(previousPoint.rangeX)} and ${JSON.stringify(currentPoint.rangeX)}.`);
-							}
-							previousPoint.rangeX = rangeIntersect;
-							currentPoint.rangeX = rangeIntersect;
-						}
-						horizontalLine = !horizontalLine;
-					}
-				},
-				//returns array of normal points
-				//turn potential points into points, taking the middle-path of potential paths
-				stablePoints: function() {
-					this.clean();
-					let result = [];
-					let previousStablePoint = null;
-					let horizontalLine = this.startsHorizontal();
-					for(let i=0; i<this.points.length; i++)
-					{
-						let point = this.points[i];
-						let stablePoint = (horizontalLine) ? point.toStablePointHorizontal(previousStablePoint) : point.toStablePointVertical(previousStablePoint);
-						result.push(stablePoint);
-						previousStablePoint = stablePoint;
-						if(i > 0)
-							horizontalLine = !horizontalLine;
-					}
-					return result;
-				},
-				//returns lines generated from stable points
-				lines: function() {
-					let stablePoints = this.stablePoints();
-					let result = [];
-					for(let i=1; i<stablePoints.length; i++)
-					{
-						result.push(Line.create(stablePoints[i-1], stablePoints[i]));
-					}
-					return result;
-				}
-			};
-		}
-	};
-	
-	const PotentialPoint = {
-		create: function(rangeX, rangeY) {
-			return {
-				rangeX: rangeX,
-				rangeY: rangeY,
-				middleX: function() {
-					return this.rangeX.middle();
-				},
-				middleY: function() {
-					return this.rangeY.middle();
-				},
-				middlePoint: function() {
-					return Point.create(this.middleX(), this.middleY());
-				},
-				stableX: function() {
-					return (this.rangeX.min == this.rangeX.max);
-				},
-				stableY: function() {
-					return (this.rangeY.min == this.rangeY.max);
-				},
-				//convert potential point to stable/normal point in relation to anchorPoint
-				//anchorPoint to result will form a horizontal line
-				toStablePointHorizontal: function(anchorPoint=null) {
-					if(anchorPoint == null)
-						return this.middlePoint();
-					if(!this.rangeY.includes(anchorPoint.y))
-						return null;
-					return Point.create(this.middleX(), anchorPoint.y);
-				},
-				//convert potential point to stable/normal point in relation to anchorPoint
-				//anchorPoint to result will form a vertical line
-				toStablePointVertical: function(anchorPoint=null) {
-					if(anchorPoint == null)
-						return this.middlePoint();
-					if(!this.rangeX.includes(anchorPoint.x))
-						return null;
-					return Point.create(anchorPoint.x, this.middleY());
-				}
-			};
-		}
-	};
-	
+
 	const Line = {
 		length: function(startPoint, endPoint) {
 			return Math.sqrt(Math.pow((endPoint.x - startPoint.x),2) + Math.pow((endPoint.y - startPoint.y),2));
@@ -1607,13 +1390,20 @@ var pinker = pinker || {};
 		//fill background
 		context.fillStyle = pinker.config.backgroundColor;
 		context.fillRect(0, 0, dimensions.width, dimensions.height);
-		
+
+		//draw nodes before causing errors with arrows
 		drawNodes(nodes, maxDepth, context);
-		
-		const possiblePaths = convertRelationsToPaths(source, nodes);
-		const paths = selectPathsFromPossibles(possiblePaths, nodes);
-		unCoincidePaths(paths);
-		drawPathObjects(paths, context);
+
+		//calculate and draw lines
+		const lines = (pinker.config.useSmartArrows) ? SmartArrows.convertRelationsToLines(source, nodes) : convertRelationsToLines(source, nodes);
+		drawLines(lines, context);
+	}
+	
+	function drawLines(lines, context) {
+		lines.forEach(function(line) {
+			drawLine(line.startPoint, line.endPoint, line.lineType, context);
+			drawArrow(line.startPoint, line.endPoint, line.arrowType, context);
+		});
 	}
 	
 	function drawNodes(nodes, maxDepth, context) {
@@ -1653,37 +1443,6 @@ var pinker = pinker || {};
 
 		//node area
 		drawNodes(node.nodes, maxDepth - 1, context);
-	}
-	
-	function drawPathObjects(paths, context) {
-		paths.forEach(function(path) {
-			if(path.isPath == true)
-			{
-				drawPathObject(path, context);
-			}
-			else
-			{
-				drawLineObject(path, context);
-			}
-		});
-	}
-	
-	function drawPathObject(path, context) {
-		let lines = path.lines();
-		for(let i=0; i<lines.length; i++)
-		{
-			let line = lines[i];
-			drawLine(line.startPoint, line.endPoint, path.lineType, context);
-			if(i == lines.length - 1)
-			{
-				drawArrow(line.startPoint, line.endPoint, path.arrowType, context);
-			}
-		}
-	}
-	
-	function drawLineObject(line, context) {
-		drawLine(line.startPoint, line.endPoint, line.lineType, context);
-		drawArrow(line.startPoint, line.endPoint, line.arrowType, context);
 	}
 	
 	function convertLayoutToNodes(source, context, path=null) {
@@ -1889,115 +1648,6 @@ var pinker = pinker || {};
 		});
 		return result;
 	}
-	
-	//returns mixed array of Paths and Lines
-	function selectPathsFromPossibles(possiblePaths, topLevelNodes) {
-		const result = [];
-		possiblePaths.forEach(function(possiblePath) {
-			if(possiblePath.isPossiblePaths)
-			{
-				if(possiblePath.paths.length == 1)
-				{
-					result.push(possiblePath.paths[0]);
-					return;
-				}
-				if(possiblePath.paths[0].type == Path.types.straight && possiblePath.paths[1].type == Path.types.curl)
-				{
-					if(possiblePath.paths[0].crossesAnySiblingNode(topLevelNodes))
-					{
-						result.push(possiblePath.paths[1]);
-						return;
-					}
-				}
-				result.push(possiblePath.paths[0]); //TODO simplistic solution to establish design
-			}
-			else
-			{
-				result.push(possiblePath);
-			}
-		});
-		return result;
-	}	
-	
-	//check for coincident paths and separate them
-	function unCoincidePaths(paths) {
-		const sets = getCoincidentPathSets(paths);
-		sets.forEach(function(set) {
-			if(set[0].startsHorizontal())
-			{
-				//all paths could have a different range of possible positions
-				//for now, try the easiest math and just don't move the paths if that doesn't work
-				let rangeY = set[0].points[0].rangeY;
-				set.forEach(function(path) {
-					rangeY = rangeY.sum(path.points[0].rangeY);
-				});
-				const unitSpan = (rangeY.span() / (set.length + 1));
-				let y = rangeY.min + unitSpan;
-				set.forEach(function(path) {
-					if(!path.points[0].rangeY.includes(y))
-						return;
-					if(!path.points[1].rangeY.includes(y))
-						return;
-					path.points[0].rangeY = Range.create(y);
-					path.points[1].rangeY = Range.create(y);
-					y += unitSpan;
-				});
-			}
-			else
-			{
-				let rangeX = set[0].points[0].rangeX;
-				set.forEach(function(path) {
-					rangeX = rangeX.sum(path.points[0].rangeX);
-				});
-				const unitSpan = (rangeX.span() / (set.length + 1));
-				let x = rangeX.min + unitSpan;
-				set.forEach(function(path) {
-					if(!path.points[0].rangeX.includes(x))
-						return;
-					if(!path.points[1].rangeX.includes(x))
-						return;
-					path.points[0].rangeX = Range.create(x);
-					path.points[1].rangeX = Range.create(x);
-					x += unitSpan;
-				});
-			}
-		});
-	}
-	
-	//divide paths into sets where a set contains paths that are coincident
-	//filters out lines
-	function getCoincidentPathSets(paths) {
-		const sets = []; //each element is an array representing one set
-		//partially coincident paths count, so it is possible to have a set where not every pair of paths is coincident
-		//TODO only handles straight paths so far
-		paths.forEach(function(path) {
-			if(!path.isPath)
-				return;
-			if(path.points.length > 2)
-				return;
-			let foundMatch = false;
-			for(let s=0; s<sets.length; s++)
-			{
-				const set = sets[s];
-				for(let i=0; i<set.length; i++)
-				{
-					if(path.isCoincident(set[i]))
-					{
-						set.push(path);
-						foundMatch = true;
-						break;
-					}
-				}
-				if(foundMatch)
-					break;
-			}
-			if(!foundMatch)
-			{
-				sets.push([path]);
-			}
-		});
-		return sets.filter(set => set.length > 1);
-	}
 
 	function findNode(nodes, label, labelPath) {
 		if(Source.isAlias(label))
@@ -2078,22 +1728,6 @@ var pinker = pinker || {};
 			);
 			path.points.push(PotentialPoint.create(rangeX, Range.create(startArea.bottom())));
 			path.points.push(PotentialPoint.create(rangeX, Range.create(endArea.top())));
-
-			if(pinker.config.useSmartArrows)
-			{
-				//wrap around on the right
-				let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode);
-				possiblePaths.paths.push(secondPath);
-				let rangeAX = Range.create(startArea.right());
-				let rangeAY = Range.create(startArea.top(), startArea.bottom());
-				let rangeBX = Range.create(startArea.right() + minBuffer, startArea.right() + minBuffer + defaultSpan);
-				let rangeCY = Range.create(endArea.top(), endArea.bottom());
-				let rangeDX = Range.create(endArea.right());
-				secondPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
-				secondPath.points.push(PotentialPoint.create(rangeBX, rangeAY));
-				secondPath.points.push(PotentialPoint.create(rangeBX, rangeCY));
-				secondPath.points.push(PotentialPoint.create(rangeDX, rangeCY));
-			}
 			return possiblePaths;
 		}
 		if(startArea.isBelow(endArea))
@@ -2106,22 +1740,6 @@ var pinker = pinker || {};
 			);
 			path.points.push(PotentialPoint.create(rangeX, Range.create(startArea.top())));
 			path.points.push(PotentialPoint.create(rangeX, Range.create(endArea.bottom())));
-			
-			if(pinker.config.useSmartArrows)
-			{
-				//wrap around on the left
-				let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode);
-				possiblePaths.paths.push(secondPath);
-				let rangeAX = Range.create(startArea.left());
-				let rangeAY = Range.create(startArea.top(), startArea.bottom());
-				let rangeBX = Range.create(startArea.left() - minBuffer - defaultSpan, startArea.left() - minBuffer);
-				let rangeCY = Range.create(endArea.top(), endArea.bottom());
-				let rangeDX = Range.create(endArea.left());
-				secondPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
-				secondPath.points.push(PotentialPoint.create(rangeBX, rangeAY));
-				secondPath.points.push(PotentialPoint.create(rangeBX, rangeCY));
-				secondPath.points.push(PotentialPoint.create(rangeDX, rangeCY));
-			}
 			return possiblePaths;
 		}
 		if(startArea.isLeftOf(endArea))
@@ -2136,22 +1754,6 @@ var pinker = pinker || {};
 			let rangeY = Range.create(minY, maxY);
 			path.points.push(PotentialPoint.create(Range.create(startArea.right()), rangeY));
 			path.points.push(PotentialPoint.create(Range.create(endArea.left()), rangeY));
-
-			if(pinker.config.useSmartArrows)
-			{
-				//wrap around on top
-				let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode);
-				possiblePaths.paths.push(secondPath);
-				let rangeAX = Range.create(startArea.left(), startArea.right());
-				let rangeAY = Range.create(startArea.top());
-				let rangeBY = Range.create(startArea.top() - minBuffer - defaultSpan, startArea.top() - minBuffer);
-				let rangeCX = Range.create(endArea.left(), endArea.right());
-				let rangeDY = Range.create(endArea.top());
-				secondPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
-				secondPath.points.push(PotentialPoint.create(rangeAX, rangeBY));
-				secondPath.points.push(PotentialPoint.create(rangeCX, rangeBY));
-				secondPath.points.push(PotentialPoint.create(rangeCX, rangeDY));
-			}
 			return possiblePaths;
 		}
 		if(startArea.isRightOf(endArea))
@@ -2166,45 +1768,8 @@ var pinker = pinker || {};
 			let rangeY = Range.create(minY, maxY);
 			path.points.push(PotentialPoint.create(Range.create(startArea.left()), rangeY));
 			path.points.push(PotentialPoint.create(Range.create(endArea.right()), rangeY));
-
-			if(pinker.config.useSmartArrows)
-			{
-				//wrap around on bottom
-				let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode);
-				possiblePaths.paths.push(secondPath);
-				let rangeAX = Range.create(startArea.left(), startArea.right());
-				let rangeAY = Range.create(startArea.bottom());
-				let rangeBY = Range.create(startArea.bottom() + minBuffer, startArea.bottom() + minBuffer + defaultSpan);
-				let rangeCX = Range.create(endArea.left(), endArea.right());
-				let rangeDY = Range.create(endArea.bottom());
-				secondPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
-				secondPath.points.push(PotentialPoint.create(rangeAX, rangeBY));
-				secondPath.points.push(PotentialPoint.create(rangeCX, rangeBY));
-				secondPath.points.push(PotentialPoint.create(rangeCX, rangeDY));
-			}
 			return possiblePaths;
 		}
-		/*
-		if(pinker.config.useSmartArrows)
-		{
-			if(startArea.isAboveLeftOf(endArea))
-			{
-				let second = Path.create(Path.types.zigzag, lineType, arrowType, startNode, endNode);
-				possiblePaths.paths.push(second);
-				let rangeAX = Range.create(startArea.right());
-				let rangeAY = Range.create(startArea.top(), startArea.bottom()); //TODO consider if startArea is a header (maybe I need an ideal range within the total possible range?)
-				let rangeBX = Range.create(startArea.right(), endArea.left());
-				let rangeCY = Range.create(endArea.top(), endArea.bottom()); //TODO consider if endArea is a header
-				let rangeDX = Range.create(endArea.left());
-
-				path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
-				path.points.push(PotentialPoint.create(rangeBX.clone(), rangeAY.clone()));
-				path.points.push(PotentialPoint.create(rangeBX.clone(), rangeCY.clone()));
-				path.points.push(PotentialPoint.create(rangeDX.clone(), rangeCY.clone()));
-				return possiblePaths;
-			}
-		}
-		*/
 		
 		//fallback: straight line between nodes
 		let start = startArea.center();
@@ -2402,4 +1967,559 @@ var pinker = pinker || {};
 		}
 	}	
 
+	//###################################################
+	//### Smart Arrows
+	//###################################################
+
+	const PossiblePaths = {
+		//returns possible paths object
+		create: function() {
+			return {
+				paths: [],
+				isPossiblePaths: true
+			};
+		}
+	};
+	
+	const Path = {
+		//classification of Path shapes
+		//at least, how the shape started - may become more complicated to route around nodes
+		types: {
+			// vertical or horizontal
+			straight: 1,
+			// -- a "C" shape
+			//  | curlLeft, curlRight, curlOver, or curlUnder
+			// --
+			curl: 2,
+			// --- an "L" shape
+			//   | elbowRightDown, elbowRightUp, elbowLeftDown, or elbowLeftUp
+			//   |
+			elbow: 3,
+			// --- a "Z" shape
+			//   | zigzagRightDown, zigzagRightUp, zigzagLeftDown, or zigzagLeftUp
+			//   ---
+			zigzag: 4
+		},
+		//returns path object
+		//all lines are vertical or horizontal
+		create: function(pathType, lineType, arrowType, startNode, endNode) {
+			return {
+				points: [], //array of potential point objects
+				type: pathType,
+				lineType: lineType,
+				arrowType: arrowType,
+				startNode: startNode,
+				endNode: endNode,
+				isPath: true,
+				connectsSiblingNodes: function() {
+					return (this.startNode.parentNode == this.endNode.parentNode
+						|| (this.startNode.parentNode == null && this.endNode.parentNode == null));
+				},
+				//returns true if path completely crosses a sibling node of startNode or endNode
+				//topLevelNodes: parent-less nodes, in case one of these nodes are at the top level
+				crossesAnySiblingNode: function(topLevelNodes) {
+					const startSiblings = (this.startNode.parentNode == null) ? topLevelNodes : this.startNode.parentNode.nodes;
+					for(let i=0; i<startSiblings.length; i++)
+					{
+						let node = startSiblings[i];
+						if(this.crossesArea(node.absoluteArea))
+							return true;
+					}
+					if(!this.connectsSiblingNodes)
+					{
+						const endSiblings = (this.endNode.parentNode == null) ? topLevelNodes : this.endNode.parentNode.nodes;
+						for(let i=0; i<endSiblings.length; i++)
+						{
+							let node = endSiblings[i];
+							if(this.crossesArea(node.absoluteArea))
+								return true;
+						}
+					}
+				},
+				//returns true if path MUST cross entirely across the area
+				//assumes all lines are horizontal or vertical
+				//TODO only handles straight paths so far
+				crossesArea: function(area) {
+					if(this.startsHorizontal())
+					{
+						return (
+							this.points[0].rangeX.min <= area.left() && this.points[1].rangeX.max >= area.right()
+							&& this.points[0].rangeY.min >= area.top() && this.points[0].rangeY.max <= area.bottom()
+						);
+					}
+					else
+					{
+						return (
+							this.points[0].rangeY.min <= area.top() && this.points[1].rangeY.max >= area.bottom()
+							&& this.points[0].rangeX.min >= area.left() && this.points[0].rangeX.max <= area.right()
+						);
+					}
+				},
+				//adjust ranges so adjacent points agree about possible x/y values
+				startsHorizontal: function() {
+					if(this.points.length == 0)
+						return true;
+					return (this.points[0].stableX() && this.points[0].rangeY.middle() == this.points[1].rangeY.middle());
+				},
+				//returns true if paths are partially coincident
+				//TODO assumes both paths are just straight lines
+				isCoincident: function(otherPath) {
+					if(this.startsHorizontal() != otherPath.startsHorizontal())
+						return false;
+					//possible paths that would currently end up not coincident, could still be pushed into coincidence by these changes
+					//so checking for paths that have an intersecting range of possible positions
+					if(this.startsHorizontal())
+					{
+						const intersectX = this.points[0].rangeX.sum(this.points[1].rangeX).intersect(otherPath.points[0].rangeX.sum(otherPath.points[1].rangeX));
+						const intersectY = this.points[0].rangeY.intersect(otherPath.points[0].rangeY);
+						return (intersectX != null && intersectY != null);
+					}
+					else
+					{
+						const intersectX = this.points[0].rangeX.intersect(otherPath.points[0].rangeX);
+						const intersectY = this.points[0].rangeY.sum(this.points[1].rangeY).intersect(otherPath.points[0].rangeY.sum(otherPath.points[1].rangeY));
+						return (intersectX != null && intersectY != null);
+					}
+				},
+				clean: function() {
+					if(this.points.length < 2)
+						return;
+					let horizontalLine = this.startsHorizontal();
+					for(let i=1; i<this.points.length; i++)
+					{
+						let previousPoint = this.points[i-1];
+						let currentPoint = this.points[i];
+						if(horizontalLine)
+						{
+							let rangeIntersect = previousPoint.rangeY.intersect(currentPoint.rangeY);
+							if(rangeIntersect == null)
+							{
+								//TODO what to do if there is no intersection?
+								displayError(`Path.clean: horizontal line: no range intersection found between Y values ${JSON.stringify(previousPoint.rangeY)} and ${JSON.stringify(currentPoint.rangeY)}.`);
+							}
+							previousPoint.rangeY = rangeIntersect;
+							currentPoint.rangeY = rangeIntersect;
+						}
+						else
+						{
+							let rangeIntersect = previousPoint.rangeX.intersect(currentPoint.rangeX);
+							if(rangeIntersect == null)
+							{
+								//TODO what to do if there is no intersection?
+								displayError(`Path.clean: vertical line: no range intersection found between X values ${JSON.stringify(previousPoint.rangeX)} and ${JSON.stringify(currentPoint.rangeX)}.`);
+							}
+							previousPoint.rangeX = rangeIntersect;
+							currentPoint.rangeX = rangeIntersect;
+						}
+						horizontalLine = !horizontalLine;
+					}
+				},
+				//returns array of normal points
+				//turn potential points into points, taking the middle-path of potential paths
+				stablePoints: function() {
+					this.clean();
+					let result = [];
+					let previousStablePoint = null;
+					let horizontalLine = this.startsHorizontal();
+					for(let i=0; i<this.points.length; i++)
+					{
+						let point = this.points[i];
+						let stablePoint = (horizontalLine) ? point.toStablePointHorizontal(previousStablePoint) : point.toStablePointVertical(previousStablePoint);
+						result.push(stablePoint);
+						previousStablePoint = stablePoint;
+						if(i > 0)
+							horizontalLine = !horizontalLine;
+					}
+					return result;
+				},
+				//returns lines generated from stable points
+				lines: function() {
+					let stablePoints = this.stablePoints();
+					let result = [];
+					for(let i=1; i<stablePoints.length; i++)
+					{
+						result.push(Line.create(stablePoints[i-1], stablePoints[i]));
+					}
+					return result;
+				}
+			};
+		}
+	};
+	
+	const PotentialPoint = {
+		create: function(rangeX, rangeY) {
+			return {
+				rangeX: rangeX,
+				rangeY: rangeY,
+				middleX: function() {
+					return this.rangeX.middle();
+				},
+				middleY: function() {
+					return this.rangeY.middle();
+				},
+				middlePoint: function() {
+					return Point.create(this.middleX(), this.middleY());
+				},
+				stableX: function() {
+					return (this.rangeX.min == this.rangeX.max);
+				},
+				stableY: function() {
+					return (this.rangeY.min == this.rangeY.max);
+				},
+				//convert potential point to stable/normal point in relation to anchorPoint
+				//anchorPoint to result will form a horizontal line
+				toStablePointHorizontal: function(anchorPoint=null) {
+					if(anchorPoint == null)
+						return this.middlePoint();
+					if(!this.rangeY.includes(anchorPoint.y))
+						return null;
+					return Point.create(this.middleX(), anchorPoint.y);
+				},
+				//convert potential point to stable/normal point in relation to anchorPoint
+				//anchorPoint to result will form a vertical line
+				toStablePointVertical: function(anchorPoint=null) {
+					if(anchorPoint == null)
+						return this.middlePoint();
+					if(!this.rangeX.includes(anchorPoint.x))
+						return null;
+					return Point.create(anchorPoint.x, this.middleY());
+				}
+			};
+		}
+	};
+		
+	const SmartArrows = {
+		//return array of simple lines, ready to be drawn
+		convertRelationsToLines: function(source, nodes) {
+			const possiblePaths = this.convertRelationsToPossiblePaths(source, nodes);
+			const paths = this.selectPathsFromPossibles(possiblePaths, nodes);
+			this.unCoincidePaths(paths);
+			const lines = this.convertPathsToLines(paths);
+			return lines;
+		},
+		//convert paths to array of lines
+		convertPathsToLines: function(paths) {
+			let lines = [];
+			paths.forEach(function(path) {
+				if(path.isPath == true)
+					lines = lines.concat(SmartArrows.convertPathToLines(path));
+				else
+					lines.push(path);
+			});
+			return lines;
+		},
+		//convert path to array of lines
+		convertPathToLines: function(path) {
+			let lines = path.lines();
+			for(let i=0; i<lines.length; i++)
+			{
+				let line = lines[i];
+				line.lineType = path.lineType;
+				line.arrowType = ArrowTypes.none;
+				if(i == lines.length - 1)
+					line.arrowType = path.arrowType;
+			}
+			return lines;
+		},
+		//returns mixed array of PossiblePaths and Lines
+		convertRelationsToPossiblePaths: function(source, allNodes, path=null) {
+			let result = [];
+			if(path == null || path.length == 0)
+				path = source.label;
+			else
+				path += "." + source.label;
+			if(source.relate != null)
+			{
+				source.relate.records.forEach(function(relation) {
+					const startNode = findNode(allNodes, relation.startLabel, path);
+					const endNode = findNode(allNodes, relation.endLabel, path);
+					if(startNode == null || endNode == null)
+						return;
+					const possiblePaths = SmartArrows.arrangePossiblePathsBetweenNodes(startNode, endNode, allNodes, relation);
+					result.push(possiblePaths);
+				});
+			}
+			source.nestedSources.forEach(function(nestedSource) {
+				let nestedResult = SmartArrows.convertRelationsToPossiblePaths(nestedSource, allNodes, path);
+				result = result.concat(nestedResult);
+			});
+			return result;
+		},
+		//returns Possible Paths object from start to end
+		//can return Line object for default angled lines
+		arrangePossiblePathsBetweenNodes: function(startNode, endNode, allNodes, relation) {
+			const startArea = startNode.absoluteArea;
+			const endArea = endNode.absoluteArea;
+			const lineType = LineTypes.convert(relation.arrowType);
+			const arrowType = ArrowTypes.convert(relation.arrowType);
+			
+			const minBuffer = 5; //TODO constant
+			const defaultSpan = 10; //TODO constant
+
+			let possiblePaths = PossiblePaths.create();
+			
+			if(startArea.isAbove(endArea))
+			{
+				let path = Path.create(Path.types.straight, lineType, arrowType, startNode, endNode);
+				possiblePaths.paths.push(path);
+				let rangeX = Range.create(
+					Math.max(startArea.left(), endArea.left()),
+					Math.min(startArea.right(), endArea.right())
+				);
+				path.points.push(PotentialPoint.create(rangeX, Range.create(startArea.bottom())));
+				path.points.push(PotentialPoint.create(rangeX, Range.create(endArea.top())));
+
+				if(pinker.config.useSmartArrows) //TODO assume use of smart arrows
+				{
+					//wrap around on the right
+					let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode);
+					possiblePaths.paths.push(secondPath);
+					let rangeAX = Range.create(startArea.right());
+					let rangeAY = Range.create(startArea.top(), startArea.bottom());
+					let rangeBX = Range.create(startArea.right() + minBuffer, startArea.right() + minBuffer + defaultSpan);
+					let rangeCY = Range.create(endArea.top(), endArea.bottom());
+					let rangeDX = Range.create(endArea.right());
+					secondPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
+					secondPath.points.push(PotentialPoint.create(rangeBX, rangeAY));
+					secondPath.points.push(PotentialPoint.create(rangeBX, rangeCY));
+					secondPath.points.push(PotentialPoint.create(rangeDX, rangeCY));
+				}
+				return possiblePaths;
+			}
+			if(startArea.isBelow(endArea))
+			{
+				let path = Path.create(Path.types.straight, lineType, arrowType, startNode, endNode);
+				possiblePaths.paths.push(path);
+				let rangeX = Range.create(
+					Math.max(startArea.left(), endArea.left()),
+					Math.min(startArea.right(), endArea.right())
+				);
+				path.points.push(PotentialPoint.create(rangeX, Range.create(startArea.top())));
+				path.points.push(PotentialPoint.create(rangeX, Range.create(endArea.bottom())));
+				
+				if(pinker.config.useSmartArrows) //TODO assume use of smart arrows
+				{
+					//wrap around on the left
+					let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode);
+					possiblePaths.paths.push(secondPath);
+					let rangeAX = Range.create(startArea.left());
+					let rangeAY = Range.create(startArea.top(), startArea.bottom());
+					let rangeBX = Range.create(startArea.left() - minBuffer - defaultSpan, startArea.left() - minBuffer);
+					let rangeCY = Range.create(endArea.top(), endArea.bottom());
+					let rangeDX = Range.create(endArea.left());
+					secondPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
+					secondPath.points.push(PotentialPoint.create(rangeBX, rangeAY));
+					secondPath.points.push(PotentialPoint.create(rangeBX, rangeCY));
+					secondPath.points.push(PotentialPoint.create(rangeDX, rangeCY));
+				}
+				return possiblePaths;
+			}
+			if(startArea.isLeftOf(endArea))
+			{
+				let path = Path.create(Path.types.straight, lineType, arrowType, startNode, endNode);
+				possiblePaths.paths.push(path);
+				const minY = Math.max(startArea.top(), endArea.top());
+				const maxY = Math.min(
+					(startNode.labelLayout.isHeader()) ? startNode.labelArea.bottom(startNode.absoluteArea.point()) : startArea.bottom(),
+					(endNode.labelLayout.isHeader())   ? endNode.labelArea.bottom(endNode.absoluteArea.point())     : endArea.bottom()
+				);
+				let rangeY = Range.create(minY, maxY);
+				path.points.push(PotentialPoint.create(Range.create(startArea.right()), rangeY));
+				path.points.push(PotentialPoint.create(Range.create(endArea.left()), rangeY));
+
+				if(pinker.config.useSmartArrows) //TODO assume use of smart arrows
+				{
+					//wrap around on top
+					let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode);
+					possiblePaths.paths.push(secondPath);
+					let rangeAX = Range.create(startArea.left(), startArea.right());
+					let rangeAY = Range.create(startArea.top());
+					let rangeBY = Range.create(startArea.top() - minBuffer - defaultSpan, startArea.top() - minBuffer);
+					let rangeCX = Range.create(endArea.left(), endArea.right());
+					let rangeDY = Range.create(endArea.top());
+					secondPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
+					secondPath.points.push(PotentialPoint.create(rangeAX, rangeBY));
+					secondPath.points.push(PotentialPoint.create(rangeCX, rangeBY));
+					secondPath.points.push(PotentialPoint.create(rangeCX, rangeDY));
+				}
+				return possiblePaths;
+			}
+			if(startArea.isRightOf(endArea))
+			{
+				let path = Path.create(Path.types.straight, lineType, arrowType, startNode, endNode);
+				possiblePaths.paths.push(path);
+				const minY = Math.max(startArea.top(), endArea.top());
+				const maxY = Math.min(
+					(startNode.labelLayout.isHeader()) ? startNode.labelArea.bottom(startNode.absoluteArea.point()) : startArea.bottom(),
+					(endNode.labelLayout.isHeader())   ? endNode.labelArea.bottom(endNode.absoluteArea.point())     : endArea.bottom()
+				);
+				let rangeY = Range.create(minY, maxY);
+				path.points.push(PotentialPoint.create(Range.create(startArea.left()), rangeY));
+				path.points.push(PotentialPoint.create(Range.create(endArea.right()), rangeY));
+
+				if(pinker.config.useSmartArrows) //TODO assume use of smart arrows
+				{
+					//wrap around on bottom
+					let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode);
+					possiblePaths.paths.push(secondPath);
+					let rangeAX = Range.create(startArea.left(), startArea.right());
+					let rangeAY = Range.create(startArea.bottom());
+					let rangeBY = Range.create(startArea.bottom() + minBuffer, startArea.bottom() + minBuffer + defaultSpan);
+					let rangeCX = Range.create(endArea.left(), endArea.right());
+					let rangeDY = Range.create(endArea.bottom());
+					secondPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
+					secondPath.points.push(PotentialPoint.create(rangeAX, rangeBY));
+					secondPath.points.push(PotentialPoint.create(rangeCX, rangeBY));
+					secondPath.points.push(PotentialPoint.create(rangeCX, rangeDY));
+				}
+				return possiblePaths;
+			}
+			/*
+			if(pinker.config.useSmartArrows)
+			{
+				if(startArea.isAboveLeftOf(endArea))
+				{
+					let second = Path.create(Path.types.zigzag, lineType, arrowType, startNode, endNode);
+					possiblePaths.paths.push(second);
+					let rangeAX = Range.create(startArea.right());
+					let rangeAY = Range.create(startArea.top(), startArea.bottom()); //TODO consider if startArea is a header (maybe I need an ideal range within the total possible range?)
+					let rangeBX = Range.create(startArea.right(), endArea.left());
+					let rangeCY = Range.create(endArea.top(), endArea.bottom()); //TODO consider if endArea is a header
+					let rangeDX = Range.create(endArea.left());
+
+					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
+					path.points.push(PotentialPoint.create(rangeBX.clone(), rangeAY.clone()));
+					path.points.push(PotentialPoint.create(rangeBX.clone(), rangeCY.clone()));
+					path.points.push(PotentialPoint.create(rangeDX.clone(), rangeCY.clone()));
+					return possiblePaths;
+				}
+			}
+			*/
+			
+			//TODO call generic solution
+			//fallback: straight line between nodes
+			let start = startArea.center();
+			let end = endArea.center();
+			let line = Line.create(start, end);
+			start = startNode.absoluteArea.getIntersection(line);
+			end = endNode.absoluteArea.getIntersection(line);
+			//stop-gap for errors - better to show some line than none
+			if(start == null)
+				start = startArea.center();
+			if(end == null)
+				end = endArea.center();
+			let resultLine = Line.create(start, end);
+			resultLine.lineType = lineType;
+			resultLine.arrowType = arrowType;
+			return resultLine;
+		},
+		//returns mixed array of Paths and Lines
+		selectPathsFromPossibles: function(possiblePaths, topLevelNodes) {
+			const result = [];
+			possiblePaths.forEach(function(possiblePath) {
+				if(possiblePath.isPossiblePaths)
+				{
+					if(possiblePath.paths.length == 1)
+					{
+						result.push(possiblePath.paths[0]);
+						return;
+					}
+					if(possiblePath.paths[0].type == Path.types.straight && possiblePath.paths[1].type == Path.types.curl)
+					{
+						if(possiblePath.paths[0].crossesAnySiblingNode(topLevelNodes))
+						{
+							result.push(possiblePath.paths[1]);
+							return;
+						}
+					}
+					result.push(possiblePath.paths[0]); //TODO simplistic solution to establish design
+				}
+				else
+				{
+					result.push(possiblePath);
+				}
+			});
+			return result;
+		},
+		//check for coincident paths and separate them
+		unCoincidePaths: function(paths) {
+			const sets = this.getCoincidentPathSets(paths);
+			sets.forEach(function(set) {
+				if(set[0].startsHorizontal())
+				{
+					//all paths could have a different range of possible positions
+					//for now, try the easiest math and just don't move the paths if that doesn't work
+					let rangeY = set[0].points[0].rangeY;
+					set.forEach(function(path) {
+						rangeY = rangeY.sum(path.points[0].rangeY);
+					});
+					const unitSpan = (rangeY.span() / (set.length + 1));
+					let y = rangeY.min + unitSpan;
+					set.forEach(function(path) {
+						if(!path.points[0].rangeY.includes(y))
+							return;
+						if(!path.points[1].rangeY.includes(y))
+							return;
+						path.points[0].rangeY = Range.create(y);
+						path.points[1].rangeY = Range.create(y);
+						y += unitSpan;
+					});
+				}
+				else
+				{
+					let rangeX = set[0].points[0].rangeX;
+					set.forEach(function(path) {
+						rangeX = rangeX.sum(path.points[0].rangeX);
+					});
+					const unitSpan = (rangeX.span() / (set.length + 1));
+					let x = rangeX.min + unitSpan;
+					set.forEach(function(path) {
+						if(!path.points[0].rangeX.includes(x))
+							return;
+						if(!path.points[1].rangeX.includes(x))
+							return;
+						path.points[0].rangeX = Range.create(x);
+						path.points[1].rangeX = Range.create(x);
+						x += unitSpan;
+					});
+				}
+			});
+		},
+		//divide paths into sets where a set contains paths that are coincident
+		//filters out lines
+		getCoincidentPathSets: function(paths) {
+			const sets = []; //each element is an array representing one set
+			//partially coincident paths count, so it is possible to have a set where not every pair of paths is coincident
+			//TODO only handles straight paths so far
+			paths.forEach(function(path) {
+				if(!path.isPath)
+					return;
+				if(path.points.length > 2)
+					return;
+				let foundMatch = false;
+				for(let s=0; s<sets.length; s++)
+				{
+					const set = sets[s];
+					for(let i=0; i<set.length; i++)
+					{
+						if(path.isCoincident(set[i]))
+						{
+							set.push(path);
+							foundMatch = true;
+							break;
+						}
+					}
+					if(foundMatch)
+						break;
+				}
+				if(!foundMatch)
+				{
+					sets.push([path]);
+				}
+			});
+			return sets.filter(set => set.length > 1);
+		}
+	};
+
+	
 })();
