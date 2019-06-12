@@ -240,6 +240,111 @@ Layout:
 			var source = document.getElementById("Source07").innerHTML;
 			pinker.draw(canvas, source);
 		</script>
+
+		Straight to Curled Paths: by crossing shared sibling
+		<div>
+			<pre id='Source08'>
+Layout:
+	[A][D]
+	[B][E]
+	[C][F][G][H]
+Relate:
+	[A]->[C]
+	[F]->[D]
+[G]:
+	Layout:
+		[G2]
+		[G3]
+		[G4]
+	Relate:
+		[G2]->[G4]
+[H]:
+	Layout:
+		[H2]
+		[H3]
+		[H4]
+	Relate:
+		[H4]->[H2]
+			</pre>
+			<canvas id='Canvas08'></canvas>
+		</div>
+		<script>
+			var canvas = document.getElementById("Canvas08");
+			var source = document.getElementById("Source08").innerHTML;
+			pinker.draw(canvas, source);
+		</script>
 			
+		Straight to Curled Paths: by crossing sibling of one node
+		<div>
+			<pre id='Source09'>
+Layout:
+	[A][D]
+	[B][E]
+	[C][F]
+Relate:
+	[F]->[D.D2]
+[A]:
+	Layout:
+		[A2]
+	Relate:
+		[A2]->[C]
+[B]:
+	Layout:
+		[B2]
+[C]:
+	Layout:
+		[C2]
+[D]:
+	Layout:
+		[D2]
+[E]:
+	Layout:
+		[E2]
+[F]:
+	Layout:
+		[F2]		
+			</pre>
+			<canvas id='Canvas09'></canvas>
+		</div>
+		<script>
+			var canvas = document.getElementById("Canvas09");
+			var source = document.getElementById("Source09").innerHTML;
+			pinker.draw(canvas, source);
+		</script>
+			
+		Straight to Curled Paths: by crossing sibling of one node
+		<div>
+			<pre id='Source10'>
+Layout:
+	[A][C]
+	[B][D]
+Relate:
+[A]:
+	Layout:
+		[A2]
+		[A3]
+	Relate:
+		[A2]->[B]
+[B]:
+	Layout:
+		[B2]
+[C]:
+	Layout:
+		[C2]
+		[C3]
+[D]:
+	Layout:
+		[D2]
+	Relate:
+		[D2]->[C.C2]
+			</pre>
+			<canvas id='Canvas10'></canvas>
+		</div>
+		<script>
+			var canvas = document.getElementById("Canvas10");
+			var source = document.getElementById("Source10").innerHTML;
+			pinker.draw(canvas, source);
+		</script>
+
 	</body>
 </html>

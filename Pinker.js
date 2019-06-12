@@ -1138,12 +1138,79 @@ var pinker = pinker || {};
 	};
 	
 	const Path = {
+		//classification of Path shapes
+		//at least, how the shape started - may become more complicated to route around nodes
+		types: {
+			// vertical or horizontal
+			straight: 1,
+			// -- a "C" shape
+			//  | curlLeft, curlRight, curlOver, or curlUnder
+			// --
+			curl: 2,
+			// --- an "L" shape
+			//   | elbowRightDown, elbowRightUp, elbowLeftDown, or elbowLeftUp
+			//   |
+			elbow: 3,
+			// --- a "Z" shape
+			//   | zigzagRightDown, zigzagRightUp, zigzagLeftDown, or zigzagLeftUp
+			//   ---
+			zigzag: 4
+		},
 		//returns path object
 		//all lines are vertical or horizontal
-		create: function() {
+		create: function(pathType, lineType, arrowType, startNode, endNode) {
 			return {
 				points: [], //array of potential point objects
+				type: pathType,
+				lineType: lineType,
+				arrowType: arrowType,
+				startNode: startNode,
+				endNode: endNode,
 				isPath: true,
+				connectsSiblingNodes: function() {
+					return (this.startNode.parentNode == this.endNode.parentNode
+						|| (this.startNode.parentNode == null && this.endNode.parentNode == null));
+				},
+				//returns true if path completely crosses a sibling node of startNode or endNode
+				//topLevelNodes: parent-less nodes, in case one of these nodes are at the top level
+				crossesAnySiblingNode: function(topLevelNodes) {
+					const startSiblings = (this.startNode.parentNode == null) ? topLevelNodes : this.startNode.parentNode.nodes;
+					for(let i=0; i<startSiblings.length; i++)
+					{
+						let node = startSiblings[i];
+						if(this.crossesArea(node.absoluteArea))
+							return true;
+					}
+					if(!this.connectsSiblingNodes)
+					{
+						const endSiblings = (this.endNode.parentNode == null) ? topLevelNodes : this.endNode.parentNode.nodes;
+						for(let i=0; i<endSiblings.length; i++)
+						{
+							let node = endSiblings[i];
+							if(this.crossesArea(node.absoluteArea))
+								return true;
+						}
+					}
+				},
+				//returns true if path MUST cross entirely across the area
+				//assumes all lines are horizontal or vertical
+				//TODO only handles straight paths so far
+				crossesArea: function(area) {
+					if(this.startsHorizontal())
+					{
+						return (
+							this.points[0].rangeX.min <= area.left() && this.points[1].rangeX.max >= area.right()
+							&& this.points[0].rangeY.min >= area.top() && this.points[0].rangeY.max <= area.bottom()
+						);
+					}
+					else
+					{
+						return (
+							this.points[0].rangeY.min <= area.top() && this.points[1].rangeY.max >= area.bottom()
+							&& this.points[0].rangeX.min >= area.left() && this.points[0].rangeX.max <= area.right()
+						);
+					}
+				},
 				//adjust ranges so adjacent points agree about possible x/y values
 				startsHorizontal: function() {
 					if(this.points.length == 0)
@@ -1278,6 +1345,9 @@ var pinker = pinker || {};
 	};
 	
 	const Line = {
+		length: function(startPoint, endPoint) {
+			return Math.sqrt(Math.pow((endPoint.x - startPoint.x),2) + Math.pow((endPoint.y - startPoint.y),2));
+		},
 		//returns intersection point between a vertical line and a horizontal line
 		intersectionVerticalHorizontal: function(verticalLine, horizontalLine) {
 			let intersect = Point.create(verticalLine.startPoint.x, horizontalLine.startPoint.y);
@@ -1541,7 +1611,7 @@ var pinker = pinker || {};
 		drawNodes(nodes, maxDepth, context);
 		
 		const possiblePaths = convertRelationsToPaths(source, nodes);
-		const paths = selectPathsFromPossibles(possiblePaths);
+		const paths = selectPathsFromPossibles(possiblePaths, nodes);
 		unCoincidePaths(paths);
 		drawPathObjects(paths, context);
 	}
@@ -1810,8 +1880,6 @@ var pinker = pinker || {};
 				if(startNode == null || endNode == null)
 					return;
 				const possiblePaths = arrangePathBetweenNodes(startNode, endNode, allNodes, relation);
-				possiblePaths.startNode = startNode;
-				possiblePaths.endNode = endNode;
 				result.push(possiblePaths);
 			});
 		}
@@ -1823,11 +1891,24 @@ var pinker = pinker || {};
 	}
 	
 	//returns mixed array of Paths and Lines
-	function selectPathsFromPossibles(possiblePaths) {
+	function selectPathsFromPossibles(possiblePaths, topLevelNodes) {
 		const result = [];
 		possiblePaths.forEach(function(possiblePath) {
 			if(possiblePath.isPossiblePaths)
 			{
+				if(possiblePath.paths.length == 1)
+				{
+					result.push(possiblePath.paths[0]);
+					return;
+				}
+				if(possiblePath.paths[0].type == Path.types.straight && possiblePath.paths[1].type == Path.types.curl)
+				{
+					if(possiblePath.paths[0].crossesAnySiblingNode(topLevelNodes))
+					{
+						result.push(possiblePath.paths[1]);
+						return;
+					}
+				}
 				result.push(possiblePath.paths[0]); //TODO simplistic solution to establish design
 			}
 			else
@@ -1981,35 +2062,72 @@ var pinker = pinker || {};
 		const endArea = endNode.absoluteArea;
 		const lineType = LineTypes.convert(relation.arrowType);
 		const arrowType = ArrowTypes.convert(relation.arrowType);
+		
+		const minBuffer = 5; //TODO constant
+		const defaultSpan = 10; //TODO constant
 
 		let possiblePaths = PossiblePaths.create();
-		let path = Path.create();
-		path.lineType = lineType;
-		path.arrowType = arrowType;
-		possiblePaths.paths.push(path);
 		
 		if(startArea.isAbove(endArea))
 		{
+			let path = Path.create(Path.types.straight, lineType, arrowType, startNode, endNode);
+			possiblePaths.paths.push(path);
 			let rangeX = Range.create(
 				Math.max(startArea.left(), endArea.left()),
 				Math.min(startArea.right(), endArea.right())
 			);
 			path.points.push(PotentialPoint.create(rangeX, Range.create(startArea.bottom())));
 			path.points.push(PotentialPoint.create(rangeX, Range.create(endArea.top())));
+
+			if(pinker.config.useSmartArrows)
+			{
+				//wrap around on the right
+				let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode);
+				possiblePaths.paths.push(secondPath);
+				let rangeAX = Range.create(startArea.right());
+				let rangeAY = Range.create(startArea.top(), startArea.bottom());
+				let rangeBX = Range.create(startArea.right() + minBuffer, startArea.right() + minBuffer + defaultSpan);
+				let rangeCY = Range.create(endArea.top(), endArea.bottom());
+				let rangeDX = Range.create(endArea.right());
+				secondPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
+				secondPath.points.push(PotentialPoint.create(rangeBX, rangeAY));
+				secondPath.points.push(PotentialPoint.create(rangeBX, rangeCY));
+				secondPath.points.push(PotentialPoint.create(rangeDX, rangeCY));
+			}
 			return possiblePaths;
 		}
 		if(startArea.isBelow(endArea))
 		{
+			let path = Path.create(Path.types.straight, lineType, arrowType, startNode, endNode);
+			possiblePaths.paths.push(path);
 			let rangeX = Range.create(
 				Math.max(startArea.left(), endArea.left()),
 				Math.min(startArea.right(), endArea.right())
 			);
 			path.points.push(PotentialPoint.create(rangeX, Range.create(startArea.top())));
 			path.points.push(PotentialPoint.create(rangeX, Range.create(endArea.bottom())));
+			
+			if(pinker.config.useSmartArrows)
+			{
+				//wrap around on the left
+				let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode);
+				possiblePaths.paths.push(secondPath);
+				let rangeAX = Range.create(startArea.left());
+				let rangeAY = Range.create(startArea.top(), startArea.bottom());
+				let rangeBX = Range.create(startArea.left() - minBuffer - defaultSpan, startArea.left() - minBuffer);
+				let rangeCY = Range.create(endArea.top(), endArea.bottom());
+				let rangeDX = Range.create(endArea.left());
+				secondPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
+				secondPath.points.push(PotentialPoint.create(rangeBX, rangeAY));
+				secondPath.points.push(PotentialPoint.create(rangeBX, rangeCY));
+				secondPath.points.push(PotentialPoint.create(rangeDX, rangeCY));
+			}
 			return possiblePaths;
 		}
 		if(startArea.isLeftOf(endArea))
 		{
+			let path = Path.create(Path.types.straight, lineType, arrowType, startNode, endNode);
+			possiblePaths.paths.push(path);
 			const minY = Math.max(startArea.top(), endArea.top());
 			const maxY = Math.min(
 				(startNode.labelLayout.isHeader()) ? startNode.labelArea.bottom(startNode.absoluteArea.point()) : startArea.bottom(),
@@ -2018,10 +2136,28 @@ var pinker = pinker || {};
 			let rangeY = Range.create(minY, maxY);
 			path.points.push(PotentialPoint.create(Range.create(startArea.right()), rangeY));
 			path.points.push(PotentialPoint.create(Range.create(endArea.left()), rangeY));
+
+			if(pinker.config.useSmartArrows)
+			{
+				//wrap around on top
+				let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode);
+				possiblePaths.paths.push(secondPath);
+				let rangeAX = Range.create(startArea.left(), startArea.right());
+				let rangeAY = Range.create(startArea.top());
+				let rangeBY = Range.create(startArea.top() - minBuffer - defaultSpan, startArea.top() - minBuffer);
+				let rangeCX = Range.create(endArea.left(), endArea.right());
+				let rangeDY = Range.create(endArea.top());
+				secondPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
+				secondPath.points.push(PotentialPoint.create(rangeAX, rangeBY));
+				secondPath.points.push(PotentialPoint.create(rangeCX, rangeBY));
+				secondPath.points.push(PotentialPoint.create(rangeCX, rangeDY));
+			}
 			return possiblePaths;
 		}
 		if(startArea.isRightOf(endArea))
 		{
+			let path = Path.create(Path.types.straight, lineType, arrowType, startNode, endNode);
+			possiblePaths.paths.push(path);
 			const minY = Math.max(startArea.top(), endArea.top());
 			const maxY = Math.min(
 				(startNode.labelLayout.isHeader()) ? startNode.labelArea.bottom(startNode.absoluteArea.point()) : startArea.bottom(),
@@ -2030,6 +2166,22 @@ var pinker = pinker || {};
 			let rangeY = Range.create(minY, maxY);
 			path.points.push(PotentialPoint.create(Range.create(startArea.left()), rangeY));
 			path.points.push(PotentialPoint.create(Range.create(endArea.right()), rangeY));
+
+			if(pinker.config.useSmartArrows)
+			{
+				//wrap around on bottom
+				let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode);
+				possiblePaths.paths.push(secondPath);
+				let rangeAX = Range.create(startArea.left(), startArea.right());
+				let rangeAY = Range.create(startArea.bottom());
+				let rangeBY = Range.create(startArea.bottom() + minBuffer, startArea.bottom() + minBuffer + defaultSpan);
+				let rangeCX = Range.create(endArea.left(), endArea.right());
+				let rangeDY = Range.create(endArea.bottom());
+				secondPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
+				secondPath.points.push(PotentialPoint.create(rangeAX, rangeBY));
+				secondPath.points.push(PotentialPoint.create(rangeCX, rangeBY));
+				secondPath.points.push(PotentialPoint.create(rangeCX, rangeDY));
+			}
 			return possiblePaths;
 		}
 		/*
@@ -2037,6 +2189,8 @@ var pinker = pinker || {};
 		{
 			if(startArea.isAboveLeftOf(endArea))
 			{
+				let second = Path.create(Path.types.zigzag, lineType, arrowType, startNode, endNode);
+				possiblePaths.paths.push(second);
 				let rangeAX = Range.create(startArea.right());
 				let rangeAY = Range.create(startArea.top(), startArea.bottom()); //TODO consider if startArea is a header (maybe I need an ideal range within the total possible range?)
 				let rangeBX = Range.create(startArea.right(), endArea.left());
@@ -2068,6 +2222,58 @@ var pinker = pinker || {};
 		resultLine.arrowType = arrowType;
 		return resultLine;
 	}
+	
+	//###################################################
+	//### Low Level Drawing Functions and Objects
+	//###################################################
+	
+	const Triangle = {
+		//returns isosceles triangle object
+		createIsosceles: function(topPoint, angle, area) {
+			const baseToHeightRatio = 1.5;
+			const base = Math.sqrt((2 * area) / baseToHeightRatio);
+			const height = base * baseToHeightRatio;
+			const triangleSideLength = Math.sqrt(Math.pow(base/2, 2) + Math.pow(height, 2));
+			const isoscelesAngle = Math.asin((base / 2) / triangleSideLength); //half of top corner angle
+			const basePointA = Point.create(
+				topPoint.x - triangleSideLength * Math.cos(angle - isoscelesAngle), 
+				topPoint.y - triangleSideLength * Math.sin(angle - isoscelesAngle)
+			);
+			const basePointB = Point.create(
+				topPoint.x - triangleSideLength * Math.cos(angle + isoscelesAngle), 
+				topPoint.y - triangleSideLength * Math.sin(angle + isoscelesAngle)
+			);
+			return {
+				topPoint: topPoint,
+				basePointA: basePointA,
+				basePointB: basePointB,
+				base: base,
+				height: height,
+				centerAngle: angle
+			};
+		},
+		//returns equilateral triangle object
+		createEquilateral: function(topPoint, angle, area) {
+			const triangleSideLength = Math.sqrt(area * 4 / Math.sqrt(3));
+			const equilateralAngle = Math.PI/6; //half of top corner angle
+			const basePointA = Point.create(
+				topPoint.x - triangleSideLength * Math.cos(angle - equilateralAngle), 
+				topPoint.y - triangleSideLength * Math.sin(angle - equilateralAngle)
+			);
+			const basePointB = Point.create(
+				topPoint.x - triangleSideLength * Math.cos(angle + equilateralAngle), 
+				topPoint.y - triangleSideLength * Math.sin(angle + equilateralAngle)
+			);
+			return {
+				topPoint: topPoint,
+				basePointA: basePointA,
+				basePointB: basePointB,
+				base: triangleSideLength,
+				height: (Math.sqrt(3) / 2) * triangleSideLength,
+				centerAngle: angle
+			};
+		}
+	};
 	
 	function drawLine(start, end, lineType, context) {
 		context.lineWidth = pinker.config.lineWeight;
@@ -2107,35 +2313,25 @@ var pinker = pinker || {};
 		context.setLineDash([]); //solid line
 		if(arrowType == ArrowTypes.filledArrow)
 		{
-			//see isosceles triangle geometry
-			const baseToHeightRatio = 1.5;
-			const base = Math.sqrt((2 * headArea) / baseToHeightRatio);
-			const height = base * baseToHeightRatio;
-			const triangleSideLength = Math.sqrt(Math.pow(base/2, 2) + Math.pow(height, 2));
-			const isoscelesAngle = Math.asin((base / 2) / triangleSideLength);
-			const arrowCornerA = Point.create(end.x - triangleSideLength * Math.cos(angle - isoscelesAngle), end.y - triangleSideLength * Math.sin(angle - isoscelesAngle));
-			const arrowCornerB = Point.create(end.x - triangleSideLength * Math.cos(angle + isoscelesAngle), end.y - triangleSideLength * Math.sin(angle + isoscelesAngle));
-
+			let triangle = Triangle.createIsosceles(end, angle, pinker.config.arrowHeadArea);
 			context.fillStyle = pinker.config.lineColor;
 			context.beginPath();
 			context.moveTo(end.x, end.y);
-			context.lineTo(arrowCornerA.x, arrowCornerA.y);
-			context.lineTo(arrowCornerB.x, arrowCornerB.y);
+			context.lineTo(triangle.basePointA.x, triangle.basePointA.y);
+			context.lineTo(triangle.basePointB.x, triangle.basePointB.y);
 			context.lineTo(end.x, end.y);
 			context.fill();
 		}
 		else if(arrowType == ArrowTypes.plainArrow || arrowType == ArrowTypes.hollowArrow)
 		{
-			const triangleSideLength = Math.sqrt(headArea * 4 / Math.sqrt(3)); //see equilateral triangle geometry
-			const arrowCornerA = Point.create(end.x - triangleSideLength * Math.cos(angle - Math.PI/6), end.y - triangleSideLength * Math.sin(angle - Math.PI/6));
-			const arrowCornerB = Point.create(end.x - triangleSideLength * Math.cos(angle + Math.PI/6), end.y - triangleSideLength * Math.sin(angle + Math.PI/6));
+			let triangle = Triangle.createEquilateral(end, angle, pinker.config.arrowHeadArea);
 			if(arrowType == ArrowTypes.plainArrow)
 			{
 				context.beginPath();
 				context.moveTo(end.x, end.y);
-				context.lineTo(arrowCornerA.x, arrowCornerA.y);
+				context.lineTo(triangle.basePointA.x, triangle.basePointA.y);
 				context.moveTo(end.x, end.y);
-				context.lineTo(arrowCornerB.x, arrowCornerB.y);
+				context.lineTo(triangle.basePointB.x, triangle.basePointB.y);
 				context.stroke();
 			}
 			else if(arrowType == ArrowTypes.hollowArrow)
@@ -2144,15 +2340,15 @@ var pinker = pinker || {};
 				context.fillStyle = pinker.config.backgroundColor;
 				context.beginPath();
 				context.moveTo(end.x, end.y);
-				context.lineTo(arrowCornerA.x, arrowCornerA.y);
-				context.lineTo(arrowCornerB.x, arrowCornerB.y);
+				context.lineTo(triangle.basePointA.x, triangle.basePointA.y);
+				context.lineTo(triangle.basePointB.x, triangle.basePointB.y);
 				context.lineTo(end.x, end.y);
 				context.fill();
 				//arrow outline
 				context.beginPath();
 				context.moveTo(end.x, end.y);
-				context.lineTo(arrowCornerA.x, arrowCornerA.y);
-				context.lineTo(arrowCornerB.x, arrowCornerB.y);
+				context.lineTo(triangle.basePointA.x, triangle.basePointA.y);
+				context.lineTo(triangle.basePointB.x, triangle.basePointB.y);
 				context.lineTo(end.x, end.y);
 				context.stroke();
 			}
