@@ -1,0 +1,42 @@
+<html>
+	<head>
+		<script src='../Pinker.js'></script>
+		<link rel="stylesheet" type="text/css" href="Test.css" />
+	</head>
+	<body>
+		<div class='header'>
+		Pinker.js Tests
+		</div>
+
+		Definitions
+		<div>
+			<pre id='Source01'>
+Layout:
+	[A][B]
+Relate:
+	[A]->[B]
+[A]:
+	Define:
+		oneField|
+		twoField
+		|getOneField()
+		getTwoField()
+		|
+		setTwoField(x, y)
+	Layout:
+		[C]
+[B]:
+	Define:
+		fourField
+		fiveField
+			</pre>
+			<canvas id='Canvas01'></canvas>
+		</div>
+		<script>
+			var canvas = document.getElementById("Canvas01");
+			var source = document.getElementById("Source01").innerHTML;
+			pinker.draw(canvas, source);
+		</script>
+
+	</body>
+</html>

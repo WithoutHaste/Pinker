@@ -1,0 +1,14 @@
+body {
+	font-family: Arial;
+	font-size: 18;
+}
+div.header {
+	font-size: 38;
+	margin-bottom: 0.5em;
+}
+pre {
+	display: inline-block;
+	vertical-align: top;
+	font-family: Courier;
+	font-size: 18;
+}

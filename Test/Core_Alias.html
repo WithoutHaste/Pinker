@@ -1,0 +1,42 @@
+<html>
+	<head>
+		<script src='../Pinker.js'></script>
+		<link rel="stylesheet" type="text/css" href="Test.css" />
+	</head>
+	<body>
+		<div class='header'>
+		Pinker.js Tests
+		</div>
+
+		Using Aliases
+		<div>
+			<pre id='Source01'>
+Layout:
+	[{A}Long Long Label A][{B}Long Long Label B]
+Relate:
+	{A}->{B}
+{A}:
+	Layout:
+		[{C}Long Long Label C]
+{B}:
+	Layout:
+		[D]
+	Relate:
+		[D]->{C}.[E.Long Long Label F]
+{C}:
+	Layout:
+		[E]
+{C}.[E]:
+	Layout:
+		[Long Long Label F]
+			</pre>
+			<canvas id='Canvas01'></canvas>
+		</div>
+		<script>
+			var canvas = document.getElementById("Canvas01");
+			var source = document.getElementById("Source01").innerHTML;
+			pinker.draw(canvas, source);
+		</script>
+
+	</body>
+</html>
