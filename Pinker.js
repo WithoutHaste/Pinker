@@ -2194,14 +2194,16 @@ var pinker = pinker || {};
 					if(this.startsHorizontal())
 					{
 						return (
-							this.points[0].rangeX.min <= area.left() && this.points[1].rangeX.max >= area.right()
+							Math.min(this.points[0].rangeX.min, this.points[1].rangeX.min) <= area.left() 
+							&& Math.max(this.points[0].rangeX.max, this.points[1].rangeX.max) >= area.right()
 							&& this.points[0].rangeY.min >= area.top() && this.points[0].rangeY.max <= area.bottom()
 						);
 					}
 					else
 					{
 						return (
-							this.points[0].rangeY.min <= area.top() && this.points[1].rangeY.max >= area.bottom()
+							Math.min(this.points[0].rangeY.min, this.points[1].rangeY.min) <= area.top() 
+							&& Math.max(this.points[0].rangeY.max, this.points[1].rangeY.max) >= area.bottom()
 							&& this.points[0].rangeX.min >= area.left() && this.points[0].rangeX.max <= area.right()
 						);
 					}
