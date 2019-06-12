@@ -33,7 +33,7 @@ var pinker = pinker || {};
 		}
 		,favorGoldenRatioLabelSize: true
 		,favorUniformNodeSizes: true
-		,useSmartArrows: true
+		,useSmartArrows: false
 	};
 
 	//render all sources onto new canvases
@@ -1126,6 +1126,67 @@ var pinker = pinker || {};
 			};
 		}
 	};
+	
+	const PossibleLine = {
+		//returns base possible line object
+		create: function(isHorizontal) {
+			return {
+				isHorizontal: isHorizontal,
+				isVertical: !isHorizontal,
+				isPossibleLine: true,
+				rangeX: function() {
+					if(this.isHorizontal)
+						return Range.create(Math.min(this.startX, this.endX), Math.max(this.startX, this.endX));
+					else
+						return Range.create(this.minX, this.maxX)
+				},
+				rangeY: function() {
+					if(this.isHorizontal)
+						return Range.create(this.minY, this.maxY)
+					else
+						return Range.create(Math.min(this.startY, this.endY), Math.max(this.startY, this.endY));
+				},
+				//returns true if possible lines are partially coincident
+				//note: possible lines that would currently end up not coincident, could still be pushed into coincidence by these changes
+				//note: so checking for lines that have an intersecting range of possible positions
+				isCoincident: function(otherLine) {
+					if(this.isHorizontal != otherLine.isHorizontal)
+						return false;
+					const intersectX = this.rangeX().intersect(otherLine.rangeX());
+					const intersectY = this.rangeY().intersect(otherLine.rangeY());
+					return (intersectX != null && intersectY != null);
+				},
+				toLine: function() {
+					let line = null;
+					if(this.isHorizontal)
+						line = Line.create(Point.create(this.startX, this.rangeY().middle()), Point.create(this.endX, this.rangeY().middle()));
+					else
+						line = Line.create(Point.create(this.rangeX().middle(), this.startY), Point.create(this.rangeX().middle(), this.endY));
+					line.lineType = this.lineType;
+					line.arrowType = this.arrowType;
+					return line;
+				}
+			};
+		},
+		//returns possible line object
+		createHorizontal: function(startX, endX, minY, maxY) {
+			let possibleLine = PossibleLine.create(true);
+			possibleLine.startX = startX;
+			possibleLine.endX = endX;
+			possibleLine.minY = minY;
+			possibleLine.maxY = maxY;
+			return possibleLine;
+		},
+		//returns possible line object
+		createVertical: function(startY, endY, minX, maxX) {
+			let possibleLine = PossibleLine.create(false);
+			possibleLine.startY = startY;
+			possibleLine.endY = endY;
+			possibleLine.minX = minX;
+			possibleLine.maxX = maxX;
+			return possibleLine;
+		}
+	};
 
 	const Line = {
 		length: function(startPoint, endPoint) {
@@ -1623,10 +1684,17 @@ var pinker = pinker || {};
 			});
 		}
 	}
+	
+	//returns array of lines, ready to be drawn
+	function convertRelationsToLines(source, allNodes) {
+		let lines = convertRelationsToPossibleLines(source, allNodes);
+		lines = unCoincidePossibleLines(lines);
+		return lines
+	}
 
-	//returns mixed array of PossiblePaths and Lines
-	function convertRelationsToPaths(source, allNodes, path=null) {
-		let result = [];
+	//returns array of lines and possible lines
+	function convertRelationsToPossibleLines(source, allNodes, path=null) {
+		let lines = [];
 		if(path == null || path.length == 0)
 			path = source.label;
 		else
@@ -1638,15 +1706,102 @@ var pinker = pinker || {};
 				const endNode = findNode(allNodes, relation.endLabel, path);
 				if(startNode == null || endNode == null)
 					return;
-				const possiblePaths = arrangePathBetweenNodes(startNode, endNode, allNodes, relation);
-				result.push(possiblePaths);
+				const line = arrangeLineBetweenNodes(startNode, endNode, allNodes, relation);
+				lines.push(line);
 			});
 		}
 		source.nestedSources.forEach(function(nestedSource) {
-			let nestedResult = convertRelationsToPaths(nestedSource, allNodes, path);
-			result = result.concat(nestedResult);
+			let nestedLines = convertRelationsToLines(nestedSource, allNodes, path);
+			lines = lines.concat(nestedLines);
 		});
-		return result;
+		return lines;
+	}
+
+	//returns new array of lines - all possible lines have been converted to lines
+	//horizontal/vertical lines that coincide have been separated
+	//seeming-duplication of SmartArrow logic is intentional: feature is important enough to create simpler version here
+	function unCoincidePossibleLines(lines) {
+		const sets = getCoincidentPossibleLineSets(lines);
+		sets.forEach(function(set) {
+			//TODO: looks like if objects are generalized to start/end/min/max then this logic could be done just once
+			if(set.length == 1)
+				return;
+			if(set[0].isHorizontal)
+			{
+				//all paths could have a different range of possible positions
+				//for now, try the easiest math and just don't move the paths if that doesn't work
+				let rangeY = set[0].rangeY();
+				set.forEach(function(line) {
+					rangeY = rangeY.sum(line.rangeY());
+				});
+				const unitSpan = (rangeY.span() / (set.length + 1));
+				let y = rangeY.min + unitSpan;
+				set.forEach(function(line) {
+					if(!line.rangeY().includes(y))
+						return;
+					line.minY = line.maxY = y;
+					y += unitSpan;
+				});
+			}
+			else
+			{
+				let rangeX = set[0].rangeX();
+				set.forEach(function(line) {
+					rangeX = rangeX.sum(line.rangeX());
+				});
+				const unitSpan = (rangeX.span() / (set.length + 1));
+				let x = rangeX.min + unitSpan;
+				set.forEach(function(line) {
+					if(!line.rangeX().includes(x))
+						return;
+					line.minX = line.maxX = x;
+					x += unitSpan;
+				});
+			}
+		});
+		const simpleLines = [];
+		lines.forEach(function(line) {
+			if(line.isLine)
+				simpleLines.push(line);
+		});
+		sets.forEach(function(set) {
+			set.forEach(function(line) {
+				simpleLines.push(line.toLine());
+			});
+		});
+		return simpleLines;
+	}
+
+	//divide possible lines into sets where a set contains possible lines that are coincident
+	//note: partially coincident paths count, so it is possible to have a set where not every pair of paths is coincident
+	//TODO: looks like this particular function can be shared - filter before passing in list, and object must implement isCoincident
+	function getCoincidentPossibleLineSets(lines) {
+		const sets = []; //each element is an array representing one set
+		lines.forEach(function(line) {
+			if(!line.isPossibleLine)
+				return;
+			let foundMatch = false;
+			for(let s=0; s<sets.length; s++)
+			{
+				const set = sets[s];
+				for(let i=0; i<set.length; i++)
+				{
+					if(line.isCoincident(set[i]))
+					{
+						set.push(line);
+						foundMatch = true;
+						break;
+					}
+				}
+				if(foundMatch)
+					break;
+			}
+			if(!foundMatch)
+			{
+				sets.push([line]);
+			}
+		});
+		return sets;
 	}
 
 	function findNode(nodes, label, labelPath) {
@@ -1705,87 +1860,74 @@ var pinker = pinker || {};
 		return Dimension.create(width, height);
 	}
 	
-	//returns Path object from start to end
-	//can return Line object for default angled lines
-	function arrangePathBetweenNodes(startNode, endNode, allNodes, relation) {
+	//returns line or possible line connecting nodes
+	function arrangeLineBetweenNodes(startNode, endNode, allNodes, relation) {
 		const startArea = startNode.absoluteArea;
 		const endArea = endNode.absoluteArea;
-		const lineType = LineTypes.convert(relation.arrowType);
-		const arrowType = ArrowTypes.convert(relation.arrowType);
-		
-		const minBuffer = 5; //TODO constant
-		const defaultSpan = 10; //TODO constant
 
-		let possiblePaths = PossiblePaths.create();
-		
+		let line = null;
 		if(startArea.isAbove(endArea))
 		{
-			let path = Path.create(Path.types.straight, lineType, arrowType, startNode, endNode);
-			possiblePaths.paths.push(path);
-			let rangeX = Range.create(
-				Math.max(startArea.left(), endArea.left()),
+			line = PossibleLine.createVertical(
+				startArea.bottom(), 
+				endArea.top(), 
+				Math.max(startArea.left(), endArea.left()), 
 				Math.min(startArea.right(), endArea.right())
-			);
-			path.points.push(PotentialPoint.create(rangeX, Range.create(startArea.bottom())));
-			path.points.push(PotentialPoint.create(rangeX, Range.create(endArea.top())));
-			return possiblePaths;
+				);
 		}
-		if(startArea.isBelow(endArea))
+		else if(startArea.isBelow(endArea))
 		{
-			let path = Path.create(Path.types.straight, lineType, arrowType, startNode, endNode);
-			possiblePaths.paths.push(path);
-			let rangeX = Range.create(
-				Math.max(startArea.left(), endArea.left()),
+			line = PossibleLine.createVertical(
+				startArea.top(), 
+				endArea.bottom(), 
+				Math.max(startArea.left(), endArea.left()), 
 				Math.min(startArea.right(), endArea.right())
-			);
-			path.points.push(PotentialPoint.create(rangeX, Range.create(startArea.top())));
-			path.points.push(PotentialPoint.create(rangeX, Range.create(endArea.bottom())));
-			return possiblePaths;
+				);
 		}
-		if(startArea.isLeftOf(endArea))
+		else if(startArea.isLeftOf(endArea))
 		{
-			let path = Path.create(Path.types.straight, lineType, arrowType, startNode, endNode);
-			possiblePaths.paths.push(path);
-			const minY = Math.max(startArea.top(), endArea.top());
-			const maxY = Math.min(
-				(startNode.labelLayout.isHeader()) ? startNode.labelArea.bottom(startNode.absoluteArea.point()) : startArea.bottom(),
-				(endNode.labelLayout.isHeader())   ? endNode.labelArea.bottom(endNode.absoluteArea.point())     : endArea.bottom()
-			);
-			let rangeY = Range.create(minY, maxY);
-			path.points.push(PotentialPoint.create(Range.create(startArea.right()), rangeY));
-			path.points.push(PotentialPoint.create(Range.create(endArea.left()), rangeY));
-			return possiblePaths;
+			line = PossibleLine.createHorizontal(
+				startArea.right(), 
+				endArea.left(), 
+				Math.max(startArea.top(), endArea.top()), 
+				Math.min(
+					(startNode.labelLayout.isHeader()) ? startNode.labelArea.bottom(startNode.absoluteArea.point()) : startArea.bottom(),
+					(endNode.labelLayout.isHeader())   ? endNode.labelArea.bottom(endNode.absoluteArea.point())     : endArea.bottom()
+					)
+				);
 		}
-		if(startArea.isRightOf(endArea))
+		else if(startArea.isRightOf(endArea))
 		{
-			let path = Path.create(Path.types.straight, lineType, arrowType, startNode, endNode);
-			possiblePaths.paths.push(path);
-			const minY = Math.max(startArea.top(), endArea.top());
-			const maxY = Math.min(
-				(startNode.labelLayout.isHeader()) ? startNode.labelArea.bottom(startNode.absoluteArea.point()) : startArea.bottom(),
-				(endNode.labelLayout.isHeader())   ? endNode.labelArea.bottom(endNode.absoluteArea.point())     : endArea.bottom()
-			);
-			let rangeY = Range.create(minY, maxY);
-			path.points.push(PotentialPoint.create(Range.create(startArea.left()), rangeY));
-			path.points.push(PotentialPoint.create(Range.create(endArea.right()), rangeY));
-			return possiblePaths;
+			line = PossibleLine.createHorizontal(
+				startArea.left(), 
+				endArea.right(), 
+				Math.max(startArea.top(), endArea.top()), 
+				Math.min(
+					(startNode.labelLayout.isHeader()) ? startNode.labelArea.bottom(startNode.absoluteArea.point()) : startArea.bottom(),
+					(endNode.labelLayout.isHeader())   ? endNode.labelArea.bottom(endNode.absoluteArea.point())     : endArea.bottom()
+					)
+				);
 		}
 		
-		//fallback: straight line between nodes
-		let start = startArea.center();
-		let end = endArea.center();
-		let line = Line.create(start, end);
-		start = startNode.absoluteArea.getIntersection(line);
-		end = endNode.absoluteArea.getIntersection(line);
-		//stop-gap for errors - better to show some line than none
-		if(start == null)
-			start = startArea.center();
-		if(end == null)
-			end = endArea.center();
-		let resultLine = Line.create(start, end);
-		resultLine.lineType = lineType;
-		resultLine.arrowType = arrowType;
-		return resultLine;
+		if(line == null)
+		{
+			//fallback: straight line between nodes
+			let start = startArea.center();
+			let end = endArea.center();
+			let referenceLine = Line.create(start, end);
+			start = startNode.absoluteArea.getIntersection(referenceLine);
+			end = endNode.absoluteArea.getIntersection(referenceLine);
+			//stop-gap for errors - better to show some line than none
+			if(start == null)
+				start = startArea.center();
+			if(end == null)
+				end = endArea.center();
+			line = Line.create(start, end);
+		}
+
+		line.lineType = LineTypes.convert(relation.arrowType);
+		line.arrowType = ArrowTypes.convert(relation.arrowType);
+		return line;
 	}
 	
 	//###################################################
