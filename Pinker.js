@@ -2267,6 +2267,10 @@ var pinker = pinker || {};
 				//returns array of normal points
 				//turn potential points into points, taking the middle-path of potential paths
 				stablePoints: function() {
+					if(this.type == Path.types.curl)
+					{
+						return this.stablePointsCurl();
+					}
 					this.clean();
 					let result = [];
 					let previousStablePoint = null;
@@ -2281,6 +2285,60 @@ var pinker = pinker || {};
 							horizontalLine = !horizontalLine;
 					}
 					return result;
+				},
+				//returns array of normal points, specifically for curl-paths
+				//expects exactly 4 points
+				//converts 3-straight-lines into diagonal-straight-diagonal to give more space for arrows; these curls tend to be cramped
+				stablePointsCurl: function() {
+					this.clean();
+					let result = [];
+					let horizontalLine = this.startsHorizontal();
+					if(this.startsHorizontal())
+					{
+						if(this.points[1].rangeY.middle() < this.points[2].rangeY.middle()) //curls downward
+						{
+							const pointA = Point.create(this.points[0].rangeX.middle(), this.points[0].rangeY.max);
+							const verticalLineX = this.points[1].rangeX.middle();
+							const offset = Math.abs(pointA.x - verticalLineX);
+							const pointB = Point.create(verticalLineX, pointA.y + offset);
+							const pointC = Point.create(verticalLineX, this.points[2].rangeY.min - offset);
+							const pointD = Point.create(this.points[3].rangeX.middle(), this.points[2].rangeY.min);
+							return [pointA, pointB, pointC, pointD];
+						}
+						else //curls upward
+						{
+							const pointA = Point.create(this.points[0].rangeX.middle(), this.points[0].rangeY.min);
+							const verticalLineX = this.points[1].rangeX.middle();
+							const offset = Math.abs(pointA.x - verticalLineX);
+							const pointB = Point.create(verticalLineX, pointA.y - offset);
+							const pointC = Point.create(verticalLineX, this.points[2].rangeY.max + offset);
+							const pointD = Point.create(this.points[3].rangeX.middle(), this.points[2].rangeY.max);
+							return [pointA, pointB, pointC, pointD];
+						}
+					}
+					else
+					{
+						if(this.points[1].rangeX.middle() < this.points[2].rangeX.middle()) //curls rightward
+						{
+							const pointA = Point.create(this.points[0].rangeX.max, this.points[0].rangeY.middle());
+							const horizontalLineY = this.points[1].rangeY.middle();
+							const offset = Math.abs(pointA.y - horizontalLineY);
+							const pointB = Point.create(pointA.x + offset, horizontalLineY);
+							const pointC = Point.create(this.points[2].rangeX.min - offset, horizontalLineY);
+							const pointD = Point.create(this.points[2].rangeX.min, this.points[3].rangeY.middle());
+							return [pointA, pointB, pointC, pointD];
+						}
+						else //curls leftward
+						{
+							const pointA = Point.create(this.points[0].rangeX.min, this.points[0].rangeY.middle());
+							const horizontalLineY = this.points[1].rangeY.middle();
+							const offset = Math.abs(pointA.y - horizontalLineY);
+							const pointB = Point.create(pointA.x - offset, horizontalLineY);
+							const pointC = Point.create(this.points[2].rangeX.max + offset, horizontalLineY);
+							const pointD = Point.create(this.points[2].rangeX.max, this.points[3].rangeY.middle());
+							return [pointA, pointB, pointC, pointD];
+						}
+					}
 				},
 				//returns lines generated from stable points
 				lines: function() {
@@ -2404,12 +2462,13 @@ var pinker = pinker || {};
 			const arrowType = ArrowTypes.convert(relation.arrowType);
 			
 			const minBuffer = 5; //TODO constant
-			const defaultSpan = 10; //TODO constant
+			const defaultSpan = Math.min(pinker.config.canvasPadding, pinker.config.scopePadding, pinker.config.scopeMargin / 2); //space at edge of scope, or space between scopes (shared)
 
 			let possiblePaths = PossiblePaths.create();
 			
 			if(startArea.isAbove(endArea))
 			{
+				//direct line
 				let path = Path.create(Path.types.straight, lineType, arrowType, startNode, endNode);
 				possiblePaths.paths.push(path);
 				let rangeX = Range.create(
@@ -2436,6 +2495,7 @@ var pinker = pinker || {};
 			}
 			if(startArea.isBelow(endArea))
 			{
+				//direct line
 				let path = Path.create(Path.types.straight, lineType, arrowType, startNode, endNode);
 				possiblePaths.paths.push(path);
 				let rangeX = Range.create(
@@ -2462,6 +2522,7 @@ var pinker = pinker || {};
 			}
 			if(startArea.isLeftOf(endArea))
 			{
+				//direct line
 				let path = Path.create(Path.types.straight, lineType, arrowType, startNode, endNode);
 				possiblePaths.paths.push(path);
 				const minY = Math.max(startArea.top(), endArea.top());
@@ -2490,6 +2551,7 @@ var pinker = pinker || {};
 			}
 			if(startArea.isRightOf(endArea))
 			{
+				//direct line
 				let path = Path.create(Path.types.straight, lineType, arrowType, startNode, endNode);
 				possiblePaths.paths.push(path);
 				const minY = Math.max(startArea.top(), endArea.top());
@@ -2560,7 +2622,7 @@ var pinker = pinker || {};
 							return;
 						}
 					}
-					result.push(possiblePath.paths[0]); //TODO simplistic solution to establish design
+					result.push(possiblePath.paths[0]); //TODO: just a simplistic solution to establish design
 				}
 				else
 				{

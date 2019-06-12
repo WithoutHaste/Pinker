@@ -241,7 +241,7 @@ Layout:
 			pinker.draw(canvas, source);
 		</script>
 
-		Straight to Curled Paths: by crossing shared sibling
+		Straight to Curled Paths: by crossing shared sibling: up and down
 		<div>
 			<pre id='Source08'>
 Layout:
@@ -271,6 +271,36 @@ Relate:
 		<script>
 			var canvas = document.getElementById("Canvas08");
 			var source = document.getElementById("Source08").innerHTML;
+			pinker.draw(canvas, source);
+		</script>
+			
+		Straight to Curled Paths: by crossing shared sibling: left and right
+		<div>
+			<pre id='Source082'>
+Layout:
+	[A][B][C]
+	[D][E][F]
+	[G]
+	[H]
+Relate:
+	[A]->[C]
+	[F]->[D]
+[G]:
+	Layout:
+		[G2][G3][G4]
+	Relate:
+		[G2]->[G4]
+[H]:
+	Layout:
+		[H2][H3][H4]
+	Relate:
+		[H4]->[H2]
+			</pre>
+			<canvas id='Canvas082'></canvas>
+		</div>
+		<script>
+			var canvas = document.getElementById("Canvas082");
+			var source = document.getElementById("Source082").innerHTML;
 			pinker.draw(canvas, source);
 		</script>
 			
