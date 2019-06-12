@@ -7,7 +7,7 @@ var pinker = pinker || {};
 
 (function() { //private scope
 
-	pinker.version = '1.1.0';
+	pinker.version = '1.2.0';
 
 	pinker.config = {
 		fontSize: 14 //font size in pixels
@@ -33,7 +33,7 @@ var pinker = pinker || {};
 		}
 		,favorGoldenRatioLabelSize: true
 		,favorUniformNodeSizes: true
-		,useSmartArrows: false
+		,useSmartArrows: true
 	};
 
 	//render all sources onto new canvases
@@ -1861,6 +1861,7 @@ var pinker = pinker || {};
 	}
 	
 	//returns line or possible line connecting nodes
+	//TODO: is allNodes being used anymore?
 	function arrangeLineBetweenNodes(startNode, endNode, allNodes, relation) {
 		const startArea = startNode.absoluteArea;
 		const endArea = endNode.absoluteArea;
@@ -1910,21 +1911,28 @@ var pinker = pinker || {};
 		}
 		
 		if(line == null)
-		{
-			//fallback: straight line between nodes
-			let start = startArea.center();
-			let end = endArea.center();
-			let referenceLine = Line.create(start, end);
-			start = startNode.absoluteArea.getIntersection(referenceLine);
-			end = endNode.absoluteArea.getIntersection(referenceLine);
-			//stop-gap for errors - better to show some line than none
-			if(start == null)
-				start = startArea.center();
-			if(end == null)
-				end = endArea.center();
-			line = Line.create(start, end);
-		}
+			return simpleLineBetweenNodes(startNode, endNode, allNodes, relation);
+		
+		line.lineType = LineTypes.convert(relation.arrowType);
+		line.arrowType = ArrowTypes.convert(relation.arrowType);
+		return line;
+	}
 
+	//returns simplest line connecting nodes
+	function simpleLineBetweenNodes(startNode, endNode, allNodes, relation) {
+		const startArea = startNode.absoluteArea;
+		const endArea = endNode.absoluteArea;
+		let start = startArea.center();
+		let end = endArea.center();
+		let referenceLine = Line.create(start, end);
+		start = startNode.absoluteArea.getIntersection(referenceLine);
+		end = endNode.absoluteArea.getIntersection(referenceLine);
+		//stop-gap for errors - better to show some line than none
+		if(start == null)
+			start = startArea.center();
+		if(end == null)
+			end = endArea.center();
+		const line = Line.create(start, end);
 		line.lineType = LineTypes.convert(relation.arrowType);
 		line.arrowType = ArrowTypes.convert(relation.arrowType);
 		return line;
@@ -2411,21 +2419,19 @@ var pinker = pinker || {};
 				path.points.push(PotentialPoint.create(rangeX, Range.create(startArea.bottom())));
 				path.points.push(PotentialPoint.create(rangeX, Range.create(endArea.top())));
 
-				if(pinker.config.useSmartArrows) //TODO assume use of smart arrows
-				{
-					//wrap around on the right
-					let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode);
-					possiblePaths.paths.push(secondPath);
-					let rangeAX = Range.create(startArea.right());
-					let rangeAY = Range.create(startArea.top(), startArea.bottom());
-					let rangeBX = Range.create(startArea.right() + minBuffer, startArea.right() + minBuffer + defaultSpan);
-					let rangeCY = Range.create(endArea.top(), endArea.bottom());
-					let rangeDX = Range.create(endArea.right());
-					secondPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
-					secondPath.points.push(PotentialPoint.create(rangeBX, rangeAY));
-					secondPath.points.push(PotentialPoint.create(rangeBX, rangeCY));
-					secondPath.points.push(PotentialPoint.create(rangeDX, rangeCY));
-				}
+				//wrap around on the right
+				let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode);
+				possiblePaths.paths.push(secondPath);
+				let rangeAX = Range.create(startArea.right());
+				let rangeAY = Range.create(startArea.top(), startArea.bottom());
+				let rangeBX = Range.create(startArea.right() + minBuffer, startArea.right() + minBuffer + defaultSpan);
+				let rangeCY = Range.create(endArea.top(), endArea.bottom());
+				let rangeDX = Range.create(endArea.right());
+				secondPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
+				secondPath.points.push(PotentialPoint.create(rangeBX, rangeAY));
+				secondPath.points.push(PotentialPoint.create(rangeBX, rangeCY));
+				secondPath.points.push(PotentialPoint.create(rangeDX, rangeCY));
+
 				return possiblePaths;
 			}
 			if(startArea.isBelow(endArea))
@@ -2438,22 +2444,20 @@ var pinker = pinker || {};
 				);
 				path.points.push(PotentialPoint.create(rangeX, Range.create(startArea.top())));
 				path.points.push(PotentialPoint.create(rangeX, Range.create(endArea.bottom())));
-				
-				if(pinker.config.useSmartArrows) //TODO assume use of smart arrows
-				{
-					//wrap around on the left
-					let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode);
-					possiblePaths.paths.push(secondPath);
-					let rangeAX = Range.create(startArea.left());
-					let rangeAY = Range.create(startArea.top(), startArea.bottom());
-					let rangeBX = Range.create(startArea.left() - minBuffer - defaultSpan, startArea.left() - minBuffer);
-					let rangeCY = Range.create(endArea.top(), endArea.bottom());
-					let rangeDX = Range.create(endArea.left());
-					secondPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
-					secondPath.points.push(PotentialPoint.create(rangeBX, rangeAY));
-					secondPath.points.push(PotentialPoint.create(rangeBX, rangeCY));
-					secondPath.points.push(PotentialPoint.create(rangeDX, rangeCY));
-				}
+			
+				//wrap around on the left
+				let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode);
+				possiblePaths.paths.push(secondPath);
+				let rangeAX = Range.create(startArea.left());
+				let rangeAY = Range.create(startArea.top(), startArea.bottom());
+				let rangeBX = Range.create(startArea.left() - minBuffer - defaultSpan, startArea.left() - minBuffer);
+				let rangeCY = Range.create(endArea.top(), endArea.bottom());
+				let rangeDX = Range.create(endArea.left());
+				secondPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
+				secondPath.points.push(PotentialPoint.create(rangeBX, rangeAY));
+				secondPath.points.push(PotentialPoint.create(rangeBX, rangeCY));
+				secondPath.points.push(PotentialPoint.create(rangeDX, rangeCY));
+
 				return possiblePaths;
 			}
 			if(startArea.isLeftOf(endArea))
@@ -2469,21 +2473,19 @@ var pinker = pinker || {};
 				path.points.push(PotentialPoint.create(Range.create(startArea.right()), rangeY));
 				path.points.push(PotentialPoint.create(Range.create(endArea.left()), rangeY));
 
-				if(pinker.config.useSmartArrows) //TODO assume use of smart arrows
-				{
-					//wrap around on top
-					let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode);
-					possiblePaths.paths.push(secondPath);
-					let rangeAX = Range.create(startArea.left(), startArea.right());
-					let rangeAY = Range.create(startArea.top());
-					let rangeBY = Range.create(startArea.top() - minBuffer - defaultSpan, startArea.top() - minBuffer);
-					let rangeCX = Range.create(endArea.left(), endArea.right());
-					let rangeDY = Range.create(endArea.top());
-					secondPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
-					secondPath.points.push(PotentialPoint.create(rangeAX, rangeBY));
-					secondPath.points.push(PotentialPoint.create(rangeCX, rangeBY));
-					secondPath.points.push(PotentialPoint.create(rangeCX, rangeDY));
-				}
+				//wrap around on top
+				let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode);
+				possiblePaths.paths.push(secondPath);
+				let rangeAX = Range.create(startArea.left(), startArea.right());
+				let rangeAY = Range.create(startArea.top());
+				let rangeBY = Range.create(startArea.top() - minBuffer - defaultSpan, startArea.top() - minBuffer);
+				let rangeCX = Range.create(endArea.left(), endArea.right());
+				let rangeDY = Range.create(endArea.top());
+				secondPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
+				secondPath.points.push(PotentialPoint.create(rangeAX, rangeBY));
+				secondPath.points.push(PotentialPoint.create(rangeCX, rangeBY));
+				secondPath.points.push(PotentialPoint.create(rangeCX, rangeDY));
+
 				return possiblePaths;
 			}
 			if(startArea.isRightOf(endArea))
@@ -2499,21 +2501,19 @@ var pinker = pinker || {};
 				path.points.push(PotentialPoint.create(Range.create(startArea.left()), rangeY));
 				path.points.push(PotentialPoint.create(Range.create(endArea.right()), rangeY));
 
-				if(pinker.config.useSmartArrows) //TODO assume use of smart arrows
-				{
-					//wrap around on bottom
-					let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode);
-					possiblePaths.paths.push(secondPath);
-					let rangeAX = Range.create(startArea.left(), startArea.right());
-					let rangeAY = Range.create(startArea.bottom());
-					let rangeBY = Range.create(startArea.bottom() + minBuffer, startArea.bottom() + minBuffer + defaultSpan);
-					let rangeCX = Range.create(endArea.left(), endArea.right());
-					let rangeDY = Range.create(endArea.bottom());
-					secondPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
-					secondPath.points.push(PotentialPoint.create(rangeAX, rangeBY));
-					secondPath.points.push(PotentialPoint.create(rangeCX, rangeBY));
-					secondPath.points.push(PotentialPoint.create(rangeCX, rangeDY));
-				}
+				//wrap around on bottom
+				let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode);
+				possiblePaths.paths.push(secondPath);
+				let rangeAX = Range.create(startArea.left(), startArea.right());
+				let rangeAY = Range.create(startArea.bottom());
+				let rangeBY = Range.create(startArea.bottom() + minBuffer, startArea.bottom() + minBuffer + defaultSpan);
+				let rangeCX = Range.create(endArea.left(), endArea.right());
+				let rangeDY = Range.create(endArea.bottom());
+				secondPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
+				secondPath.points.push(PotentialPoint.create(rangeAX, rangeBY));
+				secondPath.points.push(PotentialPoint.create(rangeCX, rangeBY));
+				secondPath.points.push(PotentialPoint.create(rangeCX, rangeDY));
+
 				return possiblePaths;
 			}
 			/*
@@ -2538,22 +2538,8 @@ var pinker = pinker || {};
 			}
 			*/
 			
-			//TODO call generic solution
 			//fallback: straight line between nodes
-			let start = startArea.center();
-			let end = endArea.center();
-			let line = Line.create(start, end);
-			start = startNode.absoluteArea.getIntersection(line);
-			end = endNode.absoluteArea.getIntersection(line);
-			//stop-gap for errors - better to show some line than none
-			if(start == null)
-				start = startArea.center();
-			if(end == null)
-				end = endArea.center();
-			let resultLine = Line.create(start, end);
-			resultLine.lineType = lineType;
-			resultLine.arrowType = arrowType;
-			return resultLine;
+			return simpleLineBetweenNodes(startNode, endNode, allNodes, relation);
 		},
 		//returns mixed array of Paths and Lines
 		selectPathsFromPossibles: function(possiblePaths, topLevelNodes) {
