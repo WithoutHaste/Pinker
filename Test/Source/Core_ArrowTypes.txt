@@ -1,0 +1,11 @@
+Layout:
+	[A][B]
+	[C][D][E][F]
+	[G][H]
+	[I][J]
+Relate:
+	[A]->[B]
+	[C]-D[D]
+	[E]-:>[F]
+	[G]-o[H]
+	[I]-+[J]
