@@ -38,32 +38,40 @@ var pinker = pinker || {};
 	};
 
 	//render all sources onto new canvases
-	pinker.render = function() {
+	pinker.render = function(options) {
 		let pinkerElements = document.getElementsByClassName("pinker");
 		for(let i = 0; i < pinkerElements.length; i++)
 		{
 			let pinkerElement = pinkerElements[i];
 			switch(pinkerElement.tagName)
 			{
-				case "PRE": renderFromPre(pinkerElement); break;
-				case "OBJECT": pinkerElement.onload = function() { renderFromObject(pinkerElement); }; break;
+				case "PRE": renderFromPre(pinkerElement, options); break;
+				case "OBJECT": pinkerElement.onload = function() { renderFromObject(pinkerElement, options); }; break;
 			}
 		}
 	};
 	
-	function renderFromPre(preElement) {
+	function renderFromPre(preElement, options) {
 		const sourceText = preElement.innerHTML;
 		const canvasElement = document.createElement("canvas");
 		if(preElement.id != null)
 			canvasElement.id = "canvas-" + preElement.id;
-		//insert canvas into pre element
-		preElement.innerHTML = null;
-		preElement.appendChild(canvasElement);
+		if(options.keepSource)
+		{
+			//insert canvas after pre element
+			preElement.parentNode.insertBefore(canvasElement, preElement.nextSibling); //verified nextSibling doesn't have to exist
+		}
+		else
+		{
+			//insert canvas into pre element
+			preElement.innerHTML = null;
+			preElement.appendChild(canvasElement);
+		}
 		pinker.draw(canvasElement, sourceText);
 	}
 	
 	//works in FireFox but fails in Chrome due to CORS (cross-site data access rules)
-	function renderFromObject(objectElement) {
+	function renderFromObject(objectElement, options) {
 		const sourceDocument = objectElement.contentDocument || objectElement.contentWindow.document;
 		let container = sourceDocument.getElementsByTagName('body')[0];
 		while(container.children.length > 0)
@@ -74,9 +82,17 @@ var pinker = pinker || {};
 		const canvasElement = document.createElement("canvas");
 		if(objectElement.id != null)
 			canvasElement.id = "canvas-" + objectElement.id;
-		//replace object element with canvas
-		objectElement.parentNode.insertBefore(canvasElement, objectElement);
-		objectElement.parentNode.removeChild(objectElement);
+		if(options.keepSource)
+		{
+			//insert canvas after object element
+			objectElement.parentNode.insertBefore(canvasElement, objectElement.nextSibling); //verified nextSibling doesn't have to exist
+		}
+		else
+		{
+			//replace object element with canvas
+			objectElement.parentNode.insertBefore(canvasElement, objectElement);
+			objectElement.parentNode.removeChild(objectElement);
+		}
 		pinker.draw(canvasElement, sourceText);
 	}
 

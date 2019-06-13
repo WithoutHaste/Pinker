@@ -75,6 +75,12 @@ You can also separate your diagram sources into text files and include them in y
 </script>
 ```
 
+Passing additional options: `pinker.render(optionsObject)`
+
+| Attribute | Data Type | Description |
+| --------- | --------- | ----------- |
+|**keepSource**|boolean|true means do not replace the Source text with the Canvas|
+
 ## Pinker Syntax
 
 Indentation is not important; you can use indentation to make the source more legible.
