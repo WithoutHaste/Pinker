@@ -2222,7 +2222,7 @@ var pinker = pinker || {};
 		},
 		//returns path object
 		//all lines are vertical or horizontal
-		create: function(pathType, lineType, arrowType, startNode, endNode) {
+		create: function(pathType, lineType, arrowType, startNode, endNode, startsHorizontal) {
 			return {
 				points: [], //array of potential point objects
 				type: pathType,
@@ -2230,6 +2230,7 @@ var pinker = pinker || {};
 				arrowType: arrowType,
 				startNode: startNode,
 				endNode: endNode,
+				startsHorizontal: startsHorizontal,
 				isPath: true,
 				//returns list of all the nodes that this path completely crosses (enters and then leaves)
 				//does not include any descendants of a crossed node
@@ -2255,7 +2256,7 @@ var pinker = pinker || {};
 					const endsWithinArea = this.possiblePointInArea(this.points[this.points.length-1], area);
 					if(endsWithinArea)
 						return false; //can't cross over if it ends inside
-					let isHorizontal = this.startsHorizontal();
+					let isHorizontal = this.startsHorizontal;
 					let entersArea = false;
 					for(let i=1; i<this.points.length; i++)
 					{
@@ -2302,7 +2303,7 @@ var pinker = pinker || {};
 						let node = nodes[n];
 						const nodeRangeX = Range.create(node.absoluteArea.left(), node.absoluteArea.right());
 						const nodeRangeY = Range.create(node.absoluteArea.top(), node.absoluteArea.bottom());
-						let isHorizontal = this.startsHorizontal();
+						let isHorizontal = this.startsHorizontal;
 						for(let p=1; p<this.points.length; p++)
 						{
 							let point = this.points[p];
@@ -2310,7 +2311,7 @@ var pinker = pinker || {};
 							let intersectY = point.rangeY.intersect(nodeRangeY);
 							if(intersectX == null || intersectY == null)
 								continue; //no intersection remains
-							if(point.rangeX.equals(intersectX) && point.rangeY.equals(intersectY))
+							if(point.rangeX.equals(intersectX) && point.rangeY.equals(intersectY)) //can't escape both constraints
 							{
 								point.rangeX = null;
 								point.rangeY = null;
@@ -2349,32 +2350,39 @@ var pinker = pinker || {};
 							this.clean();
 							isHorizontal = !isHorizontal;
 						}
+						if(this.isInvalid())
+							return false;
+						if(this.crossesArea(node.absoluteArea))
+							return false;
 					}
 					return true;
 				},
-				//returns true if any point or range in path is null
+				//returns true if any point or range in path is null, or if any neighboring points cannot connect
 				isInvalid: function() {
+					let isHorizontal = this.startsHorizontal;
 					for(let p=0; p<this.points.length; p++)
 					{
-						if(p == null || p.rangeX == null || p.rangeY == null)
+						let point = this.points[p];
+						if(point == null || point.rangeX == null || point.rangeY == null)
 							return true;
+						if(p == 0)
+							continue;
+						if(isHorizontal && point.rangeY.intersect(this.points[p-1].rangeY) == null)
+							return true;
+						if(!isHorizontal && point.rangeX.intersect(this.points[p-1].rangeX) == null)
+							return true;
+						isHorizontal = !isHorizontal;
 					}
 					return false;
-				},
-				//adjust ranges so adjacent points agree about possible x/y values
-				startsHorizontal: function() {
-					if(this.points.length == 0)
-						return true;
-					return (this.points[0].stableX() && this.points[0].rangeY.middle() == this.points[1].rangeY.middle());
 				},
 				//returns true if paths are partially coincident
 				//TODO assumes both paths are just straight lines
 				isCoincident: function(otherPath) {
-					if(this.startsHorizontal() != otherPath.startsHorizontal())
+					if(this.startsHorizontal != otherPath.startsHorizontal)
 						return false;
 					//possible paths that would currently end up not coincident, could still be pushed into coincidence by these changes
 					//so checking for paths that have an intersecting range of possible positions
-					if(this.startsHorizontal())
+					if(this.startsHorizontal)
 					{
 						const intersectX = this.points[0].rangeX.sum(this.points[1].rangeX).intersect(otherPath.points[0].rangeX.sum(otherPath.points[1].rangeX));
 						const intersectY = this.points[0].rangeY.intersect(otherPath.points[0].rangeY);
@@ -2391,7 +2399,7 @@ var pinker = pinker || {};
 				clean: function() {
 					if(this.points.length < 2)
 						return;
-					let horizontalLine = this.startsHorizontal();
+					let horizontalLine = this.startsHorizontal;
 					for(let i=1; i<this.points.length; i++)
 					{
 						let previousPoint = this.points[i-1];
@@ -2431,7 +2439,7 @@ var pinker = pinker || {};
 					this.clean();
 					let result = [];
 					let previousStablePoint = null;
-					let horizontalLine = this.startsHorizontal();
+					let horizontalLine = this.startsHorizontal;
 					for(let i=0; i<this.points.length; i++)
 					{
 						let point = this.points[i];
@@ -2449,8 +2457,8 @@ var pinker = pinker || {};
 				stablePointsCurl: function() {
 					this.clean();
 					let result = [];
-					let horizontalLine = this.startsHorizontal();
-					if(this.startsHorizontal())
+					let horizontalLine = this.startsHorizontal;
+					if(this.startsHorizontal)
 					{
 						if(this.points[1].rangeY.middle() < this.points[2].rangeY.middle()) //curls downward
 						{
@@ -2626,7 +2634,7 @@ var pinker = pinker || {};
 			if(startArea.isAbove(endArea))
 			{
 				//direct line
-				let path = Path.create(Path.types.straight, lineType, arrowType, startNode, endNode);
+				let path = Path.create(Path.types.straight, lineType, arrowType, startNode, endNode, false);
 				possiblePaths.paths.push(path);
 				let rangeX = Range.create(
 					Math.max(startArea.left(), endArea.left()),
@@ -2638,7 +2646,7 @@ var pinker = pinker || {};
 				//elbow right-down, if space allows
 				if(endArea.right() > startArea.right() + minBuffer)
 				{
-					let elbowPath = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode);
+					let elbowPath = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode, true);
 					possiblePaths.paths.push(elbowPath);
 					let rangeAX = Range.create(startArea.right());
 					let rangeAY = Range.create(startArea.top(), startArea.bottom());
@@ -2650,7 +2658,7 @@ var pinker = pinker || {};
 				}
 
 				//curl around on the right
-				let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode);
+				let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode, true);
 				possiblePaths.paths.push(secondPath);
 				let rangeAX = Range.create(startArea.right());
 				let rangeAY = Range.create(startArea.top(), startArea.bottom());
@@ -2667,7 +2675,7 @@ var pinker = pinker || {};
 			if(startArea.isBelow(endArea))
 			{
 				//direct line
-				let path = Path.create(Path.types.straight, lineType, arrowType, startNode, endNode);
+				let path = Path.create(Path.types.straight, lineType, arrowType, startNode, endNode, false);
 				possiblePaths.paths.push(path);
 				let rangeX = Range.create(
 					Math.max(startArea.left(), endArea.left()),
@@ -2679,7 +2687,7 @@ var pinker = pinker || {};
 				//elbow left-up, if space allows
 				if(startArea.left() < endArea.left() - minBuffer)
 				{
-					let elbowPath = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode);
+					let elbowPath = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode, true);
 					possiblePaths.paths.push(elbowPath);
 					let rangeAX = Range.create(startArea.left(), endArea.left() - minBuffer);
 					let rangeAY = Range.create(startArea.top());
@@ -2691,7 +2699,7 @@ var pinker = pinker || {};
 				}
 			
 				//curl around on the left
-				let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode);
+				let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode, true);
 				possiblePaths.paths.push(secondPath);
 				let rangeAX = Range.create(startArea.left());
 				let rangeAY = Range.create(startArea.top(), startArea.bottom());
@@ -2708,7 +2716,7 @@ var pinker = pinker || {};
 			if(startArea.isLeftOf(endArea))
 			{
 				//direct line
-				let path = Path.create(Path.types.straight, lineType, arrowType, startNode, endNode);
+				let path = Path.create(Path.types.straight, lineType, arrowType, startNode, endNode, true);
 				possiblePaths.paths.push(path);
 				const minY = Math.max(startArea.top(), endArea.top());
 				const maxY = (startNode.labelLayout.isHeader() && endNode.labelLayout.isHeader()) ? 
@@ -2721,7 +2729,7 @@ var pinker = pinker || {};
 				//elbow up-right, if space allows
 				if(endArea.top() < startArea.top() - minBuffer)
 				{
-					let elbowPath = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode);
+					let elbowPath = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode, false);
 					possiblePaths.paths.push(elbowPath);
 					let rangeAY = Range.create(startArea.top());
 					let rangeAX = Range.create(startArea.left(), startArea.right());
@@ -2733,7 +2741,7 @@ var pinker = pinker || {};
 				}
 
 				//curl around on top
-				let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode);
+				let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode, false);
 				possiblePaths.paths.push(secondPath);
 				let rangeAX = Range.create(startArea.left(), startArea.right());
 				let rangeAY = Range.create(startArea.top());
@@ -2750,7 +2758,7 @@ var pinker = pinker || {};
 			if(startArea.isRightOf(endArea))
 			{
 				//direct line
-				let path = Path.create(Path.types.straight, lineType, arrowType, startNode, endNode);
+				let path = Path.create(Path.types.straight, lineType, arrowType, startNode, endNode, true);
 				possiblePaths.paths.push(path);
 				const minY = Math.max(startArea.top(), endArea.top());
 				const maxY = (startNode.labelLayout.isHeader() && endNode.labelLayout.isHeader()) ? 
@@ -2793,7 +2801,7 @@ var pinker = pinker || {};
 			{
 				{
 					//elbow left-down
-					let path = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode);
+					let path = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode, true);
 					possiblePaths.paths.push(path);
 					let rangeAX = Range.create(startArea.right());
 					let rangeAY = Range.create(startArea.top(), startArea.bottom());
@@ -2806,7 +2814,7 @@ var pinker = pinker || {};
 				
 				{
 					//elbow down-left
-					let path = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode);
+					let path = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode, false);
 					possiblePaths.paths.push(path);
 					let rangeAY = Range.create(startArea.bottom());
 					let rangeAX = Range.create(startArea.left(), startArea.right());
@@ -2819,7 +2827,7 @@ var pinker = pinker || {};
 				
 				{
 					//zigzag right-down-right
-					let path = Path.create(Path.types.zigzag, lineType, arrowType, startNode, endNode);
+					let path = Path.create(Path.types.zigzag, lineType, arrowType, startNode, endNode, true);
 					possiblePaths.paths.push(path);
 					let rangeAX = Range.create(startArea.right());
 					let rangeAY = Range.create(startArea.top(), startArea.bottom());
@@ -2840,7 +2848,7 @@ var pinker = pinker || {};
 			{
 				{
 					//elbow down-right
-					let path = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode);
+					let path = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode, false);
 					possiblePaths.paths.push(path);
 					let rangeAY = Range.create(startArea.bottom());
 					let rangeAX = Range.create(startArea.left(), startArea.right());
@@ -2853,7 +2861,7 @@ var pinker = pinker || {};
 
 				{
 					//elbow right-down
-					let path = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode);
+					let path = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode, true);
 					possiblePaths.paths.push(path);
 					let rangeAX = Range.create(startArea.left());
 					let rangeAY = Range.create(startArea.top(), startArea.bottom());
@@ -2872,7 +2880,7 @@ var pinker = pinker || {};
 			{
 				{
 					//elbow up-right
-					let path = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode);
+					let path = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode, false);
 					possiblePaths.paths.push(path);
 					let rangeAY = Range.create(startArea.top());
 					let rangeAX = Range.create(startArea.left(), startArea.right());
@@ -2885,7 +2893,7 @@ var pinker = pinker || {};
 				
 				{
 					//elbow right-up
-					let path = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode);
+					let path = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode, true);
 					possiblePaths.paths.push(path);
 					let rangeAX = Range.create(startArea.right());
 					let rangeAY = Range.create(startArea.top(), startArea.bottom());
@@ -2898,7 +2906,7 @@ var pinker = pinker || {};
 				
 				{
 					//zigzag up-right-up
-					let path = Path.create(Path.types.zigzag, lineType, arrowType, startNode, endNode);
+					let path = Path.create(Path.types.zigzag, lineType, arrowType, startNode, endNode, false);
 					possiblePaths.paths.push(path);
 					let rangeAY = Range.create(startArea.top());
 					let rangeAX = Range.create(startArea.left(), startArea.right());
@@ -2919,7 +2927,7 @@ var pinker = pinker || {};
 			{
 				{
 					//elbow left-up
-					let path = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode);
+					let path = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode, true);
 					possiblePaths.paths.push(path);
 					let rangeAX = Range.create(startArea.left());
 					let rangeAY = Range.create(startArea.top(), startArea.bottom());
@@ -2932,7 +2940,7 @@ var pinker = pinker || {};
 				
 				{
 					//elbow up-left
-					let path = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode);
+					let path = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode, false);
 					possiblePaths.paths.push(path);
 					let rangeAY = Range.create(startArea.top());
 					let rangeAX = Range.create(startArea.left(), startArea.right());
@@ -2990,7 +2998,7 @@ var pinker = pinker || {};
 		unCoincidePaths: function(paths) {
 			const sets = this.getCoincidentPathSets(paths);
 			sets.forEach(function(set) {
-				if(set[0].startsHorizontal())
+				if(set[0].startsHorizontal)
 				{
 					//all paths could have a different range of possible positions
 					//for now, try the easiest math and just don't move the paths if that doesn't work

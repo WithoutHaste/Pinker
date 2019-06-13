@@ -8,21 +8,27 @@
 		Pinker.js Tests: in progress
 		</div>
 			
-
+		Zigzag: up-right: between not-top-level cousins
 		<div>
-			<pre id='Source01.2'>
+			<pre id='Source02'>
 Layout:
-	[Financial Report Generator][Financial Entities]
-	...[Financial Data Gateway (Interface)]
-	[Financial Data Mapper][Financial Database]
-Relate:
-	[Financial Data Mapper]->[Financial Entities],[Financial Database]
+	[A]
+	[B]
+[A]:
+	Layout:
+		[Financial Report Generator][Financial Entities]
+		[Financial Data Gateway (Interface)]
+[B]:
+	Layout:
+		[Financial Data Mapper][Financial Database]
+	Relate:
+		[Financial Data Mapper]->[A.Financial Entities],[Financial Database]
 			</pre>
-			<canvas id='Canvas01.2'></canvas>
+			<canvas id='Canvas02'></canvas>
 		</div>
 		<script>
-			var canvas = document.getElementById("Canvas01.2");
-			var source = document.getElementById("Source01.2").innerHTML;
+			var canvas = document.getElementById("Canvas02");
+			var source = document.getElementById("Source02").innerHTML;
 			pinker.draw(canvas, source);
 		</script>
 
