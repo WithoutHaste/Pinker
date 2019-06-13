@@ -5,56 +5,24 @@
 	</head>
 	<body>
 		<div class='header'>
-		Pinker.js Tests
+		Pinker.js Tests: in progress
 		</div>
 			
-		Curl: between scopes at different levels: crosses sibling of lower-level scope
+
 		<div>
-			<pre id='Source04'>
+			<pre id='Source01.2'>
 Layout:
-	[A][C]
-	[B][D]
-	[E][F]
-	[G][H]
+	[Financial Report Generator][Financial Entities]
+	...[Financial Data Gateway (Interface)]
+	[Financial Data Mapper][Financial Database]
 Relate:
-	[D]->[C.C2]
-	[H]->[G.G2]
-[A]:
-	Layout:
-		[A2]
-		[A3]
-	Relate:
-		[A2]->[B]
-[B]:
-	Layout:
-		[B2]
-[C]:
-	Layout:
-		[C2]
-		[C3]
-[D]:
-	Layout:
-		[D2]
-[E]:
-	Layout:
-		[E2][E3]
-	Relate:
-		[E2]->[F]
-[F]:
-	Layout:
-		[F2]
-[G]:
-	Layout:
-		[G2][G3]
-[H]:
-	Layout:
-		[H2]
+	[Financial Data Mapper]->[Financial Entities],[Financial Database]
 			</pre>
-			<canvas id='Canvas04'></canvas>
+			<canvas id='Canvas01.2'></canvas>
 		</div>
 		<script>
-			var canvas = document.getElementById("Canvas04");
-			var source = document.getElementById("Source04").innerHTML;
+			var canvas = document.getElementById("Canvas01.2");
+			var source = document.getElementById("Source01.2").innerHTML;
 			pinker.draw(canvas, source);
 		</script>
 

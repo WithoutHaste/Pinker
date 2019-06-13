@@ -1397,6 +1397,52 @@ var pinker = pinker || {};
 						Math.max(this.max, otherRange.max)
 					);
 				},
+				//returns this range with the otherRange removed from it
+				//if otherRange splits this range in twain, returns null
+				minus: function(otherRange) {
+					if(otherRange.min <= this.min && otherRange.max >= this.max)
+						return null;
+					if(otherRange.min <= this.min)
+						return Range.create(otherRange.max + 1, this.max);
+					if(otherRange.max >= this.max)
+						return Range.create(this.min, otherRange.min - 1);
+					return null;
+				},
+				//returns this range with the otherRange removed from it
+				//if otherRange splits this range in twain, keep the part closest to neighborRange
+				//if otherRange completely covers this range, returns null
+				minusNear: function(otherRange, neighborRange) {
+					let result = this.minus(otherRange);
+					if(result != null)
+						return result;
+					//range is split
+					if(Math.abs(this.min - neighborRange.middle()) < Math.abs(this.max - neighborRange.middle()))
+						return Range.create(this.min, otherRange.min - 1);
+					else
+						return Range.create(otherRange.max + 1, this.max);
+				},
+				//returns this range with the otherRange removed from it
+				//if otherRange splits this range in twain, keep the part farthest from neighborRange
+				//if otherRange completely covers this range, returns null
+				minusFar: function(otherRange, neighborRange) {
+					let result = this.minus(otherRange);
+					if(result != null)
+						return result;
+					//range is split
+					if(Math.abs(this.min - neighborRange.middle()) > Math.abs(this.max - neighborRange.middle()))
+						return Range.create(this.min, otherRange.min - 1);
+					else
+						return Range.create(otherRange.max + 1, this.max);
+				},
+				//returns true if min and max values are equal
+				equals: function(otherRange) {
+					return (this.min == otherRange.min && this.max == otherRange.max);
+				},
+				//returns true if this totally contains other
+				//contains means otherRange sits inside this one - it does not match either boundary of this range
+				contains: function(otherRange) {
+					return (this.min < otherRange.min && this.max > otherRange.max);
+				},
 				clone: function() {
 					return Range.create(this.min, this.max);
 				}
@@ -2185,30 +2231,19 @@ var pinker = pinker || {};
 				startNode: startNode,
 				endNode: endNode,
 				isPath: true,
-				connectsSiblingNodes: function() {
-					return (this.startNode.parentNode == this.endNode.parentNode
-						|| (this.startNode.parentNode == null && this.endNode.parentNode == null));
-				},
-				//returns true if path completely crosses a sibling node of startNode or endNode
-				//topLevelNodes: parent-less nodes, in case one of these nodes are at the top level
-				crossesAnySiblingNode: function(topLevelNodes) {
-					const startSiblings = (this.startNode.parentNode == null) ? topLevelNodes : this.startNode.parentNode.nodes;
-					for(let i=0; i<startSiblings.length; i++)
-					{
-						let node = startSiblings[i];
-						if(this.crossesArea(node.absoluteArea))
-							return true;
-					}
-					if(!this.connectsSiblingNodes())
-					{
-						const endSiblings = (this.endNode.parentNode == null) ? topLevelNodes : this.endNode.parentNode.nodes;
-						for(let i=0; i<endSiblings.length; i++)
-						{
-							let node = endSiblings[i];
-							if(this.crossesArea(node.absoluteArea))
-								return true;
-						}
-					}
+				//returns list of all the nodes that this path completely crosses (enters and then leaves)
+				//does not include any descendants of a crossed node
+				//topLevelNodes: parent-less nodes, linking to all lower level nodes
+				crossesNodes: function(topLevelNodes) {
+					let results = [];
+					let self = this;
+					topLevelNodes.forEach(function(node) {
+						if(self.crossesArea(node.absoluteArea))
+							results.push(node);
+						else if(node.nodes.length > 0)
+							results = results.concat(self.crossesNodes(node.nodes));
+					});					
+					return results;
 				},
 				//returns true if path MUST cross entirely across the area
 				//assumes all lines are horizontal or vertical
@@ -2258,6 +2293,74 @@ var pinker = pinker || {};
 					const intersectY = point.rangeY.intersect(Range.create(area.top() + 1, area.bottom() - 1));
 					return (intersectX != null && intersectY != null);
 				},
+				//shrink path ranges to avoid these nodes
+				//if a range shrinks to zero, set it to null and quit the whole method
+				//returns false on failure, true on success
+				avoid: function(nodes) {
+					for(let n=0; n<nodes.length; n++)
+					{
+						let node = nodes[n];
+						const nodeRangeX = Range.create(node.absoluteArea.left(), node.absoluteArea.right());
+						const nodeRangeY = Range.create(node.absoluteArea.top(), node.absoluteArea.bottom());
+						let isHorizontal = this.startsHorizontal();
+						for(let p=1; p<this.points.length; p++)
+						{
+							let point = this.points[p];
+							let intersectX = point.rangeX.intersect(nodeRangeX);
+							let intersectY = point.rangeY.intersect(nodeRangeY);
+							if(intersectX == null || intersectY == null)
+								continue; //no intersection remains
+							if(point.rangeX.equals(intersectX) && point.rangeY.equals(intersectY))
+							{
+								point.rangeX = null;
+								point.rangeY = null;
+								return false;
+							}
+							//take the little adjustments first
+							if(!point.rangeX.equals(intersectX) && !point.rangeX.contains(intersectX))
+							{
+								point.rangeX = point.rangeX.minus(intersectX);
+								this.clean();
+							}
+							if(!point.rangeY.equals(intersectY) && !point.rangeY.contains(intersectY))
+							{
+								point.rangeY = point.rangeY.minus(intersectY);
+								this.clean();
+							}
+							//if a large adjustment remains, make it
+							intersectX = point.rangeX.intersect(nodeRangeX);
+							intersectY = point.rangeY.intersect(nodeRangeY);
+							if(isHorizontal && intersectX != null)
+							{
+								if(intersectY == null)
+									point.rangeX = point.rangeX.minusFar(intersectX, this.points[p-1].rangeX);
+								else
+									point.rangeX = point.rangeX.minusNear(intersectX, this.points[p-1].rangeX);
+							}
+							else if(!isHorizontal && intersectY != null)
+							{
+								if(intersectX == null)
+									point.rangeY = point.rangeY.minusFar(intersectY, this.points[p-1].rangeY);
+								else
+									point.rangeY = point.rangeY.minusNear(intersectY, this.points[p-1].rangeY);
+							}
+							if(point.rangeX == null || point.rangeY == null)
+								return false;
+							this.clean();
+							isHorizontal = !isHorizontal;
+						}
+					}
+					return true;
+				},
+				//returns true if any point or range in path is null
+				isInvalid: function() {
+					for(let p=0; p<this.points.length; p++)
+					{
+						if(p == null || p.rangeX == null || p.rangeY == null)
+							return true;
+					}
+					return false;
+				},
 				//adjust ranges so adjacent points agree about possible x/y values
 				startsHorizontal: function() {
 					if(this.points.length == 0)
@@ -2284,6 +2387,7 @@ var pinker = pinker || {};
 						return (intersectX != null && intersectY != null);
 					}
 				},
+				//go through path, shrinking ranges on adjacent points to match each other
 				clean: function() {
 					if(this.points.length < 2)
 						return;
@@ -2713,6 +2817,21 @@ var pinker = pinker || {};
 					path.points.push(PotentialPoint.create(rangeCX.clone(), rangeBY.clone()));
 				}
 				
+				{
+					//zigzag right-down-right
+					let path = Path.create(Path.types.zigzag, lineType, arrowType, startNode, endNode);
+					possiblePaths.paths.push(path);
+					let rangeAX = Range.create(startArea.right());
+					let rangeAY = Range.create(startArea.top(), startArea.bottom());
+					let rangeBX = Range.create(startArea.right() + minBuffer, endArea.left() - minBuffer);
+					let rangeCY = Range.create(endArea.top(), endArea.bottom());
+					let rangeDX = Range.create(endArea.left());
+					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
+					path.points.push(PotentialPoint.create(rangeBX.clone(), rangeAY.clone()));
+					path.points.push(PotentialPoint.create(rangeBX.clone(), rangeCY.clone()));
+					path.points.push(PotentialPoint.create(rangeDX.clone(), rangeCY.clone()));
+				}
+
 				possiblePaths.simpleLine = simpleLineBetweenNodes(startNode, endNode, allNodes, relation);
 	
 				return possiblePaths;
@@ -2777,6 +2896,21 @@ var pinker = pinker || {};
 					path.points.push(PotentialPoint.create(rangeBX.clone(), rangeCY.clone()));
 				}
 				
+				{
+					//zigzag up-right-up
+					let path = Path.create(Path.types.zigzag, lineType, arrowType, startNode, endNode);
+					possiblePaths.paths.push(path);
+					let rangeAY = Range.create(startArea.top());
+					let rangeAX = Range.create(startArea.left(), startArea.right());
+					let rangeBY = Range.create(endArea.bottom() + minBuffer, startArea.top() - minBuffer);
+					let rangeCX = Range.create(endArea.left(), endArea.right());
+					let rangeDY = Range.create(endArea.bottom());
+					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
+					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeBY.clone()));
+					path.points.push(PotentialPoint.create(rangeCX.clone(), rangeBY.clone()));
+					path.points.push(PotentialPoint.create(rangeCX.clone(), rangeDY.clone()));
+				}
+				
 				possiblePaths.simpleLine = simpleLineBetweenNodes(startNode, endNode, allNodes, relation);
 	
 				return possiblePaths;
@@ -2826,11 +2960,13 @@ var pinker = pinker || {};
 					for(let i=0; i<possiblePath.paths.length; i++) //take first path that doesn't cross over another node
 					{
 						let currentPath = possiblePath.paths[i];
-						if(!currentPath.crossesAnySiblingNode(topLevelNodes))
-						{
-							result.push(currentPath);
-							return;
-						}
+						let crossedNodes = currentPath.crossesNodes(topLevelNodes);
+						if(crossedNodes.length > 0 && currentPath.type == Path.types.straight) //don't edit the fallback path
+							continue;
+						if(!currentPath.avoid(crossedNodes))
+							continue;
+						result.push(currentPath);
+						return;
 					}
 					//fallback on default line
 					if(possiblePath.simpleLine != undefined && possiblePath.simpleLine != null)
