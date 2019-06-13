@@ -2147,7 +2147,7 @@ var pinker = pinker || {};
 			straight: 1,
 			// -- a "C" shape
 			//  | curlLeft, curlRight, curlOver, or curlUnder
-			// --
+			// -- default curls proceed clockwise
 			curl: 2,
 			// --- an "L" shape
 			//   | elbowRightDown, elbowRightUp, elbowLeftDown, or elbowLeftUp
@@ -2198,22 +2198,49 @@ var pinker = pinker || {};
 				//assumes all lines are horizontal or vertical
 				//TODO only handles straight paths so far
 				crossesArea: function(area) {
-					if(this.startsHorizontal())
+					const startsWithinArea = this.possiblePointInArea(this.points[0], area);
+					if(startsWithinArea)
+						return false; //can't cross over if it starts inside
+					const endsWithinArea = this.possiblePointInArea(this.points[this.points.length-1], area);
+					if(endsWithinArea)
+						return false; //can't cross over if it ends inside
+					let isHorizontal = this.startsHorizontal();
+					let entersArea = false;
+					for(let i=1; i<this.points.length; i++)
+					{
+						if(this.possiblePointInArea(this.points[i], area))
+							return true;
+						if(this.possibleLineCrossesArea(this.points[i-1], this.points[i], area, isHorizontal))
+							return true;
+						isHorizontal = !isHorizontal;
+					}
+					return false;
+				},
+				//returns true if possible line crosses entirely across area
+				//assumes all lines are horizontal or vertical
+				possibleLineCrossesArea: function(pointA, pointB, area, isHorizontal) {
+					if(isHorizontal)
 					{
 						return (
-							Math.min(this.points[0].rangeX.min, this.points[1].rangeX.min) <= area.left() 
-							&& Math.max(this.points[0].rangeX.max, this.points[1].rangeX.max) >= area.right()
-							&& this.points[0].rangeY.min >= area.top() && this.points[0].rangeY.max <= area.bottom()
+							Math.min(pointA.rangeX.min, pointB.rangeX.min) <= area.left() 
+							&& Math.max(pointA.rangeX.max, pointB.rangeX.max) >= area.right()
+							&& pointA.rangeY.min >= area.top() && pointA.rangeY.max <= area.bottom()
 						);
 					}
 					else
 					{
 						return (
-							Math.min(this.points[0].rangeY.min, this.points[1].rangeY.min) <= area.top() 
-							&& Math.max(this.points[0].rangeY.max, this.points[1].rangeY.max) >= area.bottom()
-							&& this.points[0].rangeX.min >= area.left() && this.points[0].rangeX.max <= area.right()
+							Math.min(pointA.rangeY.min, pointB.rangeY.min) <= area.top() 
+							&& Math.max(pointA.rangeY.max, pointB.rangeY.max) >= area.bottom()
+							&& pointA.rangeX.min >= area.left() && pointA.rangeX.max <= area.right()
 						);
 					}
+				},
+				//returns true if a possible point may lie inside the area (not just on the boundary)
+				possiblePointInArea: function(point, area) {
+					const intersectX = point.rangeX.intersect(Range.create(area.left() + 1, area.right() - 1));
+					const intersectY = point.rangeY.intersect(Range.create(area.top() + 1, area.bottom() - 1));
+					return (intersectX != null && intersectY != null);
 				},
 				//adjust ranges so adjacent points agree about possible x/y values
 				startsHorizontal: function() {
@@ -2487,15 +2514,29 @@ var pinker = pinker || {};
 				);
 				path.points.push(PotentialPoint.create(rangeX, Range.create(startArea.bottom())));
 				path.points.push(PotentialPoint.create(rangeX, Range.create(endArea.top())));
+				
+				//elbow right-down, if space allows
+				if(endArea.right() >= startArea.right() + minBuffer)
+				{
+					let elbowPath = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode);
+					possiblePaths.paths.push(elbowPath);
+					let rangeAX = Range.create(startArea.right());
+					let rangeAY = Range.create(startArea.top(), startArea.bottom());
+					let rangeBX = Range.create(startArea.right() + minBuffer, Math.min(endArea.right(), startArea.right() + minBuffer + defaultSpan));
+					let rangeCY = Range.create(endArea.top());
+					elbowPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
+					elbowPath.points.push(PotentialPoint.create(rangeBX, rangeAY));
+					elbowPath.points.push(PotentialPoint.create(rangeBX, rangeCY));
+				}
 
 				//wrap around on the right
 				let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode);
 				possiblePaths.paths.push(secondPath);
 				let rangeAX = Range.create(startArea.right());
 				let rangeAY = Range.create(startArea.top(), startArea.bottom());
+				let rangeBX = Range.create(Math.max(startArea.right(), endArea.right()) + minBuffer, Math.max(startArea.right(), endArea.right()) + minBuffer + defaultSpan);
 				let rangeCY = Range.create(endArea.top(), endArea.bottom());
 				let rangeDX = Range.create(endArea.right());
-				let rangeBX = Range.create(Math.max(startArea.right(), endArea.right()) + minBuffer, Math.max(startArea.right(), endArea.right()) + minBuffer + defaultSpan);
 				secondPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
 				secondPath.points.push(PotentialPoint.create(rangeBX, rangeAY));
 				secondPath.points.push(PotentialPoint.create(rangeBX, rangeCY));
@@ -2514,15 +2555,30 @@ var pinker = pinker || {};
 				);
 				path.points.push(PotentialPoint.create(rangeX, Range.create(startArea.top())));
 				path.points.push(PotentialPoint.create(rangeX, Range.create(endArea.bottom())));
+				
+				//TODO why isn't this working in test?
+				//elbow left-up, if space allows
+				if(endArea.left() <= startArea.left() - minBuffer)
+				{
+					let elbowPath = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode);
+					possiblePaths.paths.push(elbowPath);
+					let rangeAX = Range.create(startArea.left() - minBuffer - defaultSpan, startArea.left() - minBuffer);
+					let rangeAY = Range.create(endArea.top());
+					let rangeBY = Range.create(startArea.top(), startArea.bottom());
+					let rangeCX = Range.create(startArea.left());
+					elbowPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
+					elbowPath.points.push(PotentialPoint.create(rangeAX, rangeBY));
+					elbowPath.points.push(PotentialPoint.create(rangeCX, rangeBY));
+				}
 			
 				//wrap around on the left
 				let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode);
 				possiblePaths.paths.push(secondPath);
 				let rangeAX = Range.create(startArea.left());
 				let rangeAY = Range.create(startArea.top(), startArea.bottom());
+				let rangeBX = Range.create(Math.min(startArea.left(), endArea.left()) - minBuffer - defaultSpan, Math.min(startArea.left(), endArea.left()) - minBuffer);
 				let rangeCY = Range.create(endArea.top(), endArea.bottom());
 				let rangeDX = Range.create(endArea.left());
-				let rangeBX = Range.create(Math.min(startArea.left(), endArea.left()) - minBuffer - defaultSpan, Math.min(startArea.left(), endArea.left()) - minBuffer);
 				secondPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
 				secondPath.points.push(PotentialPoint.create(rangeBX, rangeAY));
 				secondPath.points.push(PotentialPoint.create(rangeBX, rangeCY));
@@ -2617,20 +2673,16 @@ var pinker = pinker || {};
 			possiblePaths.forEach(function(possiblePath) {
 				if(possiblePath.isPossiblePaths)
 				{
-					if(possiblePath.paths.length == 1)
+					for(let i=0; i<possiblePath.paths.length; i++) //take first path that doesn't cross over another node
 					{
-						result.push(possiblePath.paths[0]);
-						return;
-					}
-					if(possiblePath.paths[0].type == Path.types.straight && possiblePath.paths[1].type == Path.types.curl)
-					{
-						if(possiblePath.paths[0].crossesAnySiblingNode(topLevelNodes))
+						let currentPath = possiblePath.paths[i];
+						if(!currentPath.crossesAnySiblingNode(topLevelNodes))
 						{
-							result.push(possiblePath.paths[1]);
+							result.push(currentPath);
 							return;
 						}
 					}
-					result.push(possiblePath.paths[0]); //TODO: just a simplistic solution to establish design
+					result.push(possiblePath.paths[0]); //fallback on straight line
 				}
 				else
 				{
