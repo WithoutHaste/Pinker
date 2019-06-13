@@ -7,52 +7,12 @@
 		<div class='header'>
 		Pinker.js Tests
 		</div>
-		
-		Types of arrows
-		<div>
-			<pre id='Source01'>
-Layout:
-	[A][B]
-	[C][D][E][F]
-	[G][H]
-	[I][J]
-Relate:
-	[A]->[B]
-	[C]-D[D]
-	[E]-:>[F]
-	[G]-o[H]
-	[I]-+[J]
-			</pre>
-			<canvas id='Canvas01'></canvas>
-		</div>
-		<script>
-			var canvas = document.getElementById("Canvas01");
-			var source = document.getElementById("Source01").innerHTML;
-			pinker.draw(canvas, source);
-		</script>
+		(open in Firefox)<br/>
 
-		Types of lines
-		<div>
-			<pre id='Source02'>
-Layout:
-	[A][B][G][H]
-	[C][D][I][J]
-	[E][F][K][L]
-Relate:
-	[A]->[B]
-	[C]=>[D]
-	[E]-->[F]
-	[G]-[H]
-	[I]=[J]
-	[K]--[L]
-			</pre>
-			<canvas id='Canvas02'></canvas>
-		</div>
-		<script>
-			var canvas = document.getElementById("Canvas02");
-			var source = document.getElementById("Source02").innerHTML;
-			pinker.draw(canvas, source);
-		</script>
-
+		<object id='Source01' type="text/plain" data="Source/Core_ArrowTypes.txt" class="pinker"></object><br/>
+		<object id='Source02' type="text/plain" data="Source/Core_LineTypes.txt" class="pinker"></object><br/>
 	</body>
 </html>
+<script type='text/javascript'>
+	pinker.render({keepSource:true});
+</script>

@@ -1,0 +1,15 @@
+Layout:
+	[A][B]
+[A]:
+	Layout:
+		[C][D]
+	Relate:
+		[C]->[D]
+		[D]->[B.E]
+[B]:
+	Layout:
+		[E]
+		[F]
+	Relate:
+		[E]->[F]
+		[F]->[A.D]

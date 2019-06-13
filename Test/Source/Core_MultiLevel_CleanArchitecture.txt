@@ -1,0 +1,53 @@
+Layout:
+	[Controller][Interactor]
+	[Screen Presenter][Print Presenter]...[Database]
+	[Web View][PDF View]
+[Interactor]:
+	Layout:
+		[{A}Financial Report Request (Data Structure)]
+		[{B}Financial Report Requester (Interface)][{D}Financial Report Generator][{F}Financial Entities]
+		[{C}Financial Report Response (Data Structure)][{E}Financial Data Gateway (Interface)]
+	Relate:
+		{D}->{A},{C},{E},{F}
+		{D}-:>{B}
+[Database]:
+	Layout:
+		[{G}Financial Data Mapper][{H}Financial Database]
+	Relate:
+		{G}->{H},{F}
+		{G}-:>{E}
+[Controller]:
+	Layout:
+		[{I}Financial Report Controller]
+		[{J}Financial Report Presenter (Interface)]
+	Relate:
+		{I}->{A},{B},{C},{J}
+		{J}->{C}
+[Screen Presenter]:
+	Layout:
+		[{K}Screen Presenter]
+		[{L}Screen View Model (DS)]
+		[{M}Screen View (I)]
+	Relate:
+		{K}-:>{J}
+		{K}->{L},{M}
+		{M}->{L}
+[Web View]:
+	Layout:
+		[Web View]
+	Relate:
+		[Web View]-:>{M}
+[Print Presenter]:
+	Layout:
+		[{N}Print Presenter]
+		[{O}Print View Model (DS)]
+		[{P}Print View (I)]
+	Relate:
+		{N}-:>{J}
+		{N}->{O},{P}
+		{P}->{O}
+[PDF View]:
+	Layout:
+		[PDF View]
+	Relate:
+		[PDF View]-:>{P}
