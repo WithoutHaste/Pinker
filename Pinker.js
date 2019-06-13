@@ -2669,27 +2669,134 @@ var pinker = pinker || {};
 
 				return possiblePaths;
 			}
-			/*
-			if(pinker.config.useSmartArrows)
+			if(startArea.isAboveLeftOf(endArea))
 			{
-				if(startArea.isAboveLeftOf(endArea))
 				{
-					let second = Path.create(Path.types.zigzag, lineType, arrowType, startNode, endNode);
-					possiblePaths.paths.push(second);
+					//elbow left-down
+					let path = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode);
+					possiblePaths.paths.push(path);
 					let rangeAX = Range.create(startArea.right());
-					let rangeAY = Range.create(startArea.top(), startArea.bottom()); //TODO consider if startArea is a header (maybe I need an ideal range within the total possible range?)
-					let rangeBX = Range.create(startArea.right(), endArea.left());
-					let rangeCY = Range.create(endArea.top(), endArea.bottom()); //TODO consider if endArea is a header
-					let rangeDX = Range.create(endArea.left());
-
+					let rangeAY = Range.create(startArea.top(), startArea.bottom());
+					let rangeBX = Range.create(endArea.left(), endArea.right());
+					let rangeCY = Range.create(endArea.top());
 					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
 					path.points.push(PotentialPoint.create(rangeBX.clone(), rangeAY.clone()));
 					path.points.push(PotentialPoint.create(rangeBX.clone(), rangeCY.clone()));
-					path.points.push(PotentialPoint.create(rangeDX.clone(), rangeCY.clone()));
-					return possiblePaths;
 				}
+				
+				{
+					//elbow down-left
+					let path = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode);
+					possiblePaths.paths.push(path);
+					let rangeAY = Range.create(startArea.bottom());
+					let rangeAX = Range.create(startArea.left(), startArea.right());
+					let rangeBY = Range.create(endArea.top(), endArea.bottom());
+					let rangeCX = Range.create(endArea.left());
+					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
+					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeBY.clone()));
+					path.points.push(PotentialPoint.create(rangeCX.clone(), rangeBY.clone()));
+				}
+				
+				possiblePaths.simpleLine = simpleLineBetweenNodes(startNode, endNode, allNodes, relation);
+	
+				return possiblePaths;
 			}
-			*/
+			if(startArea.isAboveRightOf(endArea))
+			{
+				{
+					//elbow down-right
+					let path = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode);
+					possiblePaths.paths.push(path);
+					let rangeAY = Range.create(startArea.bottom());
+					let rangeAX = Range.create(startArea.left(), startArea.right());
+					let rangeBY = Range.create(endArea.top(), endArea.bottom());
+					let rangeCX = Range.create(endArea.right());
+					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
+					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeBY.clone()));
+					path.points.push(PotentialPoint.create(rangeCX.clone(), rangeBY.clone()));
+				}
+
+				{
+					//elbow right-down
+					let path = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode);
+					possiblePaths.paths.push(path);
+					let rangeAX = Range.create(startArea.left());
+					let rangeAY = Range.create(startArea.top(), startArea.bottom());
+					let rangeBX = Range.create(endArea.left(), endArea.right());
+					let rangeCY = Range.create(endArea.top());
+					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
+					path.points.push(PotentialPoint.create(rangeBX.clone(), rangeAY.clone()));
+					path.points.push(PotentialPoint.create(rangeBX.clone(), rangeCY.clone()));
+				}
+				
+				possiblePaths.simpleLine = simpleLineBetweenNodes(startNode, endNode, allNodes, relation);
+	
+				return possiblePaths;
+			}
+			if(startArea.isBelowLeftOf(endArea))
+			{
+				{
+					//elbow up-right
+					let path = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode);
+					possiblePaths.paths.push(path);
+					let rangeAY = Range.create(startArea.top());
+					let rangeAX = Range.create(startArea.left(), startArea.right());
+					let rangeBY = Range.create(endArea.top(), endArea.bottom());
+					let rangeCX = Range.create(endArea.left());
+					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
+					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeBY.clone()));
+					path.points.push(PotentialPoint.create(rangeCX.clone(), rangeBY.clone()));
+				}
+				
+				{
+					//elbow right-up
+					let path = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode);
+					possiblePaths.paths.push(path);
+					let rangeAX = Range.create(startArea.right());
+					let rangeAY = Range.create(startArea.top(), startArea.bottom());
+					let rangeBX = Range.create(endArea.left(), endArea.right());
+					let rangeCY = Range.create(endArea.bottom());
+					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
+					path.points.push(PotentialPoint.create(rangeBX.clone(), rangeAY.clone()));
+					path.points.push(PotentialPoint.create(rangeBX.clone(), rangeCY.clone()));
+				}
+				
+				possiblePaths.simpleLine = simpleLineBetweenNodes(startNode, endNode, allNodes, relation);
+	
+				return possiblePaths;
+			}
+			if(startArea.isBelowRightOf(endArea))
+			{
+				{
+					//elbow left-up
+					let path = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode);
+					possiblePaths.paths.push(path);
+					let rangeAX = Range.create(startArea.left());
+					let rangeAY = Range.create(startArea.top(), startArea.bottom());
+					let rangeBX = Range.create(endArea.left(), endArea.right());
+					let rangeCY = Range.create(endArea.bottom());
+					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
+					path.points.push(PotentialPoint.create(rangeBX.clone(), rangeAY.clone()));
+					path.points.push(PotentialPoint.create(rangeBX.clone(), rangeCY.clone()));
+				}
+				
+				{
+					//elbow up-left
+					let path = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode);
+					possiblePaths.paths.push(path);
+					let rangeAY = Range.create(startArea.top());
+					let rangeAX = Range.create(startArea.left(), startArea.right());
+					let rangeBY = Range.create(endArea.top(), endArea.bottom());
+					let rangeCX = Range.create(endArea.right());
+					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
+					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeBY.clone()));
+					path.points.push(PotentialPoint.create(rangeCX.clone(), rangeBY.clone()));
+				}
+				
+				possiblePaths.simpleLine = simpleLineBetweenNodes(startNode, endNode, allNodes, relation);
+	
+				return possiblePaths;
+			}
 			
 			//fallback: straight line between nodes
 			return simpleLineBetweenNodes(startNode, endNode, allNodes, relation);
@@ -2709,7 +2816,16 @@ var pinker = pinker || {};
 							return;
 						}
 					}
-					result.push(possiblePath.paths[0]); //fallback on straight line
+					//fallback on default line
+					if(possiblePath.simpleLine != undefined && possiblePath.simpleLine != null)
+					{
+						result.push(possiblePath.simpleLine);
+						return;
+					}
+					else
+					{
+						result.push(possiblePath.paths[0]);
+					}
 				}
 				else
 				{
