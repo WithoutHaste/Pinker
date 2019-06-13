@@ -2516,7 +2516,7 @@ var pinker = pinker || {};
 				path.points.push(PotentialPoint.create(rangeX, Range.create(endArea.top())));
 				
 				//elbow right-down, if space allows
-				if(endArea.right() >= startArea.right() + minBuffer)
+				if(endArea.right() > startArea.right() + minBuffer)
 				{
 					let elbowPath = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode);
 					possiblePaths.paths.push(elbowPath);
@@ -2529,7 +2529,7 @@ var pinker = pinker || {};
 					elbowPath.points.push(PotentialPoint.create(rangeBX, rangeCY));
 				}
 
-				//wrap around on the right
+				//curl around on the right
 				let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode);
 				possiblePaths.paths.push(secondPath);
 				let rangeAX = Range.create(startArea.right());
@@ -2556,22 +2556,21 @@ var pinker = pinker || {};
 				path.points.push(PotentialPoint.create(rangeX, Range.create(startArea.top())));
 				path.points.push(PotentialPoint.create(rangeX, Range.create(endArea.bottom())));
 				
-				//TODO why isn't this working in test?
 				//elbow left-up, if space allows
-				if(endArea.left() <= startArea.left() - minBuffer)
+				if(startArea.left() < endArea.left() - minBuffer)
 				{
 					let elbowPath = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode);
 					possiblePaths.paths.push(elbowPath);
-					let rangeAX = Range.create(startArea.left() - minBuffer - defaultSpan, startArea.left() - minBuffer);
-					let rangeAY = Range.create(endArea.top());
-					let rangeBY = Range.create(startArea.top(), startArea.bottom());
-					let rangeCX = Range.create(startArea.left());
+					let rangeAX = Range.create(startArea.left(), endArea.left() - minBuffer);
+					let rangeAY = Range.create(startArea.top());
+					let rangeBY = Range.create(endArea.top(), endArea.bottom());
+					let rangeCX = Range.create(endArea.left());
 					elbowPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
 					elbowPath.points.push(PotentialPoint.create(rangeAX, rangeBY));
 					elbowPath.points.push(PotentialPoint.create(rangeCX, rangeBY));
 				}
 			
-				//wrap around on the left
+				//curl around on the left
 				let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode);
 				possiblePaths.paths.push(secondPath);
 				let rangeAX = Range.create(startArea.left());
@@ -2599,14 +2598,28 @@ var pinker = pinker || {};
 				path.points.push(PotentialPoint.create(Range.create(startArea.right()), rangeY));
 				path.points.push(PotentialPoint.create(Range.create(endArea.left()), rangeY));
 
-				//wrap around on top
+				//elbow up-right, if space allows
+				if(endArea.top() < startArea.top() - minBuffer)
+				{
+					let elbowPath = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode);
+					possiblePaths.paths.push(elbowPath);
+					let rangeAY = Range.create(startArea.top());
+					let rangeAX = Range.create(startArea.left(), startArea.right());
+					let rangeBY = Range.create(startArea.top() - minBuffer, Math.max(endArea.top(), startArea.top() - minBuffer - defaultSpan));
+					let rangeCX = Range.create(endArea.left());
+					elbowPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
+					elbowPath.points.push(PotentialPoint.create(rangeAX, rangeBY));
+					elbowPath.points.push(PotentialPoint.create(rangeCX, rangeBY));
+				}
+
+				//curl around on top
 				let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode);
 				possiblePaths.paths.push(secondPath);
 				let rangeAX = Range.create(startArea.left(), startArea.right());
 				let rangeAY = Range.create(startArea.top());
+				let rangeBY = Range.create(Math.min(startArea.top(), endArea.top()) - minBuffer - defaultSpan, Math.min(startArea.top(), endArea.top()) - minBuffer);
 				let rangeCX = Range.create(endArea.left(), endArea.right());
 				let rangeDY = Range.create(endArea.top());
-				let rangeBY = Range.create(Math.min(startArea.top(), endArea.top()) - minBuffer - defaultSpan, Math.min(startArea.top(), endArea.top()) - minBuffer);
 				secondPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
 				secondPath.points.push(PotentialPoint.create(rangeAX, rangeBY));
 				secondPath.points.push(PotentialPoint.create(rangeCX, rangeBY));
@@ -2627,7 +2640,21 @@ var pinker = pinker || {};
 				path.points.push(PotentialPoint.create(Range.create(startArea.left()), rangeY));
 				path.points.push(PotentialPoint.create(Range.create(endArea.right()), rangeY));
 
-				//wrap around on bottom
+				//elbow left-up, if space allows
+				if(startArea.bottom() > endArea.bottom() + minBuffer)
+				{
+					let elbowPath = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode);
+					possiblePaths.paths.push(elbowPath);
+					let rangeAX = Range.create(startArea.left());
+					let rangeAY = Range.create(endArea.bottom() + minBuffer, Math.min(startArea.bottom(), endArea.bottom() + minBuffer + defaultSpan));
+					let rangeBX = Range.create(endArea.left(), endArea.right());
+					let rangeCY = Range.create(endArea.bottom());
+					elbowPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
+					elbowPath.points.push(PotentialPoint.create(rangeBX, rangeAY));
+					elbowPath.points.push(PotentialPoint.create(rangeBX, rangeCY));
+				}
+
+				//curl around on bottom
 				let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode);
 				possiblePaths.paths.push(secondPath);
 				let rangeAX = Range.create(startArea.left(), startArea.right());
