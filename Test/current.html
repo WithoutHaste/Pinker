@@ -7,22 +7,21 @@
 		<div class='header'>
 		Pinker.js Tests: in progress
 		</div>
-			
-		Zigzag: up-right: between not-top-level cousins
+
 		<div>
 			<pre id='Source02'>
 Layout:
-	[A]
-	[B]
-[A]:
+	[A][B]
+	[C][D]
+	[E][F]
+	[G][H]
+[F]:
 	Layout:
-		[Financial Report Generator][Financial Entities]
-		[Financial Data Gateway (Interface)]
-[B]:
-	Layout:
-		[Financial Data Mapper][Financial Database]
+		[f4][f5][f6]
+		[f2][f3]
+		[f1]
 	Relate:
-		[Financial Data Mapper]->[A.Financial Entities],[Financial Database]
+		[f6]->[f1]
 			</pre>
 			<canvas id='Canvas02'></canvas>
 		</div>
@@ -31,6 +30,3 @@ Layout:
 			var source = document.getElementById("Source02").innerHTML;
 			pinker.draw(canvas, source);
 		</script>
-
-	</body>
-</html>

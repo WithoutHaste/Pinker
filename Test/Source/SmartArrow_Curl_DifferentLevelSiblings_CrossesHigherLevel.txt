@@ -1,0 +1,49 @@
+Layout:
+	[A][D]
+	[B][E]
+	[C][F]
+	[G][H][I]
+	[J][K][L]
+Relate:
+	[F]->[D.D2]
+	[L]->[J.J2]
+[A]:
+	Layout:
+		[A2]
+	Relate:
+		[A2]->[C]
+[B]:
+	Layout:
+		[B2]
+[C]:
+	Layout:
+		[C2]
+[D]:
+	Layout:
+		[D2]
+[E]:
+	Layout:
+		[E2]
+[F]:
+	Layout:
+		[F2]
+[G]:
+	Layout:
+		[G2]
+	Relate:
+		[G2]->[I]
+[H]:
+	Layout:
+		[H2]
+[I]:
+	Layout:
+		[I2]
+[J]:
+	Layout:
+		[J2]
+[K]:
+	Layout:
+		[K2]
+[L]:
+	Layout:
+		[L2]

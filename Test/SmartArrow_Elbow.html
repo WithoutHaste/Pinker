@@ -5,54 +5,14 @@
 	</head>
 	<body>
 		<div class='header'>
-		Pinker.js Tests
+		Pinker.js Tests: SmartArrow Elbows
 		</div>
+		(open in Firefox)<br/>
 
-		Elbow: between top-level siblings
-		<div>
-			<pre id='Source01'>
-Layout:
-	[A]
-	[B][C]
-	[D]
-	[E][F]
-	[A2][B2]
-	...[C2]
-	[D2][E2]
-	...[F2]
-	...[A3]
-	[C3][B3]
-	...[D3]
-	[F3][E3]
-	[B4][A4]
-	[C4]
-	[E4][D4]
-	[F4]
-	[A5][D5]
-	[F5][C5]
-	[C6][F6]
-	[D6][A6]
-Relate:
-	[A]->[C]
-	[F]->[D]
-	[A2]->[C2]
-	[F2]->[D2]
-	[A3]->[C3]
-	[F3]->[D3]
-	[A4]->[C4]
-	[F4]->[D4]
-	[A5]->[C5]
-	[F5]->[D5]
-	[A6]->[C6]
-	[F6]->[D6]
-			</pre>
-			<canvas id='Canvas01'></canvas>
-		</div>
-		<script>
-			var canvas = document.getElementById("Canvas01");
-			var source = document.getElementById("Source01").innerHTML;
-			pinker.draw(canvas, source);
-		</script>
-
+		<object type="text/plain" data="Source/SmartArrow_FavorStraightOverElbow.txt" class="pinker"></object><br/>
+		<object type="text/plain" data="Source/SmartArrow_Elbow.txt" class="pinker"></object><br/>
 	</body>
 </html>
+<script type='text/javascript'>
+	pinker.render({keepSource:true});
+</script>

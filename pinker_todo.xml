@@ -75,6 +75,60 @@ rename PotentialPoint to PossiblePoint to follow naming pattern</Data>
       </Row>
       <Row>
         <Cell>
+          <Data ss:Type="Number">34</Data>
+        </Cell>
+        <Cell ss:StyleID="paragraph">
+          <Data ss:Type="String">included Pinker.min.js in releases</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Todo</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Task</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-14T00:00:00.000</Data>
+        </Cell>
+      </Row>
+      <Row>
+        <Cell>
+          <Data ss:Type="Number">35</Data>
+        </Cell>
+        <Cell ss:StyleID="paragraph">
+          <Data ss:Type="String">support
+three-toed arrow head for many-to-many</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Todo</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Feature</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-14T00:00:00.000</Data>
+        </Cell>
+      </Row>
+      <Row>
+        <Cell>
+          <Data ss:Type="Number">36</Data>
+        </Cell>
+        <Cell ss:StyleID="paragraph">
+          <Data ss:Type="String">support
+lines with arrow heads at both ends
+how does that affect one scope on left-side and comma-separated-scopes on right-hand-side? can I support commas on left-hand side?</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Todo</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Feature</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-14T00:00:00.000</Data>
+        </Cell>
+      </Row>
+      <Row>
+        <Cell>
           <Data ss:Type="Number">17</Data>
         </Cell>
         <Cell ss:StyleID="paragraph">
@@ -789,7 +843,7 @@ and getting it in the webpage or js when you need it</Data>
           </Data>
         </Cell>
         <Cell>
-          <Data ss:Type="Number">33</Data>
+          <Data ss:Type="Number">36</Data>
         </Cell>
       </Row>
       <Row>

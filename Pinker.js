@@ -1114,6 +1114,10 @@ var pinker = pinker || {};
 					}
 					return null;
 				},
+				//returns true if point is on or within the boundaries of this area
+				containsPoint: function(point) {
+					return (this.left() <= point.x && this.right() >= point.x && this.top() <= point.y && this.bottom() >= point.y);
+				},
 				//draw background and outline of area
 				fillAndOutline: function(relativePoint, backgroundColor, lineColor, lineWeight, context) {
 					context.fillStyle = backgroundColor;
@@ -1225,7 +1229,7 @@ var pinker = pinker || {};
 				return null;
 			if(!Range.ordered(angledLine.minX(), intersect.x, angledLine.maxX()))
 				return null;
-			if(!Range.ordered(angledLine.minY(), intersect.y, angledLine.maxX()))
+			if(!Range.ordered(angledLine.minY(), intersect.y, angledLine.maxY()))
 				return null;
 			return intersect;
 		},
@@ -1322,6 +1326,33 @@ var pinker = pinker || {};
 						else
 							return Line.intersectionAngledAngled(this, otherLine);
 					}
+				},
+				//returns list of nodes this line crossed into and out of again
+				//does not include any nodes where line crosses an ancestor
+				crossesNodes: function(topLevelNodes) {
+					let results = [];
+					let self = this;
+					topLevelNodes.forEach(function(node) {
+						if(self.crossesArea(node.absoluteArea))
+							results.push(node);
+						else if(node.nodes.length > 0)
+							results = results.concat(self.crossesNodes(node.nodes));
+					});
+					return results;
+				},
+				//returns true if line crosses into and out of an area
+				crossesArea: function(area) {
+					if(area.containsPoint(this.startPoint))
+						return false;
+					if(area.containsPoint(this.endPoint))
+						return false;
+					const areaLines = area.edges();
+					for(let i=0; i<areaLines.length; i++)
+					{
+						if(this.intersection(areaLines[i]) != null)
+							return true;
+					}
+					return false;
 				}
 			};
 		}
@@ -2396,6 +2427,7 @@ var pinker = pinker || {};
 					}
 				},
 				//go through path, shrinking ranges on adjacent points to match each other
+				//some ranges may shrink down to null
 				clean: function() {
 					if(this.points.length < 2)
 						return;
@@ -2407,22 +2439,12 @@ var pinker = pinker || {};
 						if(horizontalLine)
 						{
 							let rangeIntersect = previousPoint.rangeY.intersect(currentPoint.rangeY);
-							if(rangeIntersect == null)
-							{
-								//TODO what to do if there is no intersection?
-								displayError(`Path.clean: horizontal line: no range intersection found between Y values ${JSON.stringify(previousPoint.rangeY)} and ${JSON.stringify(currentPoint.rangeY)}.`);
-							}
 							previousPoint.rangeY = rangeIntersect;
 							currentPoint.rangeY = rangeIntersect;
 						}
 						else
 						{
 							let rangeIntersect = previousPoint.rangeX.intersect(currentPoint.rangeX);
-							if(rangeIntersect == null)
-							{
-								//TODO what to do if there is no intersection?
-								displayError(`Path.clean: vertical line: no range intersection found between X values ${JSON.stringify(previousPoint.rangeX)} and ${JSON.stringify(currentPoint.rangeX)}.`);
-							}
 							previousPoint.rangeX = rangeIntersect;
 							currentPoint.rangeX = rangeIntersect;
 						}
@@ -2684,10 +2706,10 @@ var pinker = pinker || {};
 				path.points.push(PotentialPoint.create(rangeX, Range.create(startArea.top())));
 				path.points.push(PotentialPoint.create(rangeX, Range.create(endArea.bottom())));
 				
-				//elbow left-up, if space allows
+				//elbow up-left, if space allows
 				if(startArea.left() < endArea.left() - minBuffer)
 				{
-					let elbowPath = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode, true);
+					let elbowPath = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode, false);
 					possiblePaths.paths.push(elbowPath);
 					let rangeAX = Range.create(startArea.left(), endArea.left() - minBuffer);
 					let rangeAY = Range.create(startArea.top());
@@ -2771,7 +2793,7 @@ var pinker = pinker || {};
 				//elbow left-up, if space allows
 				if(startArea.bottom() > endArea.bottom() + minBuffer)
 				{
-					let elbowPath = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode);
+					let elbowPath = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode, true);
 					possiblePaths.paths.push(elbowPath);
 					let rangeAX = Range.create(startArea.left());
 					let rangeAY = Range.create(endArea.bottom() + minBuffer, Math.min(startArea.bottom(), endArea.bottom() + minBuffer + defaultSpan));
@@ -2783,7 +2805,7 @@ var pinker = pinker || {};
 				}
 
 				//curl around on bottom
-				let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode);
+				let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode, false);
 				possiblePaths.paths.push(secondPath);
 				let rangeAX = Range.create(startArea.left(), startArea.right());
 				let rangeAY = Range.create(startArea.bottom());
@@ -2847,7 +2869,7 @@ var pinker = pinker || {};
 			if(startArea.isAboveRightOf(endArea))
 			{
 				{
-					//elbow down-right
+					//elbow down-left
 					let path = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode, false);
 					possiblePaths.paths.push(path);
 					let rangeAY = Range.create(startArea.bottom());
@@ -2860,7 +2882,7 @@ var pinker = pinker || {};
 				}
 
 				{
-					//elbow right-down
+					//elbow left-down
 					let path = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode, true);
 					possiblePaths.paths.push(path);
 					let rangeAX = Range.create(startArea.left());
@@ -2965,6 +2987,15 @@ var pinker = pinker || {};
 			possiblePaths.forEach(function(possiblePath) {
 				if(possiblePath.isPossiblePaths)
 				{
+					if(possiblePath.simpleLine != undefined && possiblePath.simpleLine != null) //if straight line doesn't cross anything, keep it
+					{
+						let crossedNodes = possiblePath.simpleLine.crossesNodes(topLevelNodes);
+						if(crossedNodes.length == 0)
+						{
+							result.push(possiblePath.simpleLine);
+							return;
+						}						
+					}
 					for(let i=0; i<possiblePath.paths.length; i++) //take first path that doesn't cross over another node
 					{
 						let currentPath = possiblePath.paths[i];
