@@ -307,6 +307,12 @@ var pinker = pinker || {};
 					}
 					return false;
 				},
+				//returns the nested source with alias or label
+				findSource: function(label, alias=null) {
+					if(alias == null)
+						return this.findLabeledSource(label);
+					return this.findAliasedSource(alias);
+				},
 				//returns the nested source with this alias
 				findAliasedSource: function(alias) {
 					if(this.alias == alias)
@@ -593,7 +599,7 @@ var pinker = pinker || {};
 				else
 					collapsedSections.push(section);
 			}
-		});		
+		});
 		return collapsedSections;
 	}
 	
@@ -1635,7 +1641,7 @@ var pinker = pinker || {};
 				let node = Node.create(layoutRecord.label, layoutRecord.alias, path, isRightAlign);
 				node.rowIndex = rowIndex;
 
-				const relatedSource = source.findLabeledSource(layoutRecord.label);
+				const relatedSource = source.findSource(layoutRecord.label, layoutRecord.alias);
 				let relatedDefine = null;
 				let nestedNodes = [];
 				if(relatedSource != null)

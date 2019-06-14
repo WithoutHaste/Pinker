@@ -1,0 +1,12 @@
+Layout:
+	[{A}up-right: between top-level siblings]
+	[{B}up-right: between top-level siblings]
+	[{C}up-right: between not-top-level cousins]
+	[{D}up-right: between not-top-level cousins]
+{A}:
+	Layout:
+		[Financial Report Generator][Financial Entities]
+		[Financial Data Gateway (Interface)]
+		[Financial Data Mapper][Financial Database]
+	Relate:
+		[Financial Data Mapper]->[Financial Entities],[Financial Database]

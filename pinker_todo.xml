@@ -415,6 +415,27 @@ labels on lines</Data>
       </Row>
       <Row>
         <Cell>
+          <Data ss:Type="Number">37</Data>
+        </Cell>
+        <Cell ss:StyleID="paragraph">
+          <Data ss:Type="String">bug: aliasing not working correctly
+nodes with same labels and different nodes are getting mixed up</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Done</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Bug</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-14T00:00:00.000</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-14T00:00:00.000</Data>
+        </Cell>
+      </Row>
+      <Row>
+        <Cell>
           <Data ss:Type="Number">9</Data>
         </Cell>
         <Cell ss:StyleID="paragraph">
@@ -843,7 +864,7 @@ and getting it in the webpage or js when you need it</Data>
           </Data>
         </Cell>
         <Cell>
-          <Data ss:Type="Number">36</Data>
+          <Data ss:Type="Number">37</Data>
         </Cell>
       </Row>
       <Row>

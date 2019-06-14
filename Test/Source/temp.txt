@@ -1,0 +1,33 @@
+{B}:
+	Layout:
+		[Financial Report Generator][Financial Entities]
+		...[Financial Data Gateway (Interface)]
+		[Financial Data Mapper][Financial Database]
+	Relate:
+		[Financial Data Mapper]->[Financial Entities],[Financial Database]
+{C}:
+	Layout:
+		[A]
+		[B]
+	[A]:
+		Layout:
+			[Financial Report Generator][Financial Entities]
+			[Financial Data Gateway (Interface)]
+	[B]:
+		Layout:
+			[Financial Data Mapper][Financial Database]
+		Relate:
+			[Financial Data Mapper]->[A.Financial Entities],[Financial Database]
+{D}:
+	Layout:
+		[A]
+		[B]
+	[A]:
+		Layout:
+			[Financial Report Generator][Financial Entities]
+			...[Financial Data Gateway (Interface)]
+	[B]:
+		Layout:
+			[Financial Data Mapper][Financial Database]
+		Relate:
+			[Financial Data Mapper]->[A.Financial Entities],[Financial Database]

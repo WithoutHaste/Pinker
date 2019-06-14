@@ -7,88 +7,11 @@
 		<div class='header'>
 		Pinker.js Tests: SmartArrow Zigzags
 		</div>
+		(open in Firefox)<br/>
 
-		Zigzag: up-right: between top-level siblings
-		<div>
-			<pre id='Source01'>
-Layout:
-	[Financial Report Generator][Financial Entities]
-	[Financial Data Gateway (Interface)]
-	[Financial Data Mapper][Financial Database]
-Relate:
-	[Financial Data Mapper]->[Financial Entities],[Financial Database]
-			</pre>
-			<canvas id='Canvas01'></canvas>
-		</div>
-		<script>
-			var canvas = document.getElementById("Canvas01");
-			var source = document.getElementById("Source01").innerHTML;
-			pinker.draw(canvas, source);
-		</script>
-
-		<div>
-			<pre id='Source01.2'>
-Layout:
-	[Financial Report Generator][Financial Entities]
-	...[Financial Data Gateway (Interface)]
-	[Financial Data Mapper][Financial Database]
-Relate:
-	[Financial Data Mapper]->[Financial Entities],[Financial Database]
-			</pre>
-			<canvas id='Canvas01.2'></canvas>
-		</div>
-		<script>
-			var canvas = document.getElementById("Canvas01.2");
-			var source = document.getElementById("Source01.2").innerHTML;
-			pinker.draw(canvas, source);
-		</script>
-
-		Zigzag: up-right: between not-top-level cousins
-		<div>
-			<pre id='Source02'>
-Layout:
-	[A]
-	[B]
-[A]:
-	Layout:
-		[Financial Report Generator][Financial Entities]
-		[Financial Data Gateway (Interface)]
-[B]:
-	Layout:
-		[Financial Data Mapper][Financial Database]
-	Relate:
-		[Financial Data Mapper]->[A.Financial Entities],[Financial Database]
-			</pre>
-			<canvas id='Canvas02'></canvas>
-		</div>
-		<script>
-			var canvas = document.getElementById("Canvas02");
-			var source = document.getElementById("Source02").innerHTML;
-			pinker.draw(canvas, source);
-		</script>
-
-		<div>
-			<pre id='Source02.2'>
-Layout:
-	[A]
-	[B]
-[A]:
-	Layout:
-		[Financial Report Generator][Financial Entities]
-		...[Financial Data Gateway (Interface)]
-[B]:
-	Layout:
-		[Financial Data Mapper][Financial Database]
-	Relate:
-		[Financial Data Mapper]->[A.Financial Entities],[Financial Database]
-			</pre>
-			<canvas id='Canvas02.2'></canvas>
-		</div>
-		<script>
-			var canvas = document.getElementById("Canvas02.2");
-			var source = document.getElementById("Source02.2").innerHTML;
-			pinker.draw(canvas, source);
-		</script>
-
+		<object id="Source01" type="text/plain" data="Source/SmartArrow_Zigzag.txt" class="pinker"></object><br/>
 	</body>
 </html>
+<script type='text/javascript'>
+	pinker.render({keepSource:true});
+</script>
