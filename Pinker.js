@@ -179,6 +179,14 @@ var pinker = pinker || {};
 				layout: null,
 				relate: null,
 				nestedSources: [],
+				getPathSegment: function() {
+					return (this.alias == null) ? this.label : this.alias;
+				},
+				appendToPath: function(prefix=null) {
+					if(prefix == null)
+						return this.getPathSegment();
+					return prefix + "." + this.getPathSegment();
+				},
 				validate: function() {
 					if(this.layout == null && this.define == null)
 					{
@@ -1616,12 +1624,7 @@ var pinker = pinker || {};
 	function convertLayoutToNodes(source, context, path=null) {
 		if(source.layout == null)
 			return [];
-
-		if(path == null || path.length == 0)
-			path = source.label;
-		else
-			path += "." + source.label;
-
+		path = source.appendToPath(path);
 		let rowIndex = 0;
 		let nodeRows = [];
 		let allNodes = [];
@@ -1802,10 +1805,7 @@ var pinker = pinker || {};
 	//returns array of lines and possible lines
 	function convertRelationsToPossibleLines(source, allNodes, path=null) {
 		let lines = [];
-		if(path == null || path.length == 0)
-			path = source.label;
-		else
-			path += "." + source.label;
+		path = source.appendToPath(path);
 		if(source.relate != null)
 		{
 			source.relate.records.forEach(function(relation) {
@@ -1935,11 +1935,13 @@ var pinker = pinker || {};
 		return findNodeAbsolute(startingNode.nodes, label);
 	}
 	
-	function findNodeAbsolute(nodes, label) {
+	function findNodeAbsolute(nodes, labelOrPath) {
 		for(let i=0; i<nodes.length; i++)
 		{
 			let node = nodes[i];
-			let result = node.findLabel(label);
+			let result = node.findAlias(labelOrPath);
+			if(result == null)
+				result = node.findLabel(labelOrPath);
 			if(result != null)
 				return result;
 		}
@@ -2625,10 +2627,7 @@ var pinker = pinker || {};
 		//returns mixed array of PossiblePaths and Lines
 		convertRelationsToPossiblePaths: function(source, allNodes, path=null) {
 			let result = [];
-			if(path == null || path.length == 0)
-				path = source.label;
-			else
-				path += "." + source.label;
+			path = source.appendToPath(path);
 			if(source.relate != null)
 			{
 				source.relate.records.forEach(function(relation) {

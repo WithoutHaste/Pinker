@@ -10,3 +10,10 @@ Layout:
 		[Financial Data Mapper][Financial Database]
 	Relate:
 		[Financial Data Mapper]->[Financial Entities],[Financial Database]
+{B}:
+	Layout:
+		[Financial Report Generator][Financial Entities]
+		...[Financial Data Gateway (Interface)]
+		[Financial Data Mapper][Financial Database]
+	Relate:
+		[Financial Data Mapper]->[Financial Entities],[Financial Database]
