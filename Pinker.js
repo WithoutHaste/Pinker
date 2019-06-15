@@ -2676,6 +2676,13 @@ var pinker = pinker || {};
 			};
 		}
 	};
+	
+	const Direction = {
+		left: "left",
+		right: "right",
+		up: "up",
+		down: "down"
+	};
 		
 	const SmartArrows = {
 		//return array of simple lines, ready to be drawn
@@ -2741,6 +2748,14 @@ var pinker = pinker || {};
 			
 			const minBuffer = 2;
 			const defaultSpan = Math.min(pinker.config.canvasPadding, pinker.config.scopePadding, pinker.config.scopeMargin / 2) - (2 * minBuffer); //space at edge of scope, or space between scopes (shared)
+
+			const pathConfig = {
+				lineType: lineType, 
+				arrowType: arrowType, 
+				startNode: startNode, 
+				endNode: endNode, 
+				minBuffer: minBuffer
+			};
 
 			let possiblePaths = PossiblePaths.create();
 			
@@ -2912,61 +2927,10 @@ var pinker = pinker || {};
 			}
 			if(startArea.isAboveLeftOf(endArea))
 			{
-				{
-					//elbow left-down
-					let path = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode, true);
-					possiblePaths.paths.push(path);
-					let rangeAX = Range.create(startArea.right());
-					let rangeAY = Range.create(startArea.top(), startArea.bottom());
-					let rangeBX = Range.create(endArea.left(), endArea.right());
-					let rangeCY = Range.create(endArea.top());
-					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
-					path.points.push(PotentialPoint.create(rangeBX.clone(), rangeAY.clone()));
-					path.points.push(PotentialPoint.create(rangeBX.clone(), rangeCY.clone()));
-				}
-				
-				{
-					//elbow down-left
-					let path = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode, false);
-					possiblePaths.paths.push(path);
-					let rangeAY = Range.create(startArea.bottom());
-					let rangeAX = Range.create(startArea.left(), startArea.right());
-					let rangeBY = Range.create(endArea.top(), endArea.bottom());
-					let rangeCX = Range.create(endArea.left());
-					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
-					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeBY.clone()));
-					path.points.push(PotentialPoint.create(rangeCX.clone(), rangeBY.clone()));
-				}
-				
-				{
-					//zigzag down-right-down
-					let path = Path.create(Path.types.zigzag, lineType, arrowType, startNode, endNode, false);
-					possiblePaths.paths.push(path);
-					let rangeAY = Range.create(startArea.bottom());
-					let rangeAX = Range.create(startArea.left(), startArea.right());
-					let rangeBY = Range.create(startArea.bottom() + minBuffer, endArea.top() - minBuffer);
-					let rangeCX = Range.create(endArea.left(), endArea.right());
-					let rangeDY = Range.create(endArea.top());
-					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
-					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeBY.clone()));
-					path.points.push(PotentialPoint.create(rangeCX.clone(), rangeBY.clone()));
-					path.points.push(PotentialPoint.create(rangeCX.clone(), rangeDY.clone()));
-				}
-
-				{
-					//zigzag right-down-right
-					let path = Path.create(Path.types.zigzag, lineType, arrowType, startNode, endNode, true);
-					possiblePaths.paths.push(path);
-					let rangeAX = Range.create(startArea.right());
-					let rangeAY = Range.create(startArea.top(), startArea.bottom());
-					let rangeBX = Range.create(startArea.right() + minBuffer, endArea.left() - minBuffer);
-					let rangeCY = Range.create(endArea.top(), endArea.bottom());
-					let rangeDX = Range.create(endArea.left());
-					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
-					path.points.push(PotentialPoint.create(rangeBX.clone(), rangeAY.clone()));
-					path.points.push(PotentialPoint.create(rangeBX.clone(), rangeCY.clone()));
-					path.points.push(PotentialPoint.create(rangeDX.clone(), rangeCY.clone()));
-				}
+				possiblePaths.paths.push(this.createPossiblePath(Path.types.elbow, pathConfig, Direction.right, Direction.down));
+				possiblePaths.paths.push(this.createPossiblePath(Path.types.elbow, pathConfig, Direction.down, Direction.right));
+				possiblePaths.paths.push(this.createPossiblePath(Path.types.zigzag, pathConfig, Direction.down, Direction.right, Direction.down));
+				possiblePaths.paths.push(this.createPossiblePath(Path.types.zigzag, pathConfig, Direction.right, Direction.down, Direction.right));
 
 				possiblePaths.simpleLine = simpleLineBetweenNodes(startNode, endNode, allNodes, relation);
 	
@@ -2974,185 +2938,32 @@ var pinker = pinker || {};
 			}
 			if(startArea.isAboveRightOf(endArea))
 			{
-				{
-					//elbow down-left
-					let path = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode, false);
-					possiblePaths.paths.push(path);
-					let rangeAY = Range.create(startArea.bottom());
-					let rangeAX = Range.create(startArea.left(), startArea.right());
-					let rangeBY = Range.create(endArea.top(), endArea.bottom());
-					let rangeCX = Range.create(endArea.right());
-					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
-					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeBY.clone()));
-					path.points.push(PotentialPoint.create(rangeCX.clone(), rangeBY.clone()));
-				}
+				possiblePaths.paths.push(this.createPossiblePath(Path.types.elbow, pathConfig, Direction.left, Direction.down));
+				possiblePaths.paths.push(this.createPossiblePath(Path.types.elbow, pathConfig, Direction.down, Direction.left));
+				possiblePaths.paths.push(this.createPossiblePath(Path.types.zigzag, pathConfig, Direction.down, Direction.left, Direction.down));
+				possiblePaths.paths.push(this.createPossiblePath(Path.types.zigzag, pathConfig, Direction.left, Direction.down, Direction.left));
 
-				{
-					//elbow left-down
-					let path = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode, true);
-					possiblePaths.paths.push(path);
-					let rangeAX = Range.create(startArea.left());
-					let rangeAY = Range.create(startArea.top(), startArea.bottom());
-					let rangeBX = Range.create(endArea.left(), endArea.right());
-					let rangeCY = Range.create(endArea.top());
-					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
-					path.points.push(PotentialPoint.create(rangeBX.clone(), rangeAY.clone()));
-					path.points.push(PotentialPoint.create(rangeBX.clone(), rangeCY.clone()));
-				}
-				
-				{
-					//zigzag down-left-down
-					let path = Path.create(Path.types.zigzag, lineType, arrowType, startNode, endNode, false);
-					possiblePaths.paths.push(path);
-					let rangeAY = Range.create(startArea.bottom());
-					let rangeAX = Range.create(startArea.left(), startArea.right());
-					let rangeBY = Range.create(startArea.bottom() + minBuffer, endArea.top() - minBuffer);
-					let rangeCX = Range.create(endArea.left(), endArea.right());
-					let rangeDY = Range.create(endArea.top());
-					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
-					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeBY.clone()));
-					path.points.push(PotentialPoint.create(rangeCX.clone(), rangeBY.clone()));
-					path.points.push(PotentialPoint.create(rangeCX.clone(), rangeDY.clone()));
-				}
-
-				{
-					//zigzag left-down-left
-					let path = Path.create(Path.types.zigzag, lineType, arrowType, startNode, endNode, true);
-					possiblePaths.paths.push(path);
-					let rangeAX = Range.create(startArea.left());
-					let rangeAY = Range.create(startArea.top(), startArea.bottom());
-					let rangeBX = Range.create(endArea.right() + minBuffer, startArea.left() - minBuffer);
-					let rangeCY = Range.create(endArea.top(), endArea.bottom());
-					let rangeDX = Range.create(endArea.right());
-					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
-					path.points.push(PotentialPoint.create(rangeBX.clone(), rangeAY.clone()));
-					path.points.push(PotentialPoint.create(rangeBX.clone(), rangeCY.clone()));
-					path.points.push(PotentialPoint.create(rangeDX.clone(), rangeCY.clone()));
-				}
-				
 				possiblePaths.simpleLine = simpleLineBetweenNodes(startNode, endNode, allNodes, relation);
 	
 				return possiblePaths;
 			}
 			if(startArea.isBelowLeftOf(endArea))
 			{
-				{
-					//elbow up-right
-					let path = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode, false);
-					possiblePaths.paths.push(path);
-					let rangeAY = Range.create(startArea.top());
-					let rangeAX = Range.create(startArea.left(), startArea.right());
-					let rangeBY = Range.create(endArea.top(), endArea.bottom());
-					let rangeCX = Range.create(endArea.left());
-					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
-					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeBY.clone()));
-					path.points.push(PotentialPoint.create(rangeCX.clone(), rangeBY.clone()));
-				}
-				
-				{
-					//elbow right-up
-					let path = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode, true);
-					possiblePaths.paths.push(path);
-					let rangeAX = Range.create(startArea.right());
-					let rangeAY = Range.create(startArea.top(), startArea.bottom());
-					let rangeBX = Range.create(endArea.left(), endArea.right());
-					let rangeCY = Range.create(endArea.bottom());
-					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
-					path.points.push(PotentialPoint.create(rangeBX.clone(), rangeAY.clone()));
-					path.points.push(PotentialPoint.create(rangeBX.clone(), rangeCY.clone()));
-				}
-				
-				{
-					//zigzag up-right-up
-					let path = Path.create(Path.types.zigzag, lineType, arrowType, startNode, endNode, false);
-					possiblePaths.paths.push(path);
-					let rangeAY = Range.create(startArea.top());
-					let rangeAX = Range.create(startArea.left(), startArea.right());
-					let rangeBY = Range.create(endArea.bottom() + minBuffer, startArea.top() - minBuffer);
-					let rangeCX = Range.create(endArea.left(), endArea.right());
-					let rangeDY = Range.create(endArea.bottom());
-					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
-					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeBY.clone()));
-					path.points.push(PotentialPoint.create(rangeCX.clone(), rangeBY.clone()));
-					path.points.push(PotentialPoint.create(rangeCX.clone(), rangeDY.clone()));
-				}
+				possiblePaths.paths.push(this.createPossiblePath(Path.types.elbow, pathConfig, Direction.right, Direction.up));
+				possiblePaths.paths.push(this.createPossiblePath(Path.types.elbow, pathConfig, Direction.up, Direction.right));
+				possiblePaths.paths.push(this.createPossiblePath(Path.types.zigzag, pathConfig, Direction.up, Direction.right, Direction.up));
+				possiblePaths.paths.push(this.createPossiblePath(Path.types.zigzag, pathConfig, Direction.right, Direction.up, Direction.right));
 
-				{
-					//zigzag right-up-right
-					let path = Path.create(Path.types.zigzag, lineType, arrowType, startNode, endNode, true);
-					possiblePaths.paths.push(path);
-					let rangeAX = Range.create(startArea.right());
-					let rangeAY = Range.create(startArea.top(), startArea.bottom());
-					let rangeBX = Range.create(startArea.right() + minBuffer, endArea.left() - minBuffer);
-					let rangeCY = Range.create(endArea.top(), endArea.bottom());
-					let rangeDX = Range.create(endArea.left());
-					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
-					path.points.push(PotentialPoint.create(rangeBX.clone(), rangeAY.clone()));
-					path.points.push(PotentialPoint.create(rangeBX.clone(), rangeCY.clone()));
-					path.points.push(PotentialPoint.create(rangeDX.clone(), rangeCY.clone()));
-				}
-				
 				possiblePaths.simpleLine = simpleLineBetweenNodes(startNode, endNode, allNodes, relation);
 	
 				return possiblePaths;
 			}
 			if(startArea.isBelowRightOf(endArea))
 			{
-				{
-					//elbow left-up
-					let path = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode, true);
-					possiblePaths.paths.push(path);
-					let rangeAX = Range.create(startArea.left());
-					let rangeAY = Range.create(startArea.top(), startArea.bottom());
-					let rangeBX = Range.create(endArea.left(), endArea.right());
-					let rangeCY = Range.create(endArea.bottom());
-					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
-					path.points.push(PotentialPoint.create(rangeBX.clone(), rangeAY.clone()));
-					path.points.push(PotentialPoint.create(rangeBX.clone(), rangeCY.clone()));
-				}
-				
-				{
-					//elbow up-left
-					let path = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode, false);
-					possiblePaths.paths.push(path);
-					let rangeAY = Range.create(startArea.top());
-					let rangeAX = Range.create(startArea.left(), startArea.right());
-					let rangeBY = Range.create(endArea.top(), endArea.bottom());
-					let rangeCX = Range.create(endArea.right());
-					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
-					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeBY.clone()));
-					path.points.push(PotentialPoint.create(rangeCX.clone(), rangeBY.clone()));
-				}
-				
-				{
-					//zigzag up-left-up
-					let path = Path.create(Path.types.zigzag, lineType, arrowType, startNode, endNode, false);
-					possiblePaths.paths.push(path);
-					let rangeAY = Range.create(startArea.top());
-					let rangeAX = Range.create(startArea.left(), startArea.right());
-					let rangeBY = Range.create(endArea.bottom() + minBuffer, startArea.top() - minBuffer);
-					let rangeCX = Range.create(endArea.left(), endArea.right());
-					let rangeDY = Range.create(endArea.bottom());
-					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
-					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeBY.clone()));
-					path.points.push(PotentialPoint.create(rangeCX.clone(), rangeBY.clone()));
-					path.points.push(PotentialPoint.create(rangeCX.clone(), rangeDY.clone()));
-				}
-
-				{
-					//zigzag left-up-left
-					let path = Path.create(Path.types.zigzag, lineType, arrowType, startNode, endNode, true);
-					possiblePaths.paths.push(path);
-					let rangeAX = Range.create(startArea.left());
-					let rangeAY = Range.create(startArea.top(), startArea.bottom());
-					let rangeBX = Range.create(endArea.right() + minBuffer, startArea.left() - minBuffer);
-					let rangeCY = Range.create(endArea.top(), endArea.bottom());
-					let rangeDX = Range.create(endArea.right());
-					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
-					path.points.push(PotentialPoint.create(rangeBX.clone(), rangeAY.clone()));
-					path.points.push(PotentialPoint.create(rangeBX.clone(), rangeCY.clone()));
-					path.points.push(PotentialPoint.create(rangeDX.clone(), rangeCY.clone()));
-				}
+				possiblePaths.paths.push(this.createPossiblePath(Path.types.elbow, pathConfig, Direction.left, Direction.up));
+				possiblePaths.paths.push(this.createPossiblePath(Path.types.elbow, pathConfig, Direction.up, Direction.left));
+				possiblePaths.paths.push(this.createPossiblePath(Path.types.zigzag, pathConfig, Direction.up, Direction.left, Direction.up));
+				possiblePaths.paths.push(this.createPossiblePath(Path.types.zigzag, pathConfig, Direction.left, Direction.up, Direction.left));
 
 				possiblePaths.simpleLine = simpleLineBetweenNodes(startNode, endNode, allNodes, relation);
 	
@@ -3161,6 +2972,78 @@ var pinker = pinker || {};
 			
 			//fallback: straight line between nodes
 			return simpleLineBetweenNodes(startNode, endNode, allNodes, relation);
+		},
+		//returns a possible path object generated based on getting from start to end by these directions
+		//assumes elbow, curl, or zigzag path
+		createPossiblePath: function(pathType, pathConfig, ...directions) {
+			const startsHorizontal = (directions[0] == Direction.left || directions[0] == Direction.right);
+			const path = Path.create(pathType, pathConfig.lineType, pathConfig.arrowType, pathConfig.startNode, pathConfig.endNode, startsHorizontal);
+			const startArea = pathConfig.startNode.absoluteArea;
+			const endArea   = pathConfig.endNode.absoluteArea;
+			const minBuffer = pathConfig.minBuffer;
+			let rangeX = null;
+			let rangeY = null;
+			switch(directions[0])
+			{
+				case Direction.left:
+					path.points.push(PotentialPoint.create(Range.create(startArea.left()), Range.create(startArea.top(), startArea.bottom())));
+					break;
+				case Direction.right:
+					path.points.push(PotentialPoint.create(Range.create(startArea.right()), Range.create(startArea.top(), startArea.bottom())));
+					break;
+				case Direction.up:
+					path.points.push(PotentialPoint.create(Range.create(startArea.left(), startArea.right()), Range.create(startArea.top())));
+					break;
+				case Direction.down:
+					path.points.push(PotentialPoint.create(Range.create(startArea.left(), startArea.right()), Range.create(startArea.bottom())));
+					break;
+			}
+			for(let i=1; i<directions.length-1; i++)
+			{
+				switch(directions[i])
+				{
+					case Direction.left:
+					case Direction.right:
+						if(directions[i+1] == Direction.down)
+							rangeY = Range.create(startArea.bottom() + minBuffer, endArea.top() - minBuffer);
+						else
+							rangeY = Range.create(startArea.top() - minBuffer, endArea.bottom() + minBuffer);
+						path.points.push(PotentialPoint.create(path.points[path.points.length-1].rangeX, rangeY));
+						break;
+					case Direction.up:
+					case Direction.down:
+						if(directions[i+1] == Direction.left)
+							rangeX = Range.create(startArea.left() - minBuffer, endArea.right() + minBuffer);
+						else
+							rangeX = Range.create(startArea.right() + minBuffer, endArea.left() - minBuffer);
+						path.points.push(PotentialPoint.create(rangeX, path.points[path.points.length-1].rangeY));
+						break;
+				}
+			}
+			switch(directions[directions.length-1])
+			{
+				case Direction.left:
+					rangeY = Range.create(endArea.top(), endArea.bottom());
+					path.points.push(PotentialPoint.create(path.points[path.points.length-1].rangeX, rangeY));
+					path.points.push(PotentialPoint.create(Range.create(endArea.right()), rangeY));
+					break;
+				case Direction.right:
+					rangeY = Range.create(endArea.top(), endArea.bottom());
+					path.points.push(PotentialPoint.create(path.points[path.points.length-1].rangeX, rangeY));
+					path.points.push(PotentialPoint.create(Range.create(endArea.left()), rangeY));
+					break;
+				case Direction.up:
+					rangeX = Range.create(endArea.left(), endArea.right());
+					path.points.push(PotentialPoint.create(rangeX, path.points[path.points.length-1].rangeY));
+					path.points.push(PotentialPoint.create(rangeX, Range.create(endArea.bottom())));
+					break;
+				case Direction.down:
+					rangeX = Range.create(endArea.left(), endArea.right());
+					path.points.push(PotentialPoint.create(rangeX, path.points[path.points.length-1].rangeY));
+					path.points.push(PotentialPoint.create(rangeX, Range.create(endArea.top())));
+					break;
+			}
+			return path;
 		},
 		//returns mixed array of Paths and Lines
 		selectPathsFromPossibles: function(possiblePaths, topLevelNodes) {
