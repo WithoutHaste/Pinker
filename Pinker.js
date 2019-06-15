@@ -2324,8 +2324,12 @@ var pinker = pinker || {};
 					let results = [];
 					let self = this;
 					topLevelNodes.forEach(function(node) {
+	console.log(node.label);
 						if(self.crossesArea(node.absoluteArea))
+						{
+	console.log("crosses " + node.label);
 							results.push(node);
+						}
 						else if(node.nodes.length > 0)
 							results = results.concat(self.crossesNodes(node.nodes));
 					});					
@@ -2333,7 +2337,6 @@ var pinker = pinker || {};
 				},
 				//returns true if path MUST cross entirely across the area
 				//assumes all lines are horizontal or vertical
-				//TODO only handles straight paths so far
 				crossesArea: function(area) {
 					const startsWithinArea = this.possiblePointInArea(this.points[0], area);
 					if(startsWithinArea)
@@ -2437,7 +2440,7 @@ var pinker = pinker || {};
 						}
 						if(this.isInvalid())
 							return false;
-						if(this.crossesArea(node.absoluteArea))
+						if(this.crossesArea(node.absoluteArea)) //best guesses about avoiding node can result in still overlapping node
 							return false;
 					}
 					return true;
@@ -3144,6 +3147,9 @@ var pinker = pinker || {};
 						if(crossedNodes.length > 0 && currentPath.type == Path.types.straight) //don't edit the fallback path
 							continue;
 						if(!currentPath.avoid(crossedNodes))
+							continue;
+						crossedNodes = currentPath.crossesNodes(topLevelNodes); //check again - TODO - could have ended up crossing a node that was a possible-cross but not a certain one
+						if(crossedNodes.length > 0)
 							continue;
 						result.push(currentPath);
 						return;
