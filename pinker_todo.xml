@@ -129,6 +129,26 @@ how does that affect one scope on left-side and comma-separated-scopes on right-
       </Row>
       <Row>
         <Cell>
+          <Data ss:Type="Number">39</Data>
+        </Cell>
+        <Cell ss:StyleID="paragraph">
+          <Data ss:Type="String">support
+passing in any config/other options to .draw() and .render()
+and auto-merge those settings over the defaults
+- would help with the Test page for useSmartArrows on/off</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Todo</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Feature</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-15T00:00:00.000</Data>
+        </Cell>
+      </Row>
+      <Row>
+        <Cell>
           <Data ss:Type="Number">17</Data>
         </Cell>
         <Cell ss:StyleID="paragraph">
@@ -882,7 +902,7 @@ and getting it in the webpage or js when you need it</Data>
           </Data>
         </Cell>
         <Cell>
-          <Data ss:Type="Number">38</Data>
+          <Data ss:Type="Number">39</Data>
         </Cell>
       </Row>
       <Row>
