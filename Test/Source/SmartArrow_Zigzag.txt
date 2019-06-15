@@ -1,8 +1,20 @@
 Layout:
-	[{A}up-right: between top-level siblings]
+	[{A}up-right: between top-level siblings][{A2}up-right: between top-level siblings]
 	[{B}up-right: between top-level siblings]
-	[{C}up-right: between not-top-level cousins]
+	[{C}up-right: between not-top-level cousins][{C2}up-right: between not-top-level cousins]
 	[{D}up-right: between not-top-level cousins]
+	[{E}up-left: between top-level siblings][{E2}up-left: between top-level siblings]
+	[{F}up-left: between top-level siblings]
+	[{G}up-left: between not-top-level cousins][{G2}up-left: between not-top-level cousins]
+	[{H}up-left: between not-top-level cousins]
+	[{I}down-right: between top-level siblings][{I2}right-down: between top-level siblings]
+	[{J}down-right: between top-level siblings]
+	[{K}down-right: between not-top-level cousins][{K2}right-down: between not-top-level cousins]
+	[{L}down-right: between not-top-level cousins]
+	[{M}down-left: between top-level siblings][{M2}right-left: between top-level siblings]
+	[{N}down-left: between top-level siblings]
+	[{O}down-right: between not-top-level cousins][{O2}right-down: between not-top-level cousins]
+	[{P}down-right: between not-top-level cousins]
 {A}:
 	Layout:
 		[Financial Report Generator][Financial Entities]
@@ -43,3 +55,130 @@ Layout:
 		[Financial Data Mapper][Financial Database]
 	Relate:
 		[Financial Data Mapper]->{D}.[A.Financial Entities],[Financial Database]
+{E}:
+	Layout:
+		[Financial Entities][Financial Report Generator]
+		...[Financial Data Gateway (Interface)]
+		[Financial Database][Financial Data Mapper]
+	Relate:
+		[Financial Data Mapper]->[Financial Entities],[Financial Database]
+{F}:
+	Layout:
+		[Financial Entities][Financial Report Generator]
+		[Financial Data Gateway (Interface)]
+		[Financial Database][Financial Data Mapper]
+	Relate:
+		[Financial Data Mapper]->[Financial Entities],[Financial Database]
+{G}:
+	Layout:
+		[A]
+		[B]
+{G}.[A]:
+	Layout:
+		[Financial Entities][Financial Report Generator]
+		...[Financial Data Gateway (Interface)]
+{G}.[B]:
+	Layout:
+		[Financial Database][Financial Data Mapper]
+	Relate:
+		[Financial Data Mapper]->{G}.[A.Financial Entities],[Financial Database]
+{H}:
+	Layout:
+		[A]
+		[B]
+{H}.[A]:
+	Layout:
+		[Financial Entities][Financial Report Generator]
+		[Financial Data Gateway (Interface)]
+{H}.[B]:
+	Layout:
+		[Financial Database][Financial Data Mapper]
+	Relate:
+		[Financial Data Mapper]->{H}.[A.Financial Entities],[Financial Database]
+{I}:
+	Layout:
+		[Financial Data Mapper][Financial Database]
+		[Financial Data Gateway (Interface)]
+		[Financial Report Generator][Financial Entities]
+	Relate:
+		[Financial Data Mapper]->[Financial Entities],[Financial Database]
+{I2}:
+	Layout:
+		[A]...[B]
+		[CCCC][DDDD]
+		...[E]
+	Relate:
+		[A]->[E]
+{J}:
+	Layout:
+		[Financial Data Mapper][Financial Database]
+		...[Financial Data Gateway (Interface)]
+		[Financial Report Generator][Financial Entities]
+	Relate:
+		[Financial Data Mapper]->[Financial Entities],[Financial Database]
+{K}:
+	Layout:
+		[A]
+		[B]
+{K}.[A]:
+	Layout:
+		[Financial Data Mapper][Financial Database]
+	Relate:
+		[Financial Data Mapper]->{K}.[B.Financial Entities],[Financial Database]
+{K}.[B]:
+	Layout:
+		[Financial Data Gateway (Interface)]
+		[Financial Report Generator][Financial Entities]
+{L}:
+	Layout:
+		[A]
+		[B]
+{L}.[A]:
+	Layout:
+		[Financial Data Mapper][Financial Database]
+	Relate:
+		[Financial Data Mapper]->{L}.[B.Financial Entities],[Financial Database]
+{L}.[B]:
+	Layout:
+		...[Financial Data Gateway (Interface)]
+		[Financial Report Generator][Financial Entities]
+{M}:
+	Layout:
+		[Financial Database][Financial Data Mapper]
+		...[Financial Data Gateway (Interface)]
+		[Financial Entities][Financial Report Generator]
+	Relate:
+		[Financial Data Mapper]->[Financial Entities],[Financial Database]
+{N}:
+	Layout:
+		[Financial Database][Financial Data Mapper]
+		[Financial Data Gateway (Interface)]
+		[Financial Entities][Financial Report Generator]
+	Relate:
+		[Financial Data Mapper]->[Financial Entities],[Financial Database]
+{O}:
+	Layout:
+		[A]
+		[B]
+{O}.[A]:
+	Layout:
+		[Financial Database][Financial Data Mapper]
+	Relate:
+		[Financial Data Mapper]->{O}.[B.Financial Entities],[Financial Database]
+{O}.[B]:
+	Layout:
+		...[Financial Data Gateway (Interface)]
+		[Financial Entities][Financial Report Generator]
+{P}:
+	Layout:
+		[A]
+		[B]
+{P}.[A]:
+	Layout:
+		[Financial Database][Financial Data Mapper]
+	Relate:
+		[Financial Data Mapper]->{P}.[B.Financial Entities],[Financial Database]
+{P}.[B]:
+	Layout:
+		[Financial Data Gateway (Interface)]
+		[Financial Entities][Financial Report Generator]

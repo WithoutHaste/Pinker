@@ -2889,6 +2889,21 @@ var pinker = pinker || {};
 				}
 				
 				{
+					//zigzag down-right-down
+					let path = Path.create(Path.types.zigzag, lineType, arrowType, startNode, endNode, false);
+					possiblePaths.paths.push(path);
+					let rangeAY = Range.create(startArea.bottom());
+					let rangeAX = Range.create(startArea.left(), startArea.right());
+					let rangeBY = Range.create(startArea.bottom() + minBuffer, endArea.top() - minBuffer);
+					let rangeCX = Range.create(endArea.left(), endArea.right());
+					let rangeDY = Range.create(endArea.top());
+					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
+					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeBY.clone()));
+					path.points.push(PotentialPoint.create(rangeCX.clone(), rangeBY.clone()));
+					path.points.push(PotentialPoint.create(rangeCX.clone(), rangeDY.clone()));
+				}
+
+				{
 					//zigzag right-down-right
 					let path = Path.create(Path.types.zigzag, lineType, arrowType, startNode, endNode, true);
 					possiblePaths.paths.push(path);
@@ -2933,6 +2948,21 @@ var pinker = pinker || {};
 					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
 					path.points.push(PotentialPoint.create(rangeBX.clone(), rangeAY.clone()));
 					path.points.push(PotentialPoint.create(rangeBX.clone(), rangeCY.clone()));
+				}
+				
+				{
+					//zigzag down-left-down
+					let path = Path.create(Path.types.zigzag, lineType, arrowType, startNode, endNode, false);
+					possiblePaths.paths.push(path);
+					let rangeAY = Range.create(startArea.bottom());
+					let rangeAX = Range.create(startArea.left(), startArea.right());
+					let rangeBY = Range.create(startArea.bottom() + minBuffer, endArea.top() - minBuffer);
+					let rangeCX = Range.create(endArea.left(), endArea.right());
+					let rangeDY = Range.create(endArea.top());
+					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
+					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeBY.clone()));
+					path.points.push(PotentialPoint.create(rangeCX.clone(), rangeBY.clone()));
+					path.points.push(PotentialPoint.create(rangeCX.clone(), rangeDY.clone()));
 				}
 				
 				possiblePaths.simpleLine = simpleLineBetweenNodes(startNode, endNode, allNodes, relation);
@@ -3014,6 +3044,21 @@ var pinker = pinker || {};
 					path.points.push(PotentialPoint.create(rangeCX.clone(), rangeBY.clone()));
 				}
 				
+				{
+					//zigzag up-left-up
+					let path = Path.create(Path.types.zigzag, lineType, arrowType, startNode, endNode, false);
+					possiblePaths.paths.push(path);
+					let rangeAY = Range.create(startArea.top());
+					let rangeAX = Range.create(startArea.left(), startArea.right());
+					let rangeBY = Range.create(endArea.bottom() + minBuffer, startArea.top() - minBuffer);
+					let rangeCX = Range.create(endArea.left(), endArea.right());
+					let rangeDY = Range.create(endArea.bottom());
+					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeAY.clone()));
+					path.points.push(PotentialPoint.create(rangeAX.clone(), rangeBY.clone()));
+					path.points.push(PotentialPoint.create(rangeCX.clone(), rangeBY.clone()));
+					path.points.push(PotentialPoint.create(rangeCX.clone(), rangeDY.clone()));
+				}
+
 				possiblePaths.simpleLine = simpleLineBetweenNodes(startNode, endNode, allNodes, relation);
 	
 				return possiblePaths;
