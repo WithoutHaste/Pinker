@@ -277,6 +277,16 @@ Uses [Semantic Versioning 2.0.0](https://semver.org/).
 
 To see what version you are using: `let v = pinker.version;`
 
+[Smart Arrows - v1.2.0](https://github.com/WithoutHaste/Pinker/releases/tag/v1.2.0)  
+- support for curl, elbow, and zigzag SmartArrows
+- spread out coincident paths (vertical, horizontal) with or without SmartArrows
+- additional option for .render() and .draw(): do not overwrite the source
+- config option: "useSmartArrows" turns SmartArrows on/off
+- config option: "labelPadding" for padding around text blocks
+- bug fix: finding scopes by relative paths
+- bug fix: finding scopes by aliased paths
+- bug fix: aliased scopes
+
 [Improved Layout - v1.1.0](https://github.com/WithoutHaste/Pinker/releases/tag/v1.1.0)  
 - favor horizontal/vertical lines over angled lines
 - favor golden-ratio labels
