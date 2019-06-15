@@ -2317,6 +2317,62 @@ var pinker = pinker || {};
 				endNode: endNode,
 				startsHorizontal: startsHorizontal,
 				isPath: true,
+				//returns list of all the nodes that this path could overlap (enters and then leaves)
+				//does not include any descendants of a crossed node
+				//topLevelNodes: parent-less nodes, linking to all lower level nodes
+				mightCrossNodes: function(topLevelNodes)
+				{
+					let results = [];
+					let self = this;
+					topLevelNodes.forEach(function(node) {
+						if(self.mightCrossArea(node.absoluteArea))
+							results.push(node);
+						else if(node.nodes.length > 0)
+							results = results.concat(self.mightCrossNodes(node.nodes));
+					});					
+					return results;
+				},
+				//returns true if path MIGHT cross the area (enter and then leave)
+				//assumes all lines are horizontal or vertical
+				mightCrossArea: function(area) {
+					const startsWithinArea = this.possiblePointInArea(this.points[0], area);
+					if(startsWithinArea)
+						return false; //can't cross over if it starts inside
+					const endsWithinArea = this.possiblePointInArea(this.points[this.points.length-1], area);
+					if(endsWithinArea)
+						return false; //can't cross over if it ends inside
+					let isHorizontal = this.startsHorizontal;
+					let entersArea = false;
+					for(let i=1; i<this.points.length; i++)
+					{
+						if(this.possiblePointInArea(this.points[i], area))
+							return true;
+						if(this.possibleLineMightCrossArea(this.points[i-1], this.points[i], area, isHorizontal))
+							return true;
+						isHorizontal = !isHorizontal;
+					}
+					return false;
+				},
+				//returns true if possible line might cross area (enter and leave)
+				//assumes all lines are horizontal or vertical
+				possibleLineMightCrossArea: function(pointA, pointB, area, isHorizontal) {
+					if(isHorizontal)
+					{
+						return (
+							Math.min(pointA.rangeX.min, pointB.rangeX.min) <= area.left() 
+							&& Math.max(pointA.rangeX.max, pointB.rangeX.max) >= area.right()
+							&& pointA.rangeY.intersect(Range.create(area.top(), area.bottom())) != null
+						);
+					}
+					else
+					{
+						return (
+							Math.min(pointA.rangeY.min, pointB.rangeY.min) <= area.top() 
+							&& Math.max(pointA.rangeY.max, pointB.rangeY.max) >= area.bottom()
+							&& pointA.rangeX.intersect(Range.create(area.left(), area.right())) != null
+						);
+					}
+				},
 				//returns list of all the nodes that this path completely crosses (enters and then leaves)
 				//does not include any descendants of a crossed node
 				//topLevelNodes: parent-less nodes, linking to all lower level nodes
@@ -2324,12 +2380,8 @@ var pinker = pinker || {};
 					let results = [];
 					let self = this;
 					topLevelNodes.forEach(function(node) {
-	console.log(node.label);
 						if(self.crossesArea(node.absoluteArea))
-						{
-	console.log("crosses " + node.label);
 							results.push(node);
-						}
 						else if(node.nodes.length > 0)
 							results = results.concat(self.crossesNodes(node.nodes));
 					});					
@@ -2377,6 +2429,7 @@ var pinker = pinker || {};
 					}
 				},
 				//returns true if a possible point may lie inside the area (not just on the boundary)
+				//TODO the "minus 1" may be too broad - can I check for range-exclusive?
 				possiblePointInArea: function(point, area) {
 					const intersectX = point.rangeX.intersect(Range.create(area.left() + 1, area.right() - 1));
 					const intersectY = point.rangeY.intersect(Range.create(area.top() + 1, area.bottom() - 1));
@@ -2395,23 +2448,28 @@ var pinker = pinker || {};
 						for(let p=1; p<this.points.length; p++)
 						{
 							let point = this.points[p];
+							if(!this.mightCrossArea(node.absoluteArea))
+								break; //already bypassed the node
 							let intersectX = point.rangeX.intersect(nodeRangeX);
 							let intersectY = point.rangeY.intersect(nodeRangeY);
-							if(intersectX == null || intersectY == null)
+							if(intersectX == null && intersectY == null)
 								continue; //no intersection remains
-							if(point.rangeX.equals(intersectX) && point.rangeY.equals(intersectY)) //can't escape both constraints
+							else if(intersectX != null && intersectY != null)
 							{
-								point.rangeX = null;
-								point.rangeY = null;
-								return false;
+								if(point.rangeX.equals(intersectX) && point.rangeY.equals(intersectY)) //can't escape both constraints
+								{
+									point.rangeX = null;
+									point.rangeY = null;
+									return false;
+								}
 							}
 							//take the little adjustments first
-							if(!point.rangeX.equals(intersectX) && !point.rangeX.contains(intersectX))
+							if(intersectX != null && !point.rangeX.equals(intersectX) && !point.rangeX.contains(intersectX))
 							{
 								point.rangeX = point.rangeX.minus(intersectX);
 								this.clean();
 							}
-							if(!point.rangeY.equals(intersectY) && !point.rangeY.contains(intersectY))
+							if(intersectY != null && !point.rangeY.equals(intersectY) && !point.rangeY.contains(intersectY))
 							{
 								point.rangeY = point.rangeY.minus(intersectY);
 								this.clean();
@@ -3143,13 +3201,10 @@ var pinker = pinker || {};
 					for(let i=0; i<possiblePath.paths.length; i++) //take first path that doesn't cross over another node
 					{
 						let currentPath = possiblePath.paths[i];
-						let crossedNodes = currentPath.crossesNodes(topLevelNodes);
+						let crossedNodes = currentPath.mightCrossNodes(topLevelNodes);
 						if(crossedNodes.length > 0 && currentPath.type == Path.types.straight) //don't edit the fallback path
 							continue;
 						if(!currentPath.avoid(crossedNodes))
-							continue;
-						crossedNodes = currentPath.crossesNodes(topLevelNodes); //check again - TODO - could have ended up crossing a node that was a possible-cross but not a certain one
-						if(crossedNodes.length > 0)
 							continue;
 						result.push(currentPath);
 						return;
