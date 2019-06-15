@@ -141,6 +141,10 @@ var pinker = pinker || {};
 		isAlias: function(term) {
 			return(term.match(/^\{.+\}$/) != null);
 		},
+		//returns true if term is a path that starts with an alias
+		isAliasPath: function(term) {
+			return (this.isAlias(term) || term.match(/^\{.+\}\./) != null);
+		},
 		//extracts the header from a section header
 		parseHeader: function(line) {
 			const matches = line.match(/^(.+)\:$/);
@@ -755,6 +759,30 @@ var pinker = pinker || {};
 				},
 				pathPrefix: function() {
 					return this.label + ".";
+				},
+				findPath: function(path) {
+					if(Source.isAlias(path))
+						return this.findAlias(path);
+					if(Source.isAliasPath(path))
+					{
+						let [alias, label] = Source.splitAliasFromPath(path);
+						let node = this.findAlias(alias);
+						if(node == null)
+							return null;
+						if(label == null)
+							return node;
+						return node.findNestedLabel(Source.openScope(label));
+					}
+					return this.findLabel(Source.openScope(path));
+				},
+				findNestedLabel: function(label) {
+					for(let i=0; i<this.nodes.length; i++)
+					{
+						let result = this.nodes[i].findLabel(label);
+						if(result != null)
+							return result;
+					}
+					return null
 				},
 				//returns label based on next part of path matching this
 				findLabel: function(label) {
@@ -1912,8 +1940,8 @@ var pinker = pinker || {};
 	}
 
 	function findNode(nodes, label, labelPath) {
-		if(Source.isAlias(label))
-			return findNodeAlias(nodes, label);
+		if(Source.isAliasPath(label))
+			return findNodeAliasPath(nodes, label);
 		if(Source.pathStartsWithAlias(label))
 		{
 			let [alias, remainingPath] = Source.splitAliasFromPath(label);
@@ -1939,13 +1967,21 @@ var pinker = pinker || {};
 		for(let i=0; i<nodes.length; i++)
 		{
 			let node = nodes[i];
-			let result = node.findAlias(labelOrPath);
-			if(result == null)
-				result = node.findLabel(labelOrPath);
+			let result = node.findPath(labelOrPath);
 			if(result != null)
 				return result;
 		}
 		return null;
+	}
+	
+	function findNodeAliasPath(nodes, aliasPath) {
+		if(Source.isAlias(aliasPath))
+			return findNodeAlias(nodes, aliasPath);
+		let [alias, path] = Source.splitAliasFromPath(aliasPath);
+		let node = findNodeAlias(nodes, alias);
+		if(node == null)
+			return null;
+		return findNodeAbsolute(node.nodes, Source.openScope(path));
 	}
 	
 	function findNodeAlias(nodes, alias) {
