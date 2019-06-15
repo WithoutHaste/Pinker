@@ -1,0 +1,98 @@
+<html>
+	<head>
+		<meta charset="UTF-8"> 
+		<script src='../Pinker.js'></script>
+		<link rel="stylesheet" type="text/css" href="Test.css" />
+	</head>
+	<body>
+		<div class='header'>
+		Pinker.js Tests: Single-Level
+		</div>
+
+		Single-level diagram (without SmartArrows)
+		<div>
+			<pre id='Source01'>
+Layout:
+	[A]
+	[B][D][E]
+	[C]...[F]
+Relate:
+	[B]->[A],[C]
+	[D]->[B],[E],[F]
+			</pre>
+			<canvas id='Canvas01'></canvas>
+		</div>
+		<script>
+			var canvas = document.getElementById("Canvas01");
+			var source = document.getElementById("Source01").innerHTML;
+			pinker.config.useSmartArrows = false;
+			pinker.draw(canvas, source);
+		</script>
+
+		Single-level diagram: multiple scopes on each side of alignment ...  (without SmartArrows)
+		<div>
+			<pre id='Source02'>
+Layout:
+	[A]
+	[B][D][F][G][I]
+	[C][E]...[H][J]
+Relate:
+	[B]->[A],[C]
+	[D]->[B],[E],[F]
+	[H]-D[F],[G],[I],[J]
+			</pre>
+			<canvas id='Canvas02'></canvas>
+		</div>
+		<script>
+			var canvas = document.getElementById("Canvas02");
+			var source = document.getElementById("Source02").innerHTML;
+			pinker.config.useSmartArrows = false;
+			pinker.draw(canvas, source);
+		</script>
+
+		Spread out overlapping lines (without SmartArrows)
+		<div>
+			<pre id='Source03'>
+Layout:
+	[A][D][E]
+	[B]
+	[C]
+Relate:
+	[A]->[B],[C]
+	[B]->[C]
+	[D]->[E]
+	[D]-D[E]
+			</pre>
+			<canvas id='Canvas03'></canvas>
+		</div>
+		<script>
+			var canvas = document.getElementById("Canvas03");
+			var source = document.getElementById("Source03").innerHTML;
+			pinker.config.useSmartArrows = false;
+			pinker.draw(canvas, source);
+		</script>
+
+		Spread out overlapping lines (with SmartArrows)
+		<div>
+			<pre id='Source04'>
+Layout:
+	[A][D][E]
+	[B]
+	[C]
+Relate:
+	[A]->[B],[C]
+	[B]->[C]
+	[D]->[E]
+	[D]-D[E]
+			</pre>
+			<canvas id='Canvas04'></canvas>
+		</div>
+		<script>
+			var canvas = document.getElementById("Canvas04");
+			var source = document.getElementById("Source04").innerHTML;
+			pinker.config.useSmartArrows = true;
+			pinker.draw(canvas, source);
+		</script>
+
+	</body>
+</html>

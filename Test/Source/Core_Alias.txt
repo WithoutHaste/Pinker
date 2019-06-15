@@ -1,0 +1,18 @@
+Layout:
+	[{A}Long Long Label A][{B}Long Long Label B]
+Relate:
+	{A}->{B}
+{A}:
+	Layout:
+		[{C}Long Long Label C]
+{B}:
+	Layout:
+		[D]
+	Relate:
+		[D]->{C}.[E.Long Long Label F]
+{C}:
+	Layout:
+		[E]
+{C}.[E]:
+	Layout:
+		[Long Long Label F]

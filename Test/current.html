@@ -1,0 +1,34 @@
+<html>
+	<head>
+		<meta charset="UTF-8"> 
+		<script src='../Pinker.js'></script>
+		<link rel="stylesheet" type="text/css" href="Test.css" />
+	</head>
+	<body>
+		<div class='header'>
+		Pinker.js Tests: in progress
+		</div>
+
+		<div>
+			<pre id='Source02'>
+Layout:
+	[Interactor]
+	...[Database]
+[Interactor]:
+	Layout:
+		[{A}Financial Report Request (Data Structure)]
+		[{B}Financial Report Requester (Interface)][{D}Financial Report Generator][{F}Financial Entities]
+		[{C}Financial Report Response (Data Structure)][{E}Financial Data Gateway (Interface)]
+[Database]:
+	Layout:
+		[{G}Financial Data Mapper][{H}Financial Database]
+	Relate:
+		{G}->{F}
+			</pre>
+			<canvas id='Canvas02'></canvas>
+		</div>
+		<script>
+			var canvas = document.getElementById("Canvas02");
+			var source = document.getElementById("Source02").innerHTML;
+			pinker.draw(canvas, source);
+		</script>

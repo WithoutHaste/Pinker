@@ -1,0 +1,13 @@
+Layout:
+	[Interactor]
+	...[Database]
+[Interactor]:
+	Layout:
+		[{A}Financial Report Request (Data Structure)]
+		[{B}Financial Report Requester (Interface)][{D}Financial Report Generator][{F}Financial Entities]
+		[{C}Financial Report Response (Data Structure)][{E}Financial Data Gateway (Interface)]
+[Database]:
+	Layout:
+		[{G}Financial Data Mapper][{H}Financial Database]
+	Relate:
+		{G}->{F}

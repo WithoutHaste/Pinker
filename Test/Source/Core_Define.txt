@@ -1,0 +1,18 @@
+Layout:
+	[A][B]
+Relate:
+	[A]->[B]
+[A]:
+	Define:
+		oneField|
+		twoField
+		|getOneField()
+		getTwoField()
+		|
+		setTwoField(x, y)
+	Layout:
+		[C]
+[B]:
+	Define:
+		fourField
+		fiveField

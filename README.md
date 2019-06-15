@@ -75,6 +75,12 @@ You can also separate your diagram sources into text files and include them in y
 </script>
 ```
 
+Passing additional options: `pinker.render(optionsObject)`
+
+| Attribute | Data Type | Description |
+| --------- | --------- | ----------- |
+|**keepSource**|boolean|true means do not replace the Source text with the Canvas|
+
 ## Pinker Syntax
 
 Indentation is not important; you can use indentation to make the source more legible.
@@ -241,7 +247,8 @@ pinker.config.attribute = value;
 |**fontSize**|integer or float|font size in pixels|
 |**fontFamily**|string|font family|
 |**scopeMargin**|integer or float|minimum space around each scope|
-|**scopePadding**|integer or float|minimum space between scope boundary and scope contents|
+|**scopePadding**|integer or float|minimum space between scope boundary and nested scopes|
+|**labelPadding**|integer or float|minimum space between scope boundary and text areas|
 |**canvasPadding**|integer or float|minimum space between canvas boundary and scopes|
 |**backgroundColor**|string, like "#FFFFFF"|diagram background color|
 |**shadeColor**|string, like "#FFFFFF"|accent color|
@@ -254,6 +261,7 @@ pinker.config.attribute = value;
 |**lineSpacing**|function()|returns padding distance between lines of text in pixels|
 |**favorGoldenRatioLabelSize**|boolean|should multi-line labels be arranged with a width:height ratio close to 1.6?|
 |**favorUniformNodeSizes**|boolean|should sibling-nodes be resized to appear similar?|
+|**useSmartArrows**|boolean|instead of drawing straight lines between scopes, draw arrows to route around scopes|
 
 ## License
 
