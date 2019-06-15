@@ -7,7 +7,7 @@ var pinker = pinker || {};
 
 (function() { //private scope
 
-	pinker.version = '1.2.0';
+	pinker.version = '1.3.0';
 
 	pinker.config = {
 		fontSize: 14 //font size in pixels
@@ -2098,6 +2098,13 @@ var pinker = pinker || {};
 	//###################################################
 	
 	const Triangle = {
+		equilateralAngle: Math.PI/6, //half of top corner angle
+		rotateAroundPoint: function(center, length, startingAngle, deltaAngle) {
+			return Point.create(
+				center.x - length * Math.cos(startingAngle - deltaAngle), 
+				center.y - length * Math.sin(startingAngle - deltaAngle)
+			);
+		},
 		//returns isosceles triangle object
 		createIsosceles: function(topPoint, angle, area) {
 			const baseToHeightRatio = 1.5;
@@ -2105,67 +2112,104 @@ var pinker = pinker || {};
 			const height = base * baseToHeightRatio;
 			const triangleSideLength = Math.sqrt(Math.pow(base/2, 2) + Math.pow(height, 2));
 			const isoscelesAngle = Math.asin((base / 2) / triangleSideLength); //half of top corner angle
-			const basePointA = Point.create(
-				topPoint.x - triangleSideLength * Math.cos(angle - isoscelesAngle), 
-				topPoint.y - triangleSideLength * Math.sin(angle - isoscelesAngle)
-			);
-			const basePointB = Point.create(
-				topPoint.x - triangleSideLength * Math.cos(angle + isoscelesAngle), 
-				topPoint.y - triangleSideLength * Math.sin(angle + isoscelesAngle)
-			);
+			const basePointA = this.rotateAroundPoint(topPoint, triangleSideLength, angle, isoscelesAngle*-1);
+			const basePointB = this.rotateAroundPoint(topPoint, triangleSideLength, angle, isoscelesAngle);
 			return {
 				topPoint: topPoint,
 				basePointA: basePointA,
 				basePointB: basePointB,
 				base: base,
 				height: height,
+				sideLength: triangleSideLength,
 				centerAngle: angle
 			};
 		},
 		//returns equilateral triangle object
 		createEquilateral: function(topPoint, angle, area) {
 			const triangleSideLength = Math.sqrt(area * 4 / Math.sqrt(3));
-			const equilateralAngle = Math.PI/6; //half of top corner angle
-			const basePointA = Point.create(
-				topPoint.x - triangleSideLength * Math.cos(angle - equilateralAngle), 
-				topPoint.y - triangleSideLength * Math.sin(angle - equilateralAngle)
-			);
-			const basePointB = Point.create(
-				topPoint.x - triangleSideLength * Math.cos(angle + equilateralAngle), 
-				topPoint.y - triangleSideLength * Math.sin(angle + equilateralAngle)
-			);
+			const basePointA = this.rotateAroundPoint(topPoint, triangleSideLength, angle, this.equilateralAngle*-1);
+			const basePointB = this.rotateAroundPoint(topPoint, triangleSideLength, angle, this.equilateralAngle);
 			return {
 				topPoint: topPoint,
 				basePointA: basePointA,
 				basePointB: basePointB,
 				base: triangleSideLength,
 				height: (Math.sqrt(3) / 2) * triangleSideLength,
+				sideLength: triangleSideLength,
 				centerAngle: angle
 			};
 		}
 	};
 	
+	const Diamond = {
+		//returns diamond object
+		create: function(topPoint, angle, area) {
+			const triangle = Triangle.createEquilateral(topPoint, angle, area/2);
+			const bottomPoint = Triangle.rotateAroundPoint(triangle.basePointA, triangle.sideLength, angle, Triangle.equilateralAngle);
+			return {
+				topPoint: topPoint,
+				cornerA: triangle.basePointA,
+				cornerB: triangle.basePointB,
+				bottomPoint: bottomPoint,
+				sideLength: triangle.sideLength,
+				centerAngle: angle
+			};
+		}
+	};
+	
+	const Draw = {
+		setLineType: function(lineType, context) {
+			switch(lineType)
+			{
+				case LineTypes.solid: 
+					this.setSolidLine(context);
+					return;
+				case LineTypes.dashed: 
+					this.setDashedLine(pinker.config.lineDashLength, pinker.config.lineDashSpacing, context); 
+					return;
+			}
+		},
+		setSolidLine: function(context) {
+			context.setLineDash([]); 
+		},
+		setDashedLine: function(dashLength, dashSpacing, context) {
+			context.setLineDash([dashLength, dashSpacing]); 
+		},
+		//will draw figure from start point through to end point - does not close figure
+		fillAndOutlineShape: function(points, fillColor, lineColor, context) {
+			this.fillShape(points, fillColor, context);
+			this.outlineShape(points, lineColor, context);
+		},
+		fillShape: function(points, fillColor, context) {
+			context.fillStyle = fillColor;
+			this.makeContextPath(points, context);
+			context.fill();
+		},
+		outlineShape: function(points, lineColor, context) {
+			context.strokeStyle = lineColor;
+			this.makeContextPath(points, context);
+			context.stroke();
+		},
+		//does not close figure
+		makeContextPath: function(points, context) {
+			context.beginPath();
+			context.moveTo(points[0].x, points[0].y);
+			for(let i=1; i<points.length; i++)
+			{
+				context.lineTo(points[i].x, points[i].y);
+			}
+		}
+	};
+	
 	function drawLine(start, end, lineType, context) {
-		context.lineWidth = pinker.config.lineWeight;
 		if(start == null || end == null)
 		{
 			displayError(`drawLine: start and/or end point is null. Start: ${start} End: ${end}.`);
 			return;
 		}
-		context.beginPath();
-		context.strokeStyle = pinker.config.lineColor;
-		switch(lineType)
-		{
-			case LineTypes.solid: 
-				context.setLineDash([]); 
-				break;
-			case LineTypes.dashed: 
-				context.setLineDash([pinker.config.lineDashLength, pinker.config.lineDashSpacing]); 
-				break;
-		}
-		context.moveTo(start.x, start.y);
-		context.lineTo(end.x, end.y);
-		context.stroke();
+		context.lineWidth = pinker.config.lineWeight;
+		Draw.setLineType(lineType, context);
+		Draw.outlineShape([start, end], pinker.config.lineColor, context);
 	}
 	
 	function drawArrow(start, end, arrowType, context) {
@@ -2180,98 +2224,33 @@ var pinker = pinker || {};
 		const headArea = pinker.config.arrowHeadArea;
 		const angle = Math.atan2(end.y - start.y, end.x - start.x);
 		context.lineWidth = pinker.config.lineWeight;
-		context.setLineDash([]); //solid line
+		Draw.setSolidLine(context);
 		if(arrowType == ArrowTypes.filledArrow)
 		{
-			let triangle = Triangle.createIsosceles(end, angle, pinker.config.arrowHeadArea);
-			context.fillStyle = pinker.config.lineColor;
-			context.beginPath();
-			context.moveTo(end.x, end.y);
-			context.lineTo(triangle.basePointA.x, triangle.basePointA.y);
-			context.lineTo(triangle.basePointB.x, triangle.basePointB.y);
-			context.lineTo(end.x, end.y);
-			context.fill();
+			const triangle = Triangle.createIsosceles(end, angle, pinker.config.arrowHeadArea);
+			const points = [end, triangle.basePointA, triangle.basePointB, end];
+			Draw.fillShape(points, pinker.config.lineColor, context);
 		}
 		else if(arrowType == ArrowTypes.plainArrow || arrowType == ArrowTypes.hollowArrow)
 		{
-			let triangle = Triangle.createEquilateral(end, angle, pinker.config.arrowHeadArea);
+			const triangle = Triangle.createEquilateral(end, angle, pinker.config.arrowHeadArea);
+			const points = [end, triangle.basePointA, triangle.basePointB, end];
 			if(arrowType == ArrowTypes.plainArrow)
-			{
-				context.beginPath();
-				context.moveTo(end.x, end.y);
-				context.lineTo(triangle.basePointA.x, triangle.basePointA.y);
-				context.moveTo(end.x, end.y);
-				context.lineTo(triangle.basePointB.x, triangle.basePointB.y);
-				context.stroke();
-			}
+				Draw.fillShape(points, pinker.config.lineColor, context);
 			else if(arrowType == ArrowTypes.hollowArrow)
-			{
-				//hollow center covers line
-				context.fillStyle = pinker.config.backgroundColor;
-				context.beginPath();
-				context.moveTo(end.x, end.y);
-				context.lineTo(triangle.basePointA.x, triangle.basePointA.y);
-				context.lineTo(triangle.basePointB.x, triangle.basePointB.y);
-				context.lineTo(end.x, end.y);
-				context.fill();
-				//arrow outline
-				context.beginPath();
-				context.moveTo(end.x, end.y);
-				context.lineTo(triangle.basePointA.x, triangle.basePointA.y);
-				context.lineTo(triangle.basePointB.x, triangle.basePointB.y);
-				context.lineTo(end.x, end.y);
-				context.stroke();
-			}
+				Draw.fillAndOutlineShape(points, pinker.config.backgroundColor, pinker.config.lineColor, context);
 		}
 		else if(arrowType == ArrowTypes.hollowDiamond || arrowType == ArrowTypes.filledDiamond)
 		{
-			const triangleSideLength = Math.sqrt((headArea/2) * 4 / Math.sqrt(3)); //see equilateral triangle geometry
-			const arrowCornerA = Point.create(end.x - triangleSideLength * Math.cos(angle - Math.PI/6), end.y - triangleSideLength * Math.sin(angle - Math.PI/6));
-			const arrowCornerB = Point.create(end.x - triangleSideLength * Math.cos(angle + Math.PI/6), end.y - triangleSideLength * Math.sin(angle + Math.PI/6));
-			const diamondCornerC = Point.create(arrowCornerA.x - triangleSideLength * Math.cos(angle + Math.PI/6), arrowCornerA.y - triangleSideLength * Math.sin(angle + Math.PI/6));
+			const diamond = Diamond.create(end, angle, headArea);
+			const points = [end, diamond.cornerA, diamond.bottomPoint, diamond.cornerB, end];
 			if(arrowType == ArrowTypes.hollowDiamond)
-			{
-				//hollow center covers line
-				context.fillStyle = pinker.config.backgroundColor;
-				context.beginPath();
-				context.moveTo(end.x, end.y);
-				context.lineTo(arrowCornerA.x, arrowCornerA.y);
-				context.lineTo(diamondCornerC.x, diamondCornerC.y);
-				context.lineTo(arrowCornerB.x, arrowCornerB.y);
-				context.lineTo(end.x, end.y);
-				context.fill();
-				//arrow outline
-				context.beginPath();
-				context.moveTo(end.x, end.y);
-				context.lineTo(arrowCornerA.x, arrowCornerA.y);
-				context.lineTo(diamondCornerC.x, diamondCornerC.y);
-				context.lineTo(arrowCornerB.x, arrowCornerB.y);
-				context.lineTo(end.x, end.y);
-				context.stroke();
-			}
+				Draw.fillAndOutlineShape(points, pinker.config.backgroundColor, pinker.config.lineColor, context);
 			else if(arrowType == ArrowTypes.filledDiamond)
-			{
-				//solid center covers line
-				context.fillStyle = pinker.config.lineColor;
-				context.beginPath();
-				context.moveTo(end.x, end.y);
-				context.lineTo(arrowCornerA.x, arrowCornerA.y);
-				context.lineTo(diamondCornerC.x, diamondCornerC.y);
-				context.lineTo(arrowCornerB.x, arrowCornerB.y);
-				context.lineTo(end.x, end.y);
-				context.fill();
-				//arrow outline
-				context.beginPath();
-				context.moveTo(end.x, end.y);
-				context.lineTo(arrowCornerA.x, arrowCornerA.y);
-				context.lineTo(diamondCornerC.x, diamondCornerC.y);
-				context.lineTo(arrowCornerB.x, arrowCornerB.y);
-				context.lineTo(end.x, end.y);
-				context.stroke();
-			}
+				Draw.fillShape(points, pinker.config.lineColor, context);
 		}
-	}	
-
+	}
+	
 	//###################################################
 	//### Smart Arrows
 	//###################################################
