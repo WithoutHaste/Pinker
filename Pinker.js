@@ -131,18 +131,26 @@ var pinker = pinker || {};
 		},
 		//returns true if this is a section header
 		isSectionHeader: function(term) {
+			if(term == null)
+				return false;
 			return (term.match(/^.+\:$/) != null);
 		},
 		//returns true if term is a scope
 		isScope: function(term) {
+			if(term == null)
+				return false;
 			return (term.match(/^\[.+\]$/) != null);
 		},
 		//returns true if term is an alias
 		isAlias: function(term) {
+			if(term == null)
+				return false;
 			return(term.match(/^\{.+\}$/) != null);
 		},
 		//returns true if term is a path that starts with an alias
 		isAliasPath: function(term) {
+			if(term == null)
+				return false;
 			return (this.isAlias(term) || term.match(/^\{.+\}\./) != null);
 		},
 		//extracts the header from a section header
@@ -761,6 +769,8 @@ var pinker = pinker || {};
 					return this.label + ".";
 				},
 				findPath: function(path) {
+					if(path == null)
+						return null;
 					if(Source.isAlias(path))
 						return this.findAlias(path);
 					if(Source.isAliasPath(path))
