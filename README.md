@@ -152,7 +152,7 @@ Layout:
 Relate:
 	[A]->[B],[D]
 	[B]->[C]
-	[C]->[E]
+	[C],[D]->[E]
 ```
 
 The **Layout** section defines the basic visual relationship of the scopes.
@@ -292,6 +292,7 @@ Uses [Semantic Versioning 2.0.0](https://semver.org/).
 To see what version you are using: `let v = pinker.version;`
 
 Untitled - v1.3.0  
+- support lists on both sides of a Relate line
 - support dotted lines
 - support quantitative arrows
 - bug fix: parsing Relate row when label contains a comma

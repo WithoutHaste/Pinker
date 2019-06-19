@@ -5,7 +5,7 @@
 
 var pinker = pinker || {};
 
-//pinker.testMode = true;
+pinker.testMode = true;
 
 (function() { //private scope
 
@@ -515,45 +515,42 @@ var pinker = pinker || {};
 		},
 		//returns true if source relate line starts with an alias path
 		startIsAliasPath: function(line) {
-			return (line.match(/^\{.+?\}\.\[.+?\]/) != null);
+			let matches = line.match(/^(\{.+?\})/);
+			if(matches == null)
+				return false;
+			line = line.substring(matches[1].length);
+			return line.match(/^\.\[.+?\]/);
 		},
 		trimSpacesAndCommas: function(line) {
 			line = line.trim();
-			if(line.length > 0 && line[0] == ',')
+			while(line.length > 0 && line[0] == ',')
 				line = line.substring(1).trim();
 			return line;
 		},
-		//returns the starting scope or alias from a source relate line
-		parseStartTerm: function(line) {
-			if(this.startIsAlias(line))
-				return line.match(/^(\{.+?\})/)[1];
-			else if(this.startIsScope(line))
-				return line.match(/^(\[.+?\])/)[1];
-			else
-				return null;
-		},
-		//returns array of ending scopes or alias paths from the part of a source relate line after the arrow
-		parseEndTerms: function(partialLine) {
-			let endTerms = [];
+		//returns [[terms], remaining line]
+		//returns array of comma-separated scopes or alias paths
+		//stops when it hits something it doesn't recognize
+		parseListOfTerms: function(partialLine) {
+			let terms = [];
 			partialLine = this.trimSpacesAndCommas(partialLine);
 			while(partialLine.length > 0)
 			{
 				if(this.startIsAliasPath(partialLine))
 				{
 					let match = partialLine.match(/^\{.+?\}\.\[.+?\]/);
-					endTerms.push(match[0]);
+					terms.push(match[0]);
 					partialLine = partialLine.substring(match[0].length);
 				}
 				else if(this.startIsAlias(partialLine))
 				{
 					let match = partialLine.match(/^\{.+?\}/);
-					endTerms.push(match[0]);
+					terms.push(match[0]);
 					partialLine = partialLine.substring(match[0].length);
 				}
 				else if(this.startIsScope(partialLine))
 				{
 					let match = partialLine.match(/^\[.+?\]/);
-					endTerms.push(match[0]);
+					terms.push(match[0]);
 					partialLine = partialLine.substring(match[0].length);
 				}
 				else
@@ -562,18 +559,32 @@ var pinker = pinker || {};
 				}
 				partialLine = this.trimSpacesAndCommas(partialLine);
 			}
-			return endTerms;
+			return [terms, partialLine];
 		},
-		//returns [startScope, arrowType, [endScope,...]] from source relate line
-		parseTerms: function(line) {
-			const startTerm = this.parseStartTerm(line);
-			if(startTerm != null)
-				line = line.substring(startTerm.length);
-			const arrowTerm = line.match(/^(.+?)(\[|\{)/)[1].trim();
-			if(arrowTerm != null)
-				line = line.substring(arrowTerm.length).trim();
-			const endTerms = this.parseEndTerms(line);
-			return [startTerm, arrowTerm, endTerms];
+		//returns [[startScope,...], arrowType, [endScope,...]] from source relate line
+		parseLine: function(line) {
+			let startTerms = [];
+			let arrowTerm = null;
+			let endTerms = [];
+			[startTerms, line] = this.parseListOfTerms(line);
+			if(line != null)
+			{
+				let matches = line.match(/^(.+?)(\[|\{)/);
+				if(matches == null)
+				{
+					arrowTerm = line;
+				}
+				else
+				{
+					arrowTerm = matches[1].trim();
+					if(arrowTerm != null)
+					{
+						line = line.substring(arrowTerm.length).trim();
+					}
+					[endTerms, line] = this.parseListOfTerms(line);
+				}
+			}
+			return [startTerms, arrowTerm, endTerms];
 		},
 		//returns a relate record
 		create: function(startLabel, arrowType, endLabel) {
@@ -712,11 +723,13 @@ var pinker = pinker || {};
 	function parseRelateSection(section) {
 		let relateSection = Section.createRelate();
 		section.body.forEach(function(line) {
-			const [startTerm, arrowTerm, endTerms] = RelateRecord.parseTerms(line);
-			if(startTerm == null || arrowTerm == null || endTerms.length == 0)
+			const [startTerms, arrowTerm, endTerms] = RelateRecord.parseLine(line);
+			if(startTerms.length == 0 || arrowTerm == null || endTerms.length == 0)
 				return;
-			endTerms.forEach(function(endTerm) {
-				relateSection.records.push(RelateRecord.create(Source.openScope(startTerm), arrowTerm, Source.openScope(endTerm)));
+			startTerms.forEach(function(startTerm) {
+				endTerms.forEach(function(endTerm) {
+					relateSection.records.push(RelateRecord.create(Source.openScope(startTerm), arrowTerm, Source.openScope(endTerm)));
+				});
 			});
 		});
 		return relateSection;

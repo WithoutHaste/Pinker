@@ -1,0 +1,8 @@
+Layout:
+	[A][B][C]
+	[D][E][F]
+	[G][H][I]
+Relate:
+	[A]->[B],[D],[E]
+	[E],[F],[H]-D[I]
+	[B],[C]-o[E],[F]
