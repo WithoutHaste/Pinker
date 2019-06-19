@@ -5,6 +5,8 @@
 
 var pinker = pinker || {};
 
+//pinker.testMode = true;
+
 (function() { //private scope
 
 	pinker.version = '1.3.0';
@@ -509,7 +511,17 @@ var pinker = pinker || {};
 		},
 		//returns true if source relate line starts with an alias
 		startIsAlias: function(line) {
-			return (line.match(/^\{.+?\}/) != null);
+			return (!this.startIsAliasPath(line) && line.match(/^\{.+?\}/) != null);
+		},
+		//returns true if source relate line starts with an alias path
+		startIsAliasPath: function(line) {
+			return (line.match(/^\{.+?\}\.\[.+?\]/) != null);
+		},
+		trimSpacesAndCommas: function(line) {
+			line = line.trim();
+			if(line.length > 0 && line[0] == ',')
+				line = line.substring(1).trim();
+			return line;
 		},
 		//returns the starting scope or alias from a source relate line
 		parseStartTerm: function(line) {
@@ -520,15 +532,36 @@ var pinker = pinker || {};
 			else
 				return null;
 		},
-		//returns array of ending scopes or alias from the part of a source relate line after the arrow
+		//returns array of ending scopes or alias paths from the part of a source relate line after the arrow
 		parseEndTerms: function(partialLine) {
 			let endTerms = [];
-			const fields = partialLine.split(',');
-			fields.forEach(function(field) {
-				field = field.trim();
-				if(Source.isScope(field) || Source.isAlias(field) || Source.pathStartsWithAlias(field))
-					endTerms.push(field);
-			});
+			partialLine = this.trimSpacesAndCommas(partialLine);
+			while(partialLine.length > 0)
+			{
+				if(this.startIsAliasPath(partialLine))
+				{
+					let match = partialLine.match(/^\{.+?\}\.\[.+?\]/);
+					endTerms.push(match[0]);
+					partialLine = partialLine.substring(match[0].length);
+				}
+				else if(this.startIsAlias(partialLine))
+				{
+					let match = partialLine.match(/^\{.+?\}/);
+					endTerms.push(match[0]);
+					partialLine = partialLine.substring(match[0].length);
+				}
+				else if(this.startIsScope(partialLine))
+				{
+					let match = partialLine.match(/^\[.+?\]/);
+					endTerms.push(match[0]);
+					partialLine = partialLine.substring(match[0].length);
+				}
+				else
+				{
+					break;
+				}
+				partialLine = this.trimSpacesAndCommas(partialLine);
+			}
 			return endTerms;
 		},
 		//returns [startScope, arrowType, [endScope,...]] from source relate line
@@ -3288,5 +3321,13 @@ var pinker = pinker || {};
 		}
 	};
 
+	//###################################################
+	//### Setup for Testing
+	//###################################################
+
+	if(pinker.testMode)
+	{
+		pinker.RelateRecord = RelateRecord;
+	}
 	
 })();

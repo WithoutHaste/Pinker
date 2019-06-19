@@ -292,6 +292,7 @@ Uses [Semantic Versioning 2.0.0](https://semver.org/).
 To see what version you are using: `let v = pinker.version;`
 
 Untitled - v1.3.0  
+- support dotted lines
 - support quantitative arrows
 - refactoring
 
