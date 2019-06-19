@@ -294,7 +294,9 @@ To see what version you are using: `let v = pinker.version;`
 Untitled - v1.3.0  
 - support dotted lines
 - support quantitative arrows
+- bug fix: parsing Relate row when label contains a comma
 - refactoring
+- test cases
 
 [Smart Arrows - v1.2.0](https://github.com/WithoutHaste/Pinker/releases/tag/v1.2.0)  
 - support for curl, elbow, and zigzag SmartArrows
