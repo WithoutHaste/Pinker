@@ -142,3 +142,4 @@ QUnit.test("extra delimiter spaces", function( assert ) {
 QUnit.test("extra delimiter commas", function( assert ) {
 	testParseLine(",[A], , [B] ->[C],, , [D],,", [["[A]","[B]"], "->", ["[C]","[D]"]], assert);
 });
+

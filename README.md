@@ -129,6 +129,8 @@ Quantity 1 to Many: `-1N`
 
 Quantity 0 to Many: `-0N`
 
+Arrow can point right or left, and can be double-headed, such as `<:->`.
+
 ### Line Types
 
 Solid line: `->`
@@ -292,6 +294,7 @@ Uses [Semantic Versioning 2.0.0](https://semver.org/).
 To see what version you are using: `let v = pinker.version;`
 
 Untitled - v1.3.0  
+- support arrows pointing right or left; support double-headed arrows
 - support lists on both sides of a Relate line
 - support dotted lines
 - support quantitative arrows

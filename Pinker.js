@@ -5,7 +5,7 @@
 
 var pinker = pinker || {};
 
-pinker.testMode = true;
+//pinker.testMode = true;
 
 (function() { //private scope
 
@@ -119,6 +119,14 @@ pinker.testMode = true;
 	//########################################
 	//## Parsing source data structures
 	//########################################
+	
+	const Text = {
+		reverse: function(text) {
+			if(text == null)
+				return null;
+			return text.split("").reverse().join("");
+		}
+	};
 	
 	const Source = {
 		//returns the text, with all HTML character encodings converted to plain text
@@ -1579,6 +1587,26 @@ pinker.testMode = true;
 		}
 	};
 	
+	const ArrowLine = {
+		//returns ArrowLine object
+		justLine: function(lineType) {
+			return {
+				leftArrowType: ArrowTypes.none,
+				lineType: lineType,
+				rightArrowType: ArrowTypes.none
+			};
+		},
+		//parse raw arrow/line text and return ArrowLine object
+		parse: function(text) {
+			const [leftArrow, line, rightArrow] = ArrowTypes.splitDoubleHeadedArrow(text);
+			return {
+				leftArrowType: ArrowTypes.convert(leftArrow),
+				lineType: LineTypes.convert(line),
+				rightArrowType: ArrowTypes.convert(rightArrow)
+			};
+		}
+	}
+	
 	const ArrowTypes = {
 		none: 0,
 		plainArrow: 1,
@@ -1594,15 +1622,20 @@ pinker.testMode = true;
 		circleTriTail: 11,
 		//converts source arrow to arrow type
 		convert: function(sourceArrow) {
+			if(sourceArrow == null)
+				return this.none;
 			if(sourceArrow.length > 2)
 				sourceArrow = sourceArrow.substring(sourceArrow.length-2);
 			switch(sourceArrow)
 			{
 				case ":>": return this.hollowArrow;
 				case "11": return this.doubleBar;
-				case "01": return this.circleBar;
-				case "1N": return this.barTriTail;
-				case "0N": return this.circleTriTail;
+				case "01":
+				case "10": return this.circleBar;
+				case "1N": 
+				case "N1": return this.barTriTail;
+				case "0N": 
+				case "N0": return this.circleTriTail;
 			}
 			if(sourceArrow.length > 1)
 				sourceArrow = sourceArrow.substring(sourceArrow.length-1);
@@ -1616,6 +1649,37 @@ pinker.testMode = true;
 				case "N": return this.triTail;
 			}
 			return this.none;
+		},
+		//return [arrow-to-left, arrow-to-right], but with both arrows pointing to the right now
+		//return null in a slot if that arrow does not exist
+		splitDoubleHeadedArrow: function(arrowText) {
+			let left = null;
+			let line = null;
+			let right = null;
+			if(arrowText.indexOf("--") > -1)
+			{
+				line = "--";
+				[left, right] = arrowText.split("--");
+			}
+			else
+			{
+				let matches = arrowText.match(/^(.*)(\=|\*|\-)(.*)$/);
+				if(matches != null)
+				{
+					left = matches[1];
+					line = matches[2];
+					right = matches[3];
+				}
+			}
+			if(left == "")
+				left = null;
+			if(right == "")
+				right = null;
+			if(left != null)
+				left = line + Text.reverse(left).replace("<", ">");
+			if(right != null)
+				right = line + right;
+			return [left, line, right];
 		}
 	};
 	
@@ -1677,8 +1741,8 @@ pinker.testMode = true;
 	
 	function drawLines(lines, context) {
 		lines.forEach(function(line) {
-			drawLine(line.startPoint, line.endPoint, line.lineType, context);
-			drawArrow(line.startPoint, line.endPoint, line.arrowType, context);
+			drawLine(line.startPoint, line.endPoint, line.arrowLine.lineType, context);
+			drawArrows(line.startPoint, line.endPoint, line.arrowLine.leftArrowType, line.arrowLine.rightArrowType, context);
 		});
 	}
 	
@@ -2129,9 +2193,8 @@ pinker.testMode = true;
 		
 		if(line == null)
 			return simpleLineBetweenNodes(startNode, endNode, allNodes, relation);
-		
-		line.lineType = LineTypes.convert(relation.arrowType);
-		line.arrowType = ArrowTypes.convert(relation.arrowType);
+
+		line.arrowLine = ArrowLine.parse(relation.arrowType);
 		return line;
 	}
 
@@ -2150,8 +2213,7 @@ pinker.testMode = true;
 		if(end == null)
 			end = endArea.center();
 		const line = Line.create(start, end);
-		line.lineType = LineTypes.convert(relation.arrowType);
-		line.arrowType = ArrowTypes.convert(relation.arrowType);
+		line.arrowLine = ArrowLine.parse(relation.arrowType);
 		return line;
 	}
 	
@@ -2316,12 +2378,18 @@ pinker.testMode = true;
 		Draw.outlineShape([start, end], pinker.config.lineColor, context);
 	}
 	
-	function drawArrow(start, end, arrowType, context) {
+	function drawArrows(start, end, leftArrowType, rightArrowType, context) {
 		if(start == null || end == null)
 		{
-			displayError(`drawArrow: start and/or end point is null. Start: ${start} End: ${end}.`);
+			displayError(`drawArrows: start and/or end point is null. Start: ${start} End: ${end}.`);
 			return;
 		}
+		drawArrow(start, end, rightArrowType, context);
+		drawArrow(end, start, leftArrowType, context);
+	}
+	
+	function drawArrow(start, end, arrowType, context)
+	{
 		if(arrowType == ArrowTypes.none)
 			return;
 
@@ -2451,12 +2519,11 @@ pinker.testMode = true;
 		},
 		//returns path object
 		//all lines are vertical or horizontal
-		create: function(pathType, lineType, arrowType, startNode, endNode, startsHorizontal) {
+		create: function(pathType, arrowLine, startNode, endNode, startsHorizontal) {
 			return {
 				points: [], //array of potential point objects
 				type: pathType,
-				lineType: lineType,
-				arrowType: arrowType,
+				arrowLine: arrowLine,
 				startNode: startNode,
 				endNode: endNode,
 				startsHorizontal: startsHorizontal,
@@ -2875,10 +2942,15 @@ pinker.testMode = true;
 			for(let i=0; i<lines.length; i++)
 			{
 				let line = lines[i];
-				line.lineType = path.lineType;
-				line.arrowType = ArrowTypes.none;
+				line.arrowLine = ArrowLine.justLine(path.arrowLine.lineType);
+				if(i == 0)
+				{
+					line.arrowLine.leftArrowType = path.arrowLine.leftArrowType;
+				}
 				if(i == lines.length - 1)
-					line.arrowType = path.arrowType;
+				{
+					line.arrowLine.rightArrowType = path.arrowLine.rightArrowType;
+				}
 			}
 			return lines;
 		},
@@ -2908,15 +2980,13 @@ pinker.testMode = true;
 		arrangePossiblePathsBetweenNodes: function(startNode, endNode, allNodes, relation) {
 			const startArea = startNode.absoluteArea;
 			const endArea = endNode.absoluteArea;
-			const lineType = LineTypes.convert(relation.arrowType);
-			const arrowType = ArrowTypes.convert(relation.arrowType);
+			const arrowLine = ArrowLine.parse(relation.arrowType);
 			
 			const minBuffer = 2;
 			const defaultSpan = Math.min(pinker.config.canvasPadding, pinker.config.scopePadding, pinker.config.scopeMargin / 2) - (2 * minBuffer); //space at edge of scope, or space between scopes (shared)
 
 			const pathConfig = {
-				lineType: lineType, 
-				arrowType: arrowType, 
+				arrowLine: arrowLine,
 				startNode: startNode, 
 				endNode: endNode, 
 				minBuffer: minBuffer
@@ -2927,7 +2997,7 @@ pinker.testMode = true;
 			if(startArea.isAbove(endArea))
 			{
 				//direct line
-				let path = Path.create(Path.types.straight, lineType, arrowType, startNode, endNode, false);
+				let path = Path.create(Path.types.straight, arrowLine, startNode, endNode, false);
 				possiblePaths.paths.push(path);
 				let rangeX = Range.create(
 					Math.max(startArea.left(), endArea.left()),
@@ -2939,7 +3009,7 @@ pinker.testMode = true;
 				//elbow right-down, if space allows
 				if(endArea.right() > startArea.right() + minBuffer)
 				{
-					let elbowPath = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode, true);
+					let elbowPath = Path.create(Path.types.elbow, arrowLine, startNode, endNode, true);
 					possiblePaths.paths.push(elbowPath);
 					let rangeAX = Range.create(startArea.right());
 					let rangeAY = Range.create(startArea.top(), startArea.bottom());
@@ -2951,7 +3021,7 @@ pinker.testMode = true;
 				}
 
 				//curl around on the right
-				let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode, true);
+				let secondPath = Path.create(Path.types.curl, arrowLine, startNode, endNode, true);
 				possiblePaths.paths.push(secondPath);
 				let rangeAX = Range.create(startArea.right());
 				let rangeAY = Range.create(startArea.top(), startArea.bottom());
@@ -2968,7 +3038,7 @@ pinker.testMode = true;
 			if(startArea.isBelow(endArea))
 			{
 				//direct line
-				let path = Path.create(Path.types.straight, lineType, arrowType, startNode, endNode, false);
+				let path = Path.create(Path.types.straight, arrowLine, startNode, endNode, false);
 				possiblePaths.paths.push(path);
 				let rangeX = Range.create(
 					Math.max(startArea.left(), endArea.left()),
@@ -2980,7 +3050,7 @@ pinker.testMode = true;
 				//elbow up-left, if space allows
 				if(startArea.left() < endArea.left() - minBuffer)
 				{
-					let elbowPath = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode, false);
+					let elbowPath = Path.create(Path.types.elbow, arrowLine, startNode, endNode, false);
 					possiblePaths.paths.push(elbowPath);
 					let rangeAX = Range.create(startArea.left(), endArea.left() - minBuffer);
 					let rangeAY = Range.create(startArea.top());
@@ -2992,7 +3062,7 @@ pinker.testMode = true;
 				}
 			
 				//curl around on the left
-				let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode, true);
+				let secondPath = Path.create(Path.types.curl, arrowLine, startNode, endNode, true);
 				possiblePaths.paths.push(secondPath);
 				let rangeAX = Range.create(startArea.left());
 				let rangeAY = Range.create(startArea.top(), startArea.bottom());
@@ -3009,7 +3079,7 @@ pinker.testMode = true;
 			if(startArea.isLeftOf(endArea))
 			{
 				//direct line
-				let path = Path.create(Path.types.straight, lineType, arrowType, startNode, endNode, true);
+				let path = Path.create(Path.types.straight, arrowLine, startNode, endNode, true);
 				possiblePaths.paths.push(path);
 				const minY = Math.max(startArea.top(), endArea.top());
 				const maxY = (startNode.labelLayout.isHeader() && endNode.labelLayout.isHeader()) ? 
@@ -3022,7 +3092,7 @@ pinker.testMode = true;
 				//elbow up-right, if space allows
 				if(endArea.top() < startArea.top() - minBuffer)
 				{
-					let elbowPath = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode, false);
+					let elbowPath = Path.create(Path.types.elbow, arrowLine, startNode, endNode, false);
 					possiblePaths.paths.push(elbowPath);
 					let rangeAY = Range.create(startArea.top());
 					let rangeAX = Range.create(startArea.left(), startArea.right());
@@ -3034,7 +3104,7 @@ pinker.testMode = true;
 				}
 
 				//curl around on top
-				let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode, false);
+				let secondPath = Path.create(Path.types.curl, arrowLine, startNode, endNode, false);
 				possiblePaths.paths.push(secondPath);
 				let rangeAX = Range.create(startArea.left(), startArea.right());
 				let rangeAY = Range.create(startArea.top());
@@ -3051,7 +3121,7 @@ pinker.testMode = true;
 			if(startArea.isRightOf(endArea))
 			{
 				//direct line
-				let path = Path.create(Path.types.straight, lineType, arrowType, startNode, endNode, true);
+				let path = Path.create(Path.types.straight, arrowLine, startNode, endNode, true);
 				possiblePaths.paths.push(path);
 				const minY = Math.max(startArea.top(), endArea.top());
 				const maxY = (startNode.labelLayout.isHeader() && endNode.labelLayout.isHeader()) ? 
@@ -3064,7 +3134,7 @@ pinker.testMode = true;
 				//elbow left-up, if space allows
 				if(startArea.bottom() > endArea.bottom() + minBuffer)
 				{
-					let elbowPath = Path.create(Path.types.elbow, lineType, arrowType, startNode, endNode, true);
+					let elbowPath = Path.create(Path.types.elbow, arrowLine, startNode, endNode, true);
 					possiblePaths.paths.push(elbowPath);
 					let rangeAX = Range.create(startArea.left());
 					let rangeAY = Range.create(endArea.bottom() + minBuffer, Math.min(startArea.bottom(), endArea.bottom() + minBuffer + defaultSpan));
@@ -3076,7 +3146,7 @@ pinker.testMode = true;
 				}
 
 				//curl around on bottom
-				let secondPath = Path.create(Path.types.curl, lineType, arrowType, startNode, endNode, false);
+				let secondPath = Path.create(Path.types.curl, arrowLine, startNode, endNode, false);
 				possiblePaths.paths.push(secondPath);
 				let rangeAX = Range.create(startArea.left(), startArea.right());
 				let rangeAY = Range.create(startArea.bottom());
@@ -3142,7 +3212,7 @@ pinker.testMode = true;
 		//assumes elbow, curl, or zigzag path
 		createPossiblePath: function(pathType, pathConfig, ...directions) {
 			const startsHorizontal = (directions[0] == Direction.left || directions[0] == Direction.right);
-			const path = Path.create(pathType, pathConfig.lineType, pathConfig.arrowType, pathConfig.startNode, pathConfig.endNode, startsHorizontal);
+			const path = Path.create(pathType, pathConfig.arrowLine, pathConfig.startNode, pathConfig.endNode, startsHorizontal);
 			const startArea = pathConfig.startNode.absoluteArea;
 			const endArea   = pathConfig.endNode.absoluteArea;
 			const minBuffer = pathConfig.minBuffer;
@@ -3341,6 +3411,7 @@ pinker.testMode = true;
 	if(pinker.testMode)
 	{
 		pinker.RelateRecord = RelateRecord;
+		pinker.ArrowTypes = ArrowTypes;
 	}
 	
 })();
