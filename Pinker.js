@@ -20,8 +20,8 @@ var pinker = pinker || {};
 		,shadeColor: "#EEEEEE" //pale gray
 		,lineColor: "#000000" //black
 		,lineWeight: 1 //line weight in pixels
-		,lineDashLength: 5 //length of a dash in pixels
-		,lineDashSpacing: 3 //length of space between dashes in pixels
+		,lineDashLength: 6 //length of a dash in pixels
+		,lineDashSpacing: 4 //length of space between dashes in pixels
 		,arrowHeadArea: 50 //pixels-squared area of an arrow head
 		,font: function() {
 			return this.fontSize + "px " + this.fontFamily;
@@ -1552,18 +1552,22 @@ var pinker = pinker || {};
 				sourceArrow = sourceArrow.substring(sourceArrow.length-2);
 			switch(sourceArrow)
 			{
-				case "=>":
-				case "->": return this.filledArrow;
-				case "-D":
 				case ":>": return this.hollowArrow;
-				case "-o": return this.hollowDiamond;
-				case "-+": return this.filledDiamond;
-				case "-1": return this.singleBar;
 				case "11": return this.doubleBar;
-				case "-N": return this.triTail;
 				case "01": return this.circleBar;
 				case "1N": return this.barTriTail;
 				case "0N": return this.circleTriTail;
+			}
+			if(sourceArrow.length > 1)
+				sourceArrow = sourceArrow.substring(sourceArrow.length-1);
+			switch(sourceArrow)
+			{
+				case ">": return this.filledArrow;
+				case "D": return this.hollowArrow;
+				case "o": return this.hollowDiamond;
+				case "+": return this.filledDiamond;
+				case "1": return this.singleBar;
+				case "N": return this.triTail;
 			}
 			return this.none;
 		}
@@ -1572,20 +1576,20 @@ var pinker = pinker || {};
 	const LineTypes = {
 		solid: 1,
 		dashed: 2,
+		dotted: 3,
 		//converts source arrow to line type
 		convert: function(sourceArrow) {
 			if(sourceArrow.length > 2)
 				sourceArrow = sourceArrow.substring(0, 2);
+			if(sourceArrow == "--")
+				return this.dashed;
+			if(sourceArrow.length > 1)
+				sourceArrow = sourceArrow.substring(0, 1);
 			switch(sourceArrow)
 			{
-				case "=":
-				case "=>":
-				case "--": return this.dashed;
-				case "-":
-				case "->": 
-				case "-:": 
-				case "-o": 
-				case "-+": return this.solid;
+				case "*": return this.dotted;
+				case "=": return this.dashed;
+				case "-": return this.solid;
 			}
 			return this.solid;
 		}
@@ -2199,6 +2203,9 @@ var pinker = pinker || {};
 				case LineTypes.dashed: 
 					this.setDashedLine(pinker.config.lineDashLength, pinker.config.lineDashSpacing, context); 
 					return;
+				case LineTypes.dotted: 
+					this.setDottedLine(context); 
+					return;
 			}
 		},
 		setSolidLine: function(context) {
@@ -2206,6 +2213,9 @@ var pinker = pinker || {};
 		},
 		setDashedLine: function(dashLength, dashSpacing, context) {
 			context.setLineDash([dashLength, dashSpacing]); 
+		},
+		setDottedLine: function(context) {
+			context.setLineDash([2, 3]); 
 		},
 		//will draw figure from start point through to end point - does not close figure
 		fillAndOutlineShape: function(points, fillColor, lineColor, context) {
