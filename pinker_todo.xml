@@ -92,11 +92,11 @@ rename PotentialPoint to PossiblePoint to follow naming pattern</Data>
       </Row>
       <Row>
         <Cell>
-          <Data ss:Type="Number">35</Data>
+          <Data ss:Type="Number">40</Data>
         </Cell>
         <Cell ss:StyleID="paragraph">
           <Data ss:Type="String">support
-three-toed arrow head for many-to-many</Data>
+dotted lines</Data>
         </Cell>
         <Cell>
           <Data ss:Type="String">Todo</Data>
@@ -105,7 +105,7 @@ three-toed arrow head for many-to-many</Data>
           <Data ss:Type="String">Feature</Data>
         </Cell>
         <Cell ss:StyleID="cellShortDate">
-          <Data ss:Type="DateTime">2019-06-14T00:00:00.000</Data>
+          <Data ss:Type="DateTime">2019-06-19T00:00:00.000</Data>
         </Cell>
       </Row>
       <Row>
@@ -449,6 +449,28 @@ labels on lines</Data>
         </Cell>
         <Cell ss:StyleID="header">
           <Data ss:Type="String">Done</Data>
+        </Cell>
+      </Row>
+      <Row>
+        <Cell>
+          <Data ss:Type="Number">35</Data>
+        </Cell>
+        <Cell ss:StyleID="paragraph">
+          <Data ss:Type="String">support
+three-toed arrow head for many-to-many
+and other Entity-Relationship arrows</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Done</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Feature</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-14T00:00:00.000</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-19T00:00:00.000</Data>
         </Cell>
       </Row>
       <Row>
@@ -902,7 +924,7 @@ and getting it in the webpage or js when you need it</Data>
           </Data>
         </Cell>
         <Cell>
-          <Data ss:Type="Number">39</Data>
+          <Data ss:Type="Number">40</Data>
         </Cell>
       </Row>
       <Row>

@@ -117,6 +117,18 @@ Hollow diamond, for aggregation: `-o` (lower case letter O)
 
 Filled diamond, for composition: `-+`
 
+Quantity 1: `-1`
+
+Quantity Mandatory 1: `-11`
+
+Quantity Many: `-N`
+
+Quantity 0 or 1: `-01`
+
+Quantity 1 to Many: `-1N`
+
+Quantity 0 to Many: `-0N`
+
 ### Line Types
 
 Solid line: `->`
@@ -278,6 +290,7 @@ Uses [Semantic Versioning 2.0.0](https://semver.org/).
 To see what version you are using: `let v = pinker.version;`
 
 Untitled - v1.3.0  
+- support quantitative arrows
 - refactoring
 
 [Smart Arrows - v1.2.0](https://github.com/WithoutHaste/Pinker/releases/tag/v1.2.0)  

@@ -1540,6 +1540,12 @@ var pinker = pinker || {};
 		hollowArrow: 3,
 		hollowDiamond: 4,
 		filledDiamond: 5,
+		singleBar: 6,
+		doubleBar: 7,
+		triTail: 8,
+		cirleBar: 9,
+		barTriTail: 10,
+		circleTriTail: 11,
 		//converts source arrow to arrow type
 		convert: function(sourceArrow) {
 			if(sourceArrow.length > 2)
@@ -1552,6 +1558,12 @@ var pinker = pinker || {};
 				case ":>": return this.hollowArrow;
 				case "-o": return this.hollowDiamond;
 				case "-+": return this.filledDiamond;
+				case "-1": return this.singleBar;
+				case "11": return this.doubleBar;
+				case "-N": return this.triTail;
+				case "01": return this.circleBar;
+				case "1N": return this.barTriTail;
+				case "0N": return this.circleTriTail;
 			}
 			return this.none;
 		}
@@ -2099,6 +2111,7 @@ var pinker = pinker || {};
 	
 	const Triangle = {
 		equilateralAngle: Math.PI/6, //half of top corner angle
+		rightAngle: Math.PI/2, //90 degrees in radians
 		rotateAroundPoint: function(center, length, startingAngle, deltaAngle) {
 			return Point.create(
 				center.x - length * Math.cos(startingAngle - deltaAngle), 
@@ -2124,13 +2137,32 @@ var pinker = pinker || {};
 				centerAngle: angle
 			};
 		},
+		getEquilateralSideLength: function(area) {
+			return Math.sqrt(area * 4 / Math.sqrt(3));
+		},
 		//returns equilateral triangle object
 		createEquilateral: function(topPoint, angle, area) {
-			const triangleSideLength = Math.sqrt(area * 4 / Math.sqrt(3));
+			const triangleSideLength = this.getEquilateralSideLength(area);
 			const basePointA = this.rotateAroundPoint(topPoint, triangleSideLength, angle, this.equilateralAngle*-1);
 			const basePointB = this.rotateAroundPoint(topPoint, triangleSideLength, angle, this.equilateralAngle);
 			return {
 				topPoint: topPoint,
+				basePointA: basePointA,
+				basePointB: basePointB,
+				base: triangleSideLength,
+				height: (Math.sqrt(3) / 2) * triangleSideLength,
+				sideLength: triangleSideLength,
+				centerAngle: angle
+			};
+		},
+		//returns equilateral triangle with base at topPoint
+		createReverseEquilateral: function(topPoint, angle, area) {
+			const triangleSideLength = this.getEquilateralSideLength(area);
+			const basePointA = this.rotateAroundPoint(topPoint, triangleSideLength/2, angle, this.rightAngle*-1);
+			const basePointB = this.rotateAroundPoint(topPoint, triangleSideLength/2, angle, this.rightAngle);
+			const reverseTopPoint = this.rotateAroundPoint(basePointA, triangleSideLength, angle, this.equilateralAngle);
+			return {
+				topPoint: reverseTopPoint,
 				basePointA: basePointA,
 				basePointB: basePointB,
 				base: triangleSideLength,
@@ -2190,6 +2222,22 @@ var pinker = pinker || {};
 			this.makeContextPath(points, context);
 			context.stroke();
 		},
+		fillAndOutlineCircle: function(center, radius, fillColor, lineColor, context) {
+			this.fillCircle(center, radius, fillColor, context);
+			this.outlineCircle(center, radius, lineColor, context);
+		},
+		fillCircle: function(center, radius, fillColor, context) {
+			context.fillStyle = fillColor;
+			context.beginPath();
+			context.arc(center.x, center.y, radius, 0, Math.PI*2);
+			context.fill();
+		},
+		outlineCircle: function(center, radius, lineColor, context) {
+			context.strokeStyle = lineColor;
+			context.beginPath();
+			context.arc(center.x, center.y, radius, 0, Math.PI*2);
+			context.stroke();
+		},
 		//does not close figure
 		makeContextPath: function(points, context) {
 			context.beginPath();
@@ -2225,30 +2273,91 @@ var pinker = pinker || {};
 		const angle = Math.atan2(end.y - start.y, end.x - start.x);
 		context.lineWidth = pinker.config.lineWeight;
 		Draw.setSolidLine(context);
-		if(arrowType == ArrowTypes.filledArrow)
+		
+		let triangle = null;
+		let diamond = null;
+		let points = null;
+		
+		switch(arrowType)
 		{
-			const triangle = Triangle.createIsosceles(end, angle, pinker.config.arrowHeadArea);
-			const points = [end, triangle.basePointA, triangle.basePointB, end];
-			Draw.fillShape(points, pinker.config.lineColor, context);
-		}
-		else if(arrowType == ArrowTypes.plainArrow || arrowType == ArrowTypes.hollowArrow)
-		{
-			const triangle = Triangle.createEquilateral(end, angle, pinker.config.arrowHeadArea);
-			const points = [end, triangle.basePointA, triangle.basePointB, end];
-			if(arrowType == ArrowTypes.plainArrow)
+			case ArrowTypes.filledArrow:
+				triangle = Triangle.createIsosceles(end, angle, pinker.config.arrowHeadArea);
+				points = [end, triangle.basePointA, triangle.basePointB, end];
 				Draw.fillShape(points, pinker.config.lineColor, context);
-			else if(arrowType == ArrowTypes.hollowArrow)
-				Draw.fillAndOutlineShape(points, pinker.config.backgroundColor, pinker.config.lineColor, context);
-		}
-		else if(arrowType == ArrowTypes.hollowDiamond || arrowType == ArrowTypes.filledDiamond)
-		{
-			const diamond = Diamond.create(end, angle, headArea);
-			const points = [end, diamond.cornerA, diamond.bottomPoint, diamond.cornerB, end];
-			if(arrowType == ArrowTypes.hollowDiamond)
-				Draw.fillAndOutlineShape(points, pinker.config.backgroundColor, pinker.config.lineColor, context);
-			else if(arrowType == ArrowTypes.filledDiamond)
+				break;
+			case ArrowTypes.plainArrow:
+				triangle = Triangle.createEquilateral(end, angle, pinker.config.arrowHeadArea);
+				points = [end, triangle.basePointA, triangle.basePointB, end];
 				Draw.fillShape(points, pinker.config.lineColor, context);
+				break;
+			case ArrowTypes.hollowArrow:
+				triangle = Triangle.createEquilateral(end, angle, pinker.config.arrowHeadArea);
+				points = [end, triangle.basePointA, triangle.basePointB, end];
+				Draw.fillAndOutlineShape(points, pinker.config.backgroundColor, pinker.config.lineColor, context);
+				break;
+			case ArrowTypes.hollowDiamond:
+				diamond = Diamond.create(end, angle, headArea);
+				points = [end, diamond.cornerA, diamond.bottomPoint, diamond.cornerB, end];
+				Draw.fillAndOutlineShape(points, pinker.config.backgroundColor, pinker.config.lineColor, context);
+				break;
+			case ArrowTypes.filledDiamond:
+				diamond = Diamond.create(end, angle, headArea);
+				points = [end, diamond.cornerA, diamond.bottomPoint, diamond.cornerB, end];
+				Draw.fillShape(points, pinker.config.lineColor, context);
+				break;
+			case ArrowTypes.singleBar:
+				drawBarArrow(end, angle, context);
+				break;
+			case ArrowTypes.doubleBar:
+				drawDoubleBarArrow(end, angle, context);
+				break;
+			case ArrowTypes.triTail:
+				drawTriTailArrow(end, angle, context);
+				break;
+			case ArrowTypes.barTriTail:
+				drawTriTailArrow(end, angle, context);
+				drawBarArrow(end, angle, context);
+				break;
+			case ArrowTypes.circleBar:
+				drawHalfBarArrow(end, angle, context);
+				drawCircleArrow(end, angle, context);
+				break;
+			case ArrowTypes.circleTriTail:
+				drawTriTailArrow(end, angle, context);
+				drawCircleArrow(end, angle, context);
+				break;
 		}
+	}
+	
+	function drawTriTailArrow(end, angle, context) {
+		const reverseTriangle = Triangle.createReverseEquilateral(end, angle, pinker.config.arrowHeadArea);
+		const points = [reverseTriangle.basePointA, reverseTriangle.topPoint, reverseTriangle.basePointB];
+		Draw.outlineShape(points, pinker.config.lineColor, context);
+	}
+	
+	function drawDoubleBarArrow(end, angle, context) {
+		drawBarArrow(end, angle, context);
+		drawHalfBarArrow(end, angle, context);
+	}
+	
+	function drawBarArrow(end, angle, context) {
+		const triangle = Triangle.createEquilateral(end, angle, pinker.config.arrowHeadArea);
+		const points = [triangle.basePointA, triangle.basePointB];
+		Draw.outlineShape(points, pinker.config.lineColor, context);
+	}
+	
+	function drawHalfBarArrow(end, angle, context) {
+		const triangle = Triangle.createEquilateral(end, angle, pinker.config.arrowHeadArea);
+		const barPointA = Triangle.rotateAroundPoint(triangle.basePointA, triangle.height/2, angle, Triangle.rightAngle*2);
+		const barPointB = Triangle.rotateAroundPoint(triangle.basePointB, triangle.height/2, angle, Triangle.rightAngle*2*-1);
+		Draw.outlineShape([barPointA, barPointB], pinker.config.lineColor, context);
+	}
+	
+	function drawCircleArrow(end, angle, context) {
+		const triangle = Triangle.createEquilateral(end, angle, pinker.config.arrowHeadArea);
+		const radius = triangle.sideLength*0.4;
+		const center = Triangle.rotateAroundPoint(triangle.topPoint, triangle.height+radius, angle, 0);
+		Draw.fillAndOutlineCircle(center, radius, pinker.config.backgroundColor, pinker.config.lineColor, context);
 	}
 	
 	//###################################################
