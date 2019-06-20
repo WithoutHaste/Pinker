@@ -75,12 +75,6 @@ You can also separate your diagram sources into text files and include them in y
 </script>
 ```
 
-Passing additional options: `pinker.render(optionsObject)`
-
-| Attribute | Data Type | Description |
-| --------- | --------- | ----------- |
-|**keepSource**|boolean|true means do not replace the Source text with the Canvas|
-
 ## Pinker Syntax
 
 Indentation is not important; you can use indentation to make the source more legible.
@@ -129,7 +123,7 @@ Quantity 1 to Many: `-1N`
 
 Quantity 0 to Many: `-0N`
 
-Arrow can point right or left, and can be double-headed, such as `<:->`.
+Arrows can point right or left, and can be double-headed, such as `<:->`.
 
 ### Line Types
 
@@ -254,9 +248,11 @@ Relate:
 
 ## Configuration
 
-```
-pinker.config.attribute = value;
-```
+Changing individual configuration settings: `pinker.config.attribute = value;`  
+
+Passing multiple configuration settings:  
+`pinker.draw(canvasElement, sourceText, options);`  
+`pinker.render(options);`  
 
 | Attribute | Data Type | Description |
 | --------- | --------- | ----------- |
@@ -278,6 +274,7 @@ pinker.config.attribute = value;
 |**favorGoldenRatioLabelSize**|boolean|should multi-line labels be arranged with a width:height ratio close to 1.6?|
 |**favorUniformNodeSizes**|boolean|should sibling-nodes be resized to appear similar?|
 |**useSmartArrows**|boolean|instead of drawing straight lines between scopes, draw arrows to route around scopes|
+|**keepSource**|boolean|on render(), add the diagram next to the source instead of overwriting the source|
 
 ## License
 

@@ -37,10 +37,11 @@ var pinker = pinker || {};
 		,favorGoldenRatioLabelSize: true
 		,favorUniformNodeSizes: true
 		,useSmartArrows: true
+		,keepSource: false
 	};
 
 	//render all sources onto new canvases
-	pinker.render = function(options) {
+	pinker.render = function(options={}) {
 		let pinkerElements = document.getElementsByClassName("pinker");
 		for(let i = 0; i < pinkerElements.length; i++)
 		{
@@ -53,12 +54,13 @@ var pinker = pinker || {};
 		}
 	};
 	
-	function renderFromPre(preElement, options) {
+	function renderFromPre(preElement, options={}) {
+		Object.assign(pinker.config, options);
 		const sourceText = preElement.innerHTML;
 		const canvasElement = document.createElement("canvas");
 		if(preElement.id != null)
 			canvasElement.id = "canvas-" + preElement.id;
-		if(options.keepSource)
+		if(pinker.config.keepSource)
 		{
 			//insert canvas after pre element
 			preElement.parentNode.insertBefore(canvasElement, preElement.nextSibling); //verified nextSibling doesn't have to exist
@@ -73,7 +75,8 @@ var pinker = pinker || {};
 	}
 	
 	//works in FireFox but fails in Chrome due to CORS (cross-site data access rules)
-	function renderFromObject(objectElement, options) {
+	function renderFromObject(objectElement, options={}) {
+		Object.assign(pinker.config, options);
 		const sourceDocument = objectElement.contentDocument || objectElement.contentWindow.document;
 		let container = sourceDocument.getElementsByTagName('body')[0];
 		while(container.children.length > 0)
@@ -84,7 +87,7 @@ var pinker = pinker || {};
 		const canvasElement = document.createElement("canvas");
 		if(objectElement.id != null)
 			canvasElement.id = "canvas-" + objectElement.id;
-		if(options.keepSource)
+		if(pinker.config.keepSource)
 		{
 			//insert canvas after object element
 			objectElement.parentNode.insertBefore(canvasElement, objectElement.nextSibling); //verified nextSibling doesn't have to exist
@@ -99,7 +102,8 @@ var pinker = pinker || {};
 	}
 
 	//draw on provided canvas with provided source
-	pinker.draw = function(canvasElement, sourceText) {
+	pinker.draw = function(canvasElement, sourceText, options={}) {
+		Object.assign(pinker.config, options);
 		sourceText = Source.decodeHtml(sourceText);
 		const source = parseSource(sourceText);
 		if(source.hasErrors)
@@ -1289,8 +1293,7 @@ var pinker = pinker || {};
 						line = Line.create(Point.create(this.startX, this.rangeY().middle()), Point.create(this.endX, this.rangeY().middle()));
 					else
 						line = Line.create(Point.create(this.rangeX().middle(), this.startY), Point.create(this.rangeX().middle(), this.endY));
-					line.lineType = this.lineType;
-					line.arrowType = this.arrowType;
+					line.arrowLine = this.arrowLine;
 					return line;
 				}
 			};
@@ -1982,7 +1985,7 @@ var pinker = pinker || {};
 			});
 		}
 		source.nestedSources.forEach(function(nestedSource) {
-			let nestedLines = convertRelationsToLines(nestedSource, allNodes, path);
+			let nestedLines = convertRelationsToPossibleLines(nestedSource, allNodes, path);
 			lines = lines.concat(nestedLines);
 		});
 		return lines;

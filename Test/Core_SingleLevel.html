@@ -25,8 +25,7 @@ Relate:
 		<script>
 			var canvas = document.getElementById("Canvas01");
 			var source = document.getElementById("Source01").innerHTML;
-			pinker.config.useSmartArrows = false;
-			pinker.draw(canvas, source);
+			pinker.draw(canvas, source, {useSmartArrows:false});
 		</script>
 
 		Single-level diagram: multiple scopes on each side of alignment ...  (without SmartArrows)
@@ -46,8 +45,7 @@ Relate:
 		<script>
 			var canvas = document.getElementById("Canvas02");
 			var source = document.getElementById("Source02").innerHTML;
-			pinker.config.useSmartArrows = false;
-			pinker.draw(canvas, source);
+			pinker.draw(canvas, source, {useSmartArrows:false});
 		</script>
 
 		Spread out overlapping lines (without SmartArrows)
@@ -68,8 +66,7 @@ Relate:
 		<script>
 			var canvas = document.getElementById("Canvas03");
 			var source = document.getElementById("Source03").innerHTML;
-			pinker.config.useSmartArrows = false;
-			pinker.draw(canvas, source);
+			pinker.draw(canvas, source, {useSmartArrows:false});
 		</script>
 
 		Spread out overlapping lines (with SmartArrows)
@@ -90,8 +87,7 @@ Relate:
 		<script>
 			var canvas = document.getElementById("Canvas04");
 			var source = document.getElementById("Source04").innerHTML;
-			pinker.config.useSmartArrows = true;
-			pinker.draw(canvas, source);
+			pinker.draw(canvas, source, {useSmartArrows:true});
 		</script>
 
 	</body>

@@ -109,22 +109,19 @@ rename PotentialPoint to PossiblePoint to follow naming pattern</Data>
       </Row>
       <Row>
         <Cell>
-          <Data ss:Type="Number">39</Data>
+          <Data ss:Type="Number">43</Data>
         </Cell>
         <Cell ss:StyleID="paragraph">
-          <Data ss:Type="String">support
-passing in any config/other options to .draw() and .render()
-and auto-merge those settings over the defaults
-- would help with the Test page for useSmartArrows on/off</Data>
+          <Data ss:Type="String">improve error messages</Data>
         </Cell>
         <Cell>
           <Data ss:Type="String">Todo</Data>
         </Cell>
         <Cell>
-          <Data ss:Type="String">Feature</Data>
+          <Data ss:Type="String">Task</Data>
         </Cell>
         <Cell ss:StyleID="cellShortDate">
-          <Data ss:Type="DateTime">2019-06-15T00:00:00.000</Data>
+          <Data ss:Type="DateTime">2019-06-19T00:00:00.000</Data>
         </Cell>
       </Row>
       <Row>
@@ -173,7 +170,8 @@ and remove support for defining aliases in layout? or leave that option? cleaner
         </Cell>
         <Cell ss:StyleID="paragraph">
           <Data ss:Type="String">support
-quantities at each end of an relation</Data>
+quantities at each end of an relation
+in general, labels at each end of relation</Data>
         </Cell>
         <Cell>
           <Data ss:Type="String">Todo</Data>
@@ -191,8 +189,9 @@ quantities at each end of an relation</Data>
         </Cell>
         <Cell ss:StyleID="paragraph">
           <Data ss:Type="String">support
-single-line comments #
-entire line or part of line</Data>
+single-line comments # (what if you want # in your label?)
+entire line or part of line
+multi-line comments</Data>
         </Cell>
         <Cell>
           <Data ss:Type="String">Todo</Data>
@@ -284,9 +283,8 @@ this line type means Y</Data>
         <Cell ss:StyleID="paragraph">
           <Data ss:Type="String">support
 more types of lines
-s&gt; for wavy-snake line
-*&gt; for dotted line
-^&gt; for spiky line
+s&gt; for wavy-snake line? $&gt;?
+^&gt; for spiky line?
 will be most useful after Key is added, so users can encode different data into one diagram</Data>
         </Cell>
         <Cell>
@@ -351,7 +349,9 @@ possibly:
 where pipe delineates columns, and groups of nodes are horizontally centered in their column
 ...[F] indicates right-align in column
 [F]... indicates left-align in column
-whitespace not required, whitespace will be ignored</Data>
+whitespace not required, whitespace will be ignored
+
+can row-span be indicated without using up lots of lines?</Data>
         </Cell>
         <Cell>
           <Data ss:Type="String">Todo</Data>
@@ -375,10 +375,30 @@ labels on lines</Data>
           <Data ss:Type="String">Todo</Data>
         </Cell>
         <Cell>
-          <Data ss:Type="String">Feature - Low</Data>
+          <Data ss:Type="String">Feature</Data>
         </Cell>
         <Cell ss:StyleID="cellShortDate">
           <Data ss:Type="DateTime">2019-06-05T00:00:00.000</Data>
+        </Cell>
+      </Row>
+      <Row>
+        <Cell>
+          <Data ss:Type="Number">42</Data>
+        </Cell>
+        <Cell ss:StyleID="paragraph">
+          <Data ss:Type="String">support
+styling of nodes by arbitrary categories
+either by applying class css to them (can I pull that from javascript?)
+or by passing in options</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Todo</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Feature</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-19T00:00:00.000</Data>
         </Cell>
       </Row>
     </Table>
@@ -410,6 +430,29 @@ labels on lines</Data>
         </Cell>
         <Cell ss:StyleID="header">
           <Data ss:Type="String">Done</Data>
+        </Cell>
+      </Row>
+      <Row>
+        <Cell>
+          <Data ss:Type="Number">39</Data>
+        </Cell>
+        <Cell ss:StyleID="paragraph">
+          <Data ss:Type="String">support
+passing in any config/other options to .draw() and .render()
+and auto-merge those settings over the defaults
+- would help with the Test page for useSmartArrows on/off</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Done</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Feature</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-15T00:00:00.000</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-19T00:00:00.000</Data>
         </Cell>
       </Row>
       <Row>
@@ -950,7 +993,7 @@ and getting it in the webpage or js when you need it</Data>
           </Data>
         </Cell>
         <Cell>
-          <Data ss:Type="Number">41</Data>
+          <Data ss:Type="Number">43</Data>
         </Cell>
       </Row>
       <Row>
