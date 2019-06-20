@@ -291,6 +291,7 @@ Uses [Semantic Versioning 2.0.0](https://semver.org/).
 To see what version you are using: `let v = pinker.version;`
 
 Untitled - v1.3.0  
+- support passing multiple options into render() and draw()
 - support arrows pointing right or left; support double-headed arrows
 - support lists on both sides of a Relate line
 - support dotted lines
