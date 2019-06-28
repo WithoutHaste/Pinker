@@ -165,7 +165,7 @@ pinker.testMode = true;
 		isSectionHeader: function(term) {
 			if(term == null)
 				return false;
-			return (term.match(/^.+\:$/) != null);
+			return ((term.match(/^.+\:$/) != null) && !RelateRecord.isRelateRowEndingInColon(term));
 		},
 		//returns true if term is a scope
 		isScope: function(term) {
@@ -535,6 +535,12 @@ pinker.testMode = true;
 	};
 
 	const RelateRecord = {
+		//returns true for a line generally formatted like a Relate row with labels
+		//main intention is to differentiate a Section Header from a Relate row that ends in a colon
+		//ex [B1]->[B2] :"middle label":
+		isRelateRowEndingInColon: function(line) {
+			return (line.match(/\[.*\].*":/) != null);
+		},
 		//returns true if source relate line starts with a scope
 		startIsScope: function(line) {
 			return (line.match(/^\[.+?\]/) != null);
@@ -595,37 +601,31 @@ pinker.testMode = true;
 		parseLabels: function(line) {
 			line = line.trim();
 			let match = null;
-			match = line.match(/^\s*\"(.+?)\"\s*\|\s*\"(.+?)\"\s*\|\s*\"(.+?)\"\s*$/); //start|middle|end
+			match = line.match(/^\s*"(.+?)"\s*:\s*"(.+?)"\s*:\s*"(.+?)"\s*$/); //start:middle:end
 			if(match != null)
 				return [match[1].trim(), match[2].trim(), match[3].trim()];
-			match = line.match(/^\s*\"(.+?)\"\s*\|\s*\|\s*\"(.+?)\"\s*$/); //start||end
+			match = line.match(/^\s*"(.+?)"\s*:\s*:\s*"(.+?)"\s*$/); //start::end
 			if(match != null)
 				return [match[1].trim(), null, match[2].trim()];
-			match = line.match(/^\s*\"(.+?)\"\s*\|\s*\"(.+?)\"\s*$/); //start|end
+			match = line.match(/^\s*"(.+?)"\s*:\s*"(.+?)"\s*$/); //start:end
 			if(match != null)
 				return [match[1].trim(), null, match[2].trim()];
-			match = line.match(/^\s*\|\s*\"(.+?)\"\s*\|\s*\"(.+?)\"\s*$/); //|middle|end
+			match = line.match(/^\s*:\s*"(.+?)"\s*:\s*"(.+?)"\s*$/); //:middle:end
 			if(match != null)
 				return [null, match[1].trim(), match[2].trim()];
-			match = line.match(/^\s*\|\s*\"(.+?)\"\s*\|\s*$/); //|middle|
+			match = line.match(/^\s*:\s*"(.+?)"\s*:\s*$/); //:middle:
 			if(match != null)
 				return [null, match[1].trim(), null];
-			match = line.match(/^\s*\"(.+?)\"\s*\|\s*\"(.+?)\"\s*\|\s*$/); //start|middle|
+			match = line.match(/^\s*"(.+?)"\s*:\s*"(.+?)"\s*:\s*$/); //start:middle:
 			if(match != null)
 				return [match[1].trim(), match[2].trim(), null];
-			match = line.match(/^\s*\"(.+?)\"\s*\|\s*\|\s*$/); //start||
+			match = line.match(/^\s*"(.+?)"\s*:\s*(:\s*)?$/); //start:: or start:
 			if(match != null)
 				return [match[1].trim(), null, null];
-			match = line.match(/^\s*\"(.+?)\"\s*\|\s*$/); //start|
+			match = line.match(/^(\s*:)?\s*:\s*"(.+?)"\s*$/); //::end or :end
 			if(match != null)
-				return [match[1].trim(), null, null];
-			match = line.match(/^\s*\|\s*\|\s*\"(.+?)\"\s*$/); //||end
-			if(match != null)
-				return [null, null, match[1].trim()];
-			match = line.match(/^\s*\|\s*\"(.+?)\"\s*$/); //|end
-			if(match != null)
-				return [null, null, match[1].trim()];
-			match = line.match(/^\s*\"(.+?)\"\s*$/); //middle
+				return [null, null, match[2].trim()];
+			match = line.match(/^\s*"(.+?)"\s*$/); //middle
 			if(match != null)
 				return [null, match[1].trim(), null];
 			return [null, null, null];
@@ -751,7 +751,6 @@ pinker.testMode = true;
 					collapsedSections.push(section);
 			}
 		});
-console.log(collapsedSections);
 		return collapsedSections;
 	}
 	
@@ -811,10 +810,8 @@ console.log(collapsedSections);
 	function parseRelateSection(section) {
 		let relateSection = Section.createRelate();
 		section.body.forEach(function(line) {
-	console.log(line);
 			let results = RelateRecord.parseLine(line);
 			relateSection.records = relateSection.records.concat(results);
-	console.log(relateSection.records);
 		});
 		return relateSection;
 	}

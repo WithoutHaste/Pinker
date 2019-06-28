@@ -155,43 +155,43 @@ QUnit.test("just middle label", function( assert ) {
 	testParseLabels("\"middle label\"", [null, "middle label", null], assert);
 });
 QUnit.test("fully delimited middle label", function( assert ) {
-	testParseLabels("|\"middle label\"|", [null, "middle label", null], assert);
+	testParseLabels(":\"middle label\":", [null, "middle label", null], assert);
 });
 QUnit.test("all three labels", function( assert ) {
-	testParseLabels("\"start label\"|\"middle label\"|\"end label\"", ["start label", "middle label", "end label"], assert);
+	testParseLabels("\"start label\":\"middle label\":\"end label\"", ["start label", "middle label", "end label"], assert);
 });
 QUnit.test("fully delimited middle and end labels", function( assert ) {
-	testParseLabels("|\"middle label\"|\"end label\"", [null, "middle label", "end label"], assert);
+	testParseLabels(":\"middle label\":\"end label\"", [null, "middle label", "end label"], assert);
 });
 QUnit.test("fully delimited start and middle labels", function( assert ) {
-	testParseLabels("\"start label\"|\"middle label\"|", ["start label", "middle label", null], assert);
+	testParseLabels("\"start label\":\"middle label\":", ["start label", "middle label", null], assert);
 });
 QUnit.test("fully delimited start and end labels", function( assert ) {
-	testParseLabels("\"start label\"||\"end label\"", ["start label", null, "end label"], assert);
+	testParseLabels("\"start label\"::\"end label\"", ["start label", null, "end label"], assert);
 });
 QUnit.test("partially delimited start and end labels", function( assert ) {
-	testParseLabels("\"start label\"|\"end label\"", ["start label", null, "end label"], assert);
+	testParseLabels("\"start label\":\"end label\"", ["start label", null, "end label"], assert);
 });
 QUnit.test("partially delimited start label", function( assert ) {
-	testParseLabels("\"start label\"|", ["start label", null, null], assert);
+	testParseLabels("\"start label\":", ["start label", null, null], assert);
 });
 QUnit.test("fully delimited start label", function( assert ) {
-	testParseLabels("\"start label\"||", ["start label", null, null], assert);
+	testParseLabels("\"start label\"::", ["start label", null, null], assert);
 });
 QUnit.test("partially delimited end label", function( assert ) {
-	testParseLabels("|\"end label\"", [null, null, "end label"], assert);
+	testParseLabels(":\"end label\"", [null, null, "end label"], assert);
 });
 QUnit.test("fully delimited end label", function( assert ) {
-	testParseLabels("||\"end label\"", [null, null, "end label"], assert);
+	testParseLabels("::\"end label\"", [null, null, "end label"], assert);
 });
 QUnit.test("no match", function( assert ) {
 	testParseLabels("->[C]", [null, null, null], assert);
 });
 QUnit.test("extra spaces between labels", function( assert ) {
-	testParseLabels("  \"start label\" |  \"middle label\" |  \"end label\" ", ["start label", "middle label", "end label"], assert);
+	testParseLabels("  \"start label\" :  \"middle label\" :  \"end label\" ", ["start label", "middle label", "end label"], assert);
 });
 QUnit.test("extra spaces within labels", function( assert ) {
-	testParseLabels("\"  start label \"|\"  middle label \"|\"  end label \"", ["start label", "middle label", "end label"], assert);
+	testParseLabels("\"  start label \":\"  middle label \":\"  end label \"", ["start label", "middle label", "end label"], assert);
 });
 
 function testParseLine(text, expected, assert) {
@@ -206,7 +206,7 @@ QUnit.test("single relation, middle label", function( assert ) {
 	testParseLine("[A]->[B] \"middle label\"", [pinker.RelateRecord.create("A", "->", "B", null, "middle label", null)], assert);
 });
 QUnit.test("single relation, all labels", function( assert ) {
-	testParseLine("[A]->[B] \"start label\"|\"middle label\"|\"end label\"", [pinker.RelateRecord.create("A", "->", "B", "start label", "middle label", "end label")], assert);
+	testParseLine("[A]->[B] \"start label\":\"middle label\":\"end label\"", [pinker.RelateRecord.create("A", "->", "B", "start label", "middle label", "end label")], assert);
 });
 QUnit.test("single relation, extra spaces around label", function( assert ) {
 	testParseLine("[A]->[B]    \"middle label\"  ", [pinker.RelateRecord.create("A", "->", "B", null, "middle label", null)], assert);
