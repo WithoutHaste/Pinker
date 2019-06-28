@@ -1,0 +1,17 @@
+Layout:
+	[Loooooooooooooooooooooooooong]
+	[A1]...[A2]
+	[B1]...[B2]
+	[C1]...[C2]
+	[D1]...[D2]
+	[E1]...[E2]
+	[F1]...[F2]
+	[G1]...[G2]
+Relate:
+	[A1]->[A2] "middle label"
+	[B1]->[B2] | "middle label" |
+	[C1]->[C2] "start label" | "middle label" | "end label"
+	[D1]->[D2] "start label" || "end label"
+	[E1]->[E2] "start label" | "end label"
+	[F1]->[F2] "start label" |
+	[G1]->[G2] | "end label"

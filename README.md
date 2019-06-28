@@ -198,17 +198,17 @@ Relations can be made across scopes. For example, `[C]` has a relation to `[A.D.
 
 A line between two scopes can be labeled at the start, in the middle, and/or at the end. 
 
-Labels are defined on the same source row as the relationship, after a whitespace. Labels are surrounded by double-quotes and are separated by colons.
+Labels are defined on the same source row as the relationship, after a whitespace. Labels are surrounded by double-quotes and are separated by pipes.
 
 ```
 Relate:
 	[A1]->[A2] "middle label"
-	[B1]->[B2] :"middle label":
-	[C1]->[C2] "start label":"middle label":"end label"
-	[D1]->[D2] "start label"::"end label"
-	[E1]->[E2] "start label":"end label"
-	[F1]->[F2] "start label":
-	[G1]->[G2] :"end label"
+	[B1]->[B2] |"middle label"|
+	[C1]->[C2] "start label"|"middle label"|"end label"
+	[D1]->[D2] "start label"||"end label"
+	[E1]->[E2] "start label"|"end label"
+	[F1]->[F2] "start label"|
+	[G1]->[G2] |"end label"
 ```
 
 ### Aliases

@@ -595,39 +595,39 @@ pinker.testMode = true;
 		parseLabels: function(line) {
 			line = line.trim();
 			let match = null;
-			match = line.match(/^\"(.+?)\"\:\"(.+?)\"\:\"(.+?)\"$/); //start:middle:end
+			match = line.match(/^\s*\"(.+?)\"\s*\|\s*\"(.+?)\"\s*\|\s*\"(.+?)\"\s*$/); //start|middle|end
 			if(match != null)
-				return [match[1], match[2], match[3]];
-			match = line.match(/^\"(.+?)\"\:\:\"(.+?)\"$/); //start::end
+				return [match[1].trim(), match[2].trim(), match[3].trim()];
+			match = line.match(/^\s*\"(.+?)\"\s*\|\s*\|\s*\"(.+?)\"\s*$/); //start||end
 			if(match != null)
-				return [match[1], null, match[2]];
-			match = line.match(/^\"(.+?)\"\:\"(.+?)\"$/); //start:end
+				return [match[1].trim(), null, match[2].trim()];
+			match = line.match(/^\s*\"(.+?)\"\s*\|\s*\"(.+?)\"\s*$/); //start|end
 			if(match != null)
-				return [match[1], null, match[2]];
-			match = line.match(/^\:\"(.+?)\"\:\"(.+?)\"$/); //:middle:end
+				return [match[1].trim(), null, match[2].trim()];
+			match = line.match(/^\s*\|\s*\"(.+?)\"\s*\|\s*\"(.+?)\"\s*$/); //|middle|end
 			if(match != null)
-				return [null, match[1], match[2]];
-			match = line.match(/^\:\"(.+?)\"\:$/); //:middle:
+				return [null, match[1].trim(), match[2].trim()];
+			match = line.match(/^\s*\|\s*\"(.+?)\"\s*\|\s*$/); //|middle|
 			if(match != null)
-				return [null, match[1], null];
-			match = line.match(/^\"(.+?)\"\:\"(.+?)\"\:$/); //start:middle:
+				return [null, match[1].trim(), null];
+			match = line.match(/^\s*\"(.+?)\"\s*\|\s*\"(.+?)\"\s*\|\s*$/); //start|middle|
 			if(match != null)
-				return [match[1], match[2], null];
-			match = line.match(/^\"(.+?)\"\:\:$/); //start::
+				return [match[1].trim(), match[2].trim(), null];
+			match = line.match(/^\s*\"(.+?)\"\s*\|\s*\|\s*$/); //start||
 			if(match != null)
-				return [match[1], null, null];
-			match = line.match(/^\"(.+?)\"\:$/); //start:
+				return [match[1].trim(), null, null];
+			match = line.match(/^\s*\"(.+?)\"\s*\|\s*$/); //start|
 			if(match != null)
-				return [match[1], null, null];
-			match = line.match(/^\:\:\"(.+?)\"$/); //::end
+				return [match[1].trim(), null, null];
+			match = line.match(/^\s*\|\s*\|\s*\"(.+?)\"\s*$/); //||end
 			if(match != null)
-				return [null, null, match[1]];
-			match = line.match(/^\:\"(.+?)\"$/); //:end
+				return [null, null, match[1].trim()];
+			match = line.match(/^\s*\|\s*\"(.+?)\"\s*$/); //|end
 			if(match != null)
-				return [null, null, match[1]];
-			match = line.match(/^\"(.+?)\"$/); //middle
+				return [null, null, match[1].trim()];
+			match = line.match(/^\s*\"(.+?)\"\s*$/); //middle
 			if(match != null)
-				return [null, match[1], null];
+				return [null, match[1].trim(), null];
 			return [null, null, null];
 		},
 		//returns [[startTerms], arrowType, [endTerms], remainingLine] from full Relate row
@@ -751,6 +751,7 @@ pinker.testMode = true;
 					collapsedSections.push(section);
 			}
 		});
+console.log(collapsedSections);
 		return collapsedSections;
 	}
 	
@@ -810,8 +811,10 @@ pinker.testMode = true;
 	function parseRelateSection(section) {
 		let relateSection = Section.createRelate();
 		section.body.forEach(function(line) {
+	console.log(line);
 			let results = RelateRecord.parseLine(line);
 			relateSection.records = relateSection.records.concat(results);
+	console.log(relateSection.records);
 		});
 		return relateSection;
 	}
