@@ -5,7 +5,7 @@
 
 var pinker = pinker || {};
 
-//pinker.testMode = true;
+pinker.testMode = true;
 
 (function() { //private scope
 
@@ -129,6 +129,24 @@ var pinker = pinker || {};
 			if(text == null)
 				return null;
 			return text.split("").reverse().join("");
+		},
+		removeFromStart: function(text, start) {
+			if(text.startsWith(start))
+				return text.substring(start.length);
+			return text;
+		},
+		removeEnclosingCharacters: function(text, startChar, endChar=null) {
+			if(endChar == null)
+				endChar = startChar;
+			if(text == null || text.length == 0)
+				return text;
+			if(text[0] == startChar)
+				text = text.substring(1);
+			if(text.length == 0)
+				return text;
+			if(text[text.length-1] == endChar)
+				text = text.substring(0, text.length-1);
+			return text;
 		}
 	};
 	
@@ -573,8 +591,47 @@ var pinker = pinker || {};
 			}
 			return [terms, partialLine];
 		},
-		//returns [[startScope,...], arrowType, [endScope,...]] from source relate line
-		parseLine: function(line) {
+		//returns [lineLabelStart, lineLabelMiddle, lineLabelEnd] from the label section of a Relate line
+		parseLabels: function(line) {
+			line = line.trim();
+			let match = null;
+			match = line.match(/^\"(.+?)\"\:\"(.+?)\"\:\"(.+?)\"$/); //start:middle:end
+			if(match != null)
+				return [match[1], match[2], match[3]];
+			match = line.match(/^\"(.+?)\"\:\:\"(.+?)\"$/); //start::end
+			if(match != null)
+				return [match[1], null, match[2]];
+			match = line.match(/^\"(.+?)\"\:\"(.+?)\"$/); //start:end
+			if(match != null)
+				return [match[1], null, match[2]];
+			match = line.match(/^\:\"(.+?)\"\:\"(.+?)\"$/); //:middle:end
+			if(match != null)
+				return [null, match[1], match[2]];
+			match = line.match(/^\:\"(.+?)\"\:$/); //:middle:
+			if(match != null)
+				return [null, match[1], null];
+			match = line.match(/^\"(.+?)\"\:\"(.+?)\"\:$/); //start:middle:
+			if(match != null)
+				return [match[1], match[2], null];
+			match = line.match(/^\"(.+?)\"\:\:$/); //start::
+			if(match != null)
+				return [match[1], null, null];
+			match = line.match(/^\"(.+?)\"\:$/); //start:
+			if(match != null)
+				return [match[1], null, null];
+			match = line.match(/^\:\:\"(.+?)\"$/); //::end
+			if(match != null)
+				return [null, null, match[1]];
+			match = line.match(/^\:\"(.+?)\"$/); //:end
+			if(match != null)
+				return [null, null, match[1]];
+			match = line.match(/^\"(.+?)\"$/); //middle
+			if(match != null)
+				return [null, match[1], null];
+			return [null, null, null];
+		},
+		//returns [[startTerms], arrowType, [endTerms], remainingLine] from full Relate row
+		parseRelation: function(line) {
 			let startTerms = [];
 			let arrowTerm = null;
 			let endTerms = [];
@@ -585,25 +642,43 @@ var pinker = pinker || {};
 				if(matches == null)
 				{
 					arrowTerm = line;
+					line = "";
 				}
 				else
 				{
 					arrowTerm = matches[1].trim();
 					if(arrowTerm != null)
 					{
-						line = line.substring(arrowTerm.length).trim();
+						line = Text.removeFromStart(line, arrowTerm).trim();
 					}
 					[endTerms, line] = this.parseListOfTerms(line);
 				}
 			}
-			return [startTerms, arrowTerm, endTerms];
+			return [startTerms, arrowTerm, endTerms, line];
+		},
+		//returns an array of Relate Record objects
+		parseLine: function(line) {
+			let [startTerms, arrowTerm, endTerms, lineB] = this.parseRelation(line);
+			if(startTerms.length == 0 || arrowTerm == null || endTerms.length == 0)
+				return [];
+			let [lineLabelStart, lineLabelMiddle, lineLabelEnd] = this.parseLabels(lineB);
+			let results = [];
+			startTerms.forEach(function(startTerm) {
+				endTerms.forEach(function(endTerm) {
+					results.push(RelateRecord.create(Source.openScope(startTerm), arrowTerm, Source.openScope(endTerm), lineLabelStart, lineLabelMiddle, lineLabelEnd));
+				});
+			});
+			return results;
 		},
 		//returns a relate record
-		create: function(startLabel, arrowType, endLabel) {
+		create: function(startLabel, arrowType, endLabel, lineLabelStart=null, lineLabelMiddle=null, lineLabelEnd=null) {
 			return {
 				startLabel: startLabel,
 				arrowType: arrowType,
-				endLabel: endLabel
+				endLabel: endLabel,
+				lineLabelStart: lineLabelStart,
+				lineLabelMiddle: lineLabelMiddle,
+				lineLabelEnd, lineLabelEnd
 			};
 		}
 	};
@@ -735,14 +810,8 @@ var pinker = pinker || {};
 	function parseRelateSection(section) {
 		let relateSection = Section.createRelate();
 		section.body.forEach(function(line) {
-			const [startTerms, arrowTerm, endTerms] = RelateRecord.parseLine(line);
-			if(startTerms.length == 0 || arrowTerm == null || endTerms.length == 0)
-				return;
-			startTerms.forEach(function(startTerm) {
-				endTerms.forEach(function(endTerm) {
-					relateSection.records.push(RelateRecord.create(Source.openScope(startTerm), arrowTerm, Source.openScope(endTerm)));
-				});
-			});
+			let results = RelateRecord.parseLine(line);
+			relateSection.records = relateSection.records.concat(results);
 		});
 		return relateSection;
 	}

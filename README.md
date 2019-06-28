@@ -194,6 +194,23 @@ Relate:
 
 Relations can be made across scopes. For example, `[C]` has a relation to `[A.D.G]`. Since `[C]` and `[D]` exist in the same scope, the relative reference `[D.G]` is sufficient. Relative references will be checked before global references.
 
+### Labels on Lines
+
+A line between two scopes can be labeled at the start, in the middle, and/or at the end. 
+
+Labels are defined on the same source row as the relationship, after a whitespace. Labels are surrounded by double-quotes and are separated by colons.
+
+```
+Relate:
+	[A1]->[A2] "middle label"
+	[B1]->[B2] :"middle label":
+	[C1]->[C2] "start label":"middle label":"end label"
+	[D1]->[D2] "start label"::"end label"
+	[E1]->[E2] "start label":"end label"
+	[F1]->[F2] "start label":
+	[G1]->[G2] :"end label"
+```
+
 ### Aliases
 
 Since some labels can be very long, Pinker supports **aliases**.
@@ -291,6 +308,7 @@ Uses [Semantic Versioning 2.0.0](https://semver.org/).
 To see what version you are using: `let v = pinker.version;`
 
 Untitled - v1.3.0  
+- support labels on relationship lines/arrows
 - support passing multiple options into render() and draw()
 - support arrows pointing right or left; support double-headed arrows
 - support lists on both sides of a Relate line
