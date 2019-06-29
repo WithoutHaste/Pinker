@@ -125,6 +125,10 @@ pinker.testMode = true;
 	//########################################
 	
 	const Text = {
+		//returns true for empty string, null, or undefined
+		isBlank: function(text) {
+			return (text == undefined || text == null || text.length == 0);
+		},
 		reverse: function(text) {
 			if(text == null)
 				return null;
@@ -1363,6 +1367,9 @@ pinker.testMode = true;
 					else
 						line = Line.create(Point.create(this.rangeX().middle(), this.startY), Point.create(this.rangeX().middle(), this.endY));
 					line.arrowLine = this.arrowLine;
+					line.startLabel = this.startLabel;
+					line.middleLabel = this.middleLabel;
+					line.endLabel = this.endLabel;
 					return line;
 				}
 			};
@@ -1474,6 +1481,9 @@ pinker.testMode = true;
 				},
 				maxY: function() {
 					return Math.max(this.startPoint.y, this.endPoint.y);
+				},
+				length: function() {
+					return Line.length(this.startPoint, this.endPoint);
 				},
 				//returns overlap point of lines, or null
 				intersection: function(otherLine) {
@@ -1815,6 +1825,7 @@ pinker.testMode = true;
 		lines.forEach(function(line) {
 			drawLine(line.startPoint, line.endPoint, line.arrowLine.lineType, context);
 			drawArrows(line.startPoint, line.endPoint, line.arrowLine.leftArrowType, line.arrowLine.rightArrowType, context);
+			StrategyPlaceLineLabels.apply(line, context);
 		});
 	}
 	
@@ -2267,6 +2278,9 @@ pinker.testMode = true;
 			return simpleLineBetweenNodes(startNode, endNode, allNodes, relation);
 
 		line.arrowLine = ArrowLine.parse(relation.arrowType);
+		line.startLabel = relation.lineLabelStart;
+		line.middleLabel = relation.lineLabelMiddle;
+		line.endLabel = relation.lineLabelEnd;
 		return line;
 	}
 
@@ -2286,6 +2300,9 @@ pinker.testMode = true;
 			end = endArea.center();
 		const line = Line.create(start, end);
 		line.arrowLine = ArrowLine.parse(relation.arrowType);
+		line.startLabel = relation.lineLabelStart;
+		line.middleLabel = relation.lineLabelMiddle;
+		line.endLabel = relation.lineLabelEnd;
 		return line;
 	}
 	
@@ -2435,6 +2452,142 @@ pinker.testMode = true;
 			for(let i=1; i<points.length; i++)
 			{
 				context.lineTo(points[i].x, points[i].y);
+			}
+		},
+		//draw text left-aligned to point
+		textLeftAligned: function(text, xBottomLeft, yBottomLeft, context) {
+			context.fillStyle = pinker.config.lineColor;
+			context.font = pinker.config.font();
+			context.fillText(text, xBottomLeft, yBottomLeft);
+		},
+		//draw text right-aligned to point
+		textRightAligned: function(text, xBottomRight, yBottomRight, context) {
+			context.fillStyle = pinker.config.lineColor;
+			context.font = pinker.config.font();
+			const xBottomLeft = xBottomRight - context.measureText(text).width;
+			context.fillText(text, xBottomLeft, yBottomRight);
+		}
+	};
+	
+	const StrategyPlaceLineLabels = {
+		apply: function(line, context) {
+			const hasStartLabel = !Text.isBlank(line.startLabel);
+			const hasMiddleLabel = !Text.isBlank(line.middleLabel);
+			const hasEndLabel = !Text.isBlank(line.endLabel);
+			context.font = pinker.config.font();
+			const startLength = context.measureText(line.startLabel).width;
+			const middleLength = context.measureText(line.middleLabel).width;
+			const endLength = context.measureText(line.endLabel).width;
+			//no labels
+			if(!hasStartLabel && !hasMiddleLabel && !hasEndLabel)
+				return;
+			//only start
+			if(hasStartLabel && !hasMiddleLabel && !hasEndLabel)
+			{
+				this.drawTextAlignedToStart(line, line.startLabel, context);
+			}
+			//only middle
+			else if(!hasStartLabel && hasMiddleLabel && !hasEndLabel)
+			{
+				this.drawTextAlignedToMiddle(line, line.middleLabel, context);
+			}
+			//only end
+			else if(!hasStartLabel && !hasMiddleLabel && hasEndLabel)
+			{
+				this.drawTextAlignedToEnd(line, line.endLabel, context);
+			}
+			//start and end
+			else if(hasStartLabel && !hasMiddleLabel && hasEndLabel)
+			{
+				this.drawTextAlignedToStart(line, line.startLabel, context);
+				if(startLength + endLength < line.length())
+					this.drawTextAlignedToEnd(line, line.endLabel, context);
+				else
+					this.drawTextAlignedToEnd(line, line.endLabel, context, true);
+			}
+			//start and middle
+			else if(hasStartLabel && hasMiddleLabel && !hasEndLabel)
+			{
+			}
+			//middle and end
+			else if(!hasStartLabel && hasMiddleLabel && hasEndLabel)
+			{
+			}
+			//start and middle and end
+			else if(!hasStartLabel && hasMiddleLabel && hasEndLabel)
+			{
+			}
+		},
+		//align text to start of line
+		drawTextAlignedToStart: function(line, text, context) {
+			const margin = 5;
+			const arrowHeadLength = (line.arrowLine.leftArrowType > 0) ? Math.sqrt(pinker.config.arrowHeadArea) : 0; //estimate arrow head length
+			const fontHeight = pinker.config.estimateFontHeight();
+			if(line.isVertical())
+			{
+				if(line.startPoint.y < line.endPoint.y)
+					Draw.textLeftAligned(text, line.startPoint.x + margin, line.startPoint.y + arrowHeadLength + margin + fontHeight, context);
+				else
+					Draw.textLeftAligned(text, line.startPoint.x + margin, line.startPoint.y - arrowHeadLength - margin - fontHeight, context);
+			}
+			else if(line.isHorizontal())
+			{
+				if(line.startPoint.x < line.endPoint.x)
+					Draw.textLeftAligned(text, line.startPoint.x + arrowHeadLength + margin, line.startPoint.y - margin, context);
+				else
+					Draw.textRightAligned(text, line.startPoint.x - arrowHeadLength - margin, line.startPoint.y - margin, context);
+			}
+			else
+			{
+				//TODO
+			}
+		},
+		//align text to end of line
+		drawTextAlignedToEnd: function(line, text, context, offset=false) {
+			const margin = 5;
+			const arrowHeadLength = (line.arrowLine.rightArrowType > 0) ? Math.sqrt(pinker.config.arrowHeadArea) : 0; //estimate arrow head length
+			const fontHeight = pinker.config.estimateFontHeight();
+			if(line.isVertical())
+			{
+				if(line.endPoint.y < line.startPoint.y)
+					Draw.textLeftAligned(text, line.endPoint.x + margin, line.endPoint.y + arrowHeadLength + margin + fontHeight, context);
+				else
+					Draw.textLeftAligned(text, line.endPoint.x + margin, line.endPoint.y - arrowHeadLength - margin - fontHeight, context);
+			}
+			else if(line.isHorizontal())
+			{
+				let y = (offset) ? line.endPoint.y + margin + fontHeight : line.endPoint.y - margin;
+				if(line.endPoint.x < line.startPoint.x)
+					Draw.textLeftAligned(text, line.endPoint.x + arrowHeadLength + margin, y, context);
+				else
+					Draw.textRightAligned(text, line.endPoint.x - arrowHeadLength - margin, y, context);
+			}
+			else
+			{
+				//TODO
+			}
+		},
+		//align text to middle of line
+		drawTextAlignedToMiddle: function(line, text, context, offset=false) {
+			const margin = 5;
+			const fontHeight = pinker.config.estimateFontHeight();
+			const textLength = context.measureText(text).width;
+			if(line.isVertical())
+			{
+				let y = (line.startPoint.y + line.endPoint.y) / 2;
+				Draw.textLeftAligned(text, line.startPoint.x + margin, y, context);
+			}
+			else if(line.isHorizontal())
+			{
+				let x = Math.min(line.startPoint.x, line.endPoint.x);
+				if(textLength < line.length())
+					x += (line.length() - textLength) / 2;
+				let y = (offset) ? line.endPoint.y + margin + fontHeight : line.endPoint.y - margin;
+				Draw.textLeftAligned(text, x, y, context);
+			}
+			else
+			{
+				//TODO
 			}
 		}
 	};
@@ -3018,10 +3171,16 @@ pinker.testMode = true;
 				if(i == 0)
 				{
 					line.arrowLine.leftArrowType = path.arrowLine.leftArrowType;
+					line.startLabel = path.startLabel;
+				}
+				if(i == Math.floor(lines.length / 2))
+				{
+					lines.middleLabel = path.middleLabel;
 				}
 				if(i == lines.length - 1)
 				{
 					line.arrowLine.rightArrowType = path.arrowLine.rightArrowType;
+					line.endLabel = path.endLabel;
 				}
 			}
 			return lines;
@@ -3061,175 +3220,43 @@ pinker.testMode = true;
 				arrowLine: arrowLine,
 				startNode: startNode, 
 				endNode: endNode, 
-				minBuffer: minBuffer
+				minBuffer: minBuffer,
+				defaultSpan: defaultSpan,
+				relation: relation
 			};
 
 			let possiblePaths = PossiblePaths.create();
 			
 			if(startArea.isAbove(endArea))
 			{
-				//direct line
-				let path = Path.create(Path.types.straight, arrowLine, startNode, endNode, false);
-				possiblePaths.paths.push(path);
-				let rangeX = Range.create(
-					Math.max(startArea.left(), endArea.left()),
-					Math.min(startArea.right(), endArea.right())
-				);
-				path.points.push(PotentialPoint.create(rangeX, Range.create(startArea.bottom())));
-				path.points.push(PotentialPoint.create(rangeX, Range.create(endArea.top())));
-				
-				//elbow right-down, if space allows
-				if(endArea.right() > startArea.right() + minBuffer)
-				{
-					let elbowPath = Path.create(Path.types.elbow, arrowLine, startNode, endNode, true);
-					possiblePaths.paths.push(elbowPath);
-					let rangeAX = Range.create(startArea.right());
-					let rangeAY = Range.create(startArea.top(), startArea.bottom());
-					let rangeBX = Range.create(startArea.right() + minBuffer, Math.min(endArea.right(), startArea.right() + minBuffer + defaultSpan));
-					let rangeCY = Range.create(endArea.top());
-					elbowPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
-					elbowPath.points.push(PotentialPoint.create(rangeBX, rangeAY));
-					elbowPath.points.push(PotentialPoint.create(rangeBX, rangeCY));
-				}
-
-				//curl around on the right
-				let secondPath = Path.create(Path.types.curl, arrowLine, startNode, endNode, true);
-				possiblePaths.paths.push(secondPath);
-				let rangeAX = Range.create(startArea.right());
-				let rangeAY = Range.create(startArea.top(), startArea.bottom());
-				let rangeBX = Range.create(Math.max(startArea.right(), endArea.right()) + minBuffer, Math.max(startArea.right(), endArea.right()) + minBuffer + defaultSpan);
-				let rangeCY = Range.create(endArea.top(), endArea.bottom());
-				let rangeDX = Range.create(endArea.right());
-				secondPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
-				secondPath.points.push(PotentialPoint.create(rangeBX, rangeAY));
-				secondPath.points.push(PotentialPoint.create(rangeBX, rangeCY));
-				secondPath.points.push(PotentialPoint.create(rangeDX, rangeCY));
-
+				possiblePaths.paths.push(this.createPossiblePath(Path.types.straight, pathConfig, Direction.down));
+				possiblePaths.paths.push(this.createPossiblePath(Path.types.elbow, pathConfig, Direction.right, Direction.down));
+				possiblePaths.paths.push(this.createPossiblePath(Path.types.elbow, pathConfig, Direction.left, Direction.down));
+				possiblePaths.paths.push(this.createPossiblePath(Path.types.curl, pathConfig, Direction.right, Direction.down, Direction.left));
 				return possiblePaths;
 			}
 			if(startArea.isBelow(endArea))
 			{
-				//direct line
-				let path = Path.create(Path.types.straight, arrowLine, startNode, endNode, false);
-				possiblePaths.paths.push(path);
-				let rangeX = Range.create(
-					Math.max(startArea.left(), endArea.left()),
-					Math.min(startArea.right(), endArea.right())
-				);
-				path.points.push(PotentialPoint.create(rangeX, Range.create(startArea.top())));
-				path.points.push(PotentialPoint.create(rangeX, Range.create(endArea.bottom())));
-				
-				//elbow up-left, if space allows
-				if(startArea.left() < endArea.left() - minBuffer)
-				{
-					let elbowPath = Path.create(Path.types.elbow, arrowLine, startNode, endNode, false);
-					possiblePaths.paths.push(elbowPath);
-					let rangeAX = Range.create(startArea.left(), endArea.left() - minBuffer);
-					let rangeAY = Range.create(startArea.top());
-					let rangeBY = Range.create(endArea.top(), endArea.bottom());
-					let rangeCX = Range.create(endArea.left());
-					elbowPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
-					elbowPath.points.push(PotentialPoint.create(rangeAX, rangeBY));
-					elbowPath.points.push(PotentialPoint.create(rangeCX, rangeBY));
-				}
-			
-				//curl around on the left
-				let secondPath = Path.create(Path.types.curl, arrowLine, startNode, endNode, true);
-				possiblePaths.paths.push(secondPath);
-				let rangeAX = Range.create(startArea.left());
-				let rangeAY = Range.create(startArea.top(), startArea.bottom());
-				let rangeBX = Range.create(Math.min(startArea.left(), endArea.left()) - minBuffer - defaultSpan, Math.min(startArea.left(), endArea.left()) - minBuffer);
-				let rangeCY = Range.create(endArea.top(), endArea.bottom());
-				let rangeDX = Range.create(endArea.left());
-				secondPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
-				secondPath.points.push(PotentialPoint.create(rangeBX, rangeAY));
-				secondPath.points.push(PotentialPoint.create(rangeBX, rangeCY));
-				secondPath.points.push(PotentialPoint.create(rangeDX, rangeCY));
-
+				possiblePaths.paths.push(this.createPossiblePath(Path.types.straight, pathConfig, Direction.up));
+				possiblePaths.paths.push(this.createPossiblePath(Path.types.elbow, pathConfig, Direction.left, Direction.up));
+				possiblePaths.paths.push(this.createPossiblePath(Path.types.elbow, pathConfig, Direction.right, Direction.up));
+				possiblePaths.paths.push(this.createPossiblePath(Path.types.curl, pathConfig, Direction.left, Direction.up, Direction.right));
 				return possiblePaths;
 			}
 			if(startArea.isLeftOf(endArea))
 			{
-				//direct line
-				let path = Path.create(Path.types.straight, arrowLine, startNode, endNode, true);
-				possiblePaths.paths.push(path);
-				const minY = Math.max(startArea.top(), endArea.top());
-				const maxY = (startNode.labelLayout.isHeader() && endNode.labelLayout.isHeader()) ? 
-					Math.min(startNode.labelArea.bottom(startNode.absoluteArea.point()), endNode.labelArea.bottom(endNode.absoluteArea.point())) :
-					Math.min(startArea.bottom(), endArea.bottom());
-				let rangeY = Range.create(minY, maxY);
-				path.points.push(PotentialPoint.create(Range.create(startArea.right()), rangeY));
-				path.points.push(PotentialPoint.create(Range.create(endArea.left()), rangeY));
-
-				//elbow up-right, if space allows
-				if(endArea.top() < startArea.top() - minBuffer)
-				{
-					let elbowPath = Path.create(Path.types.elbow, arrowLine, startNode, endNode, false);
-					possiblePaths.paths.push(elbowPath);
-					let rangeAY = Range.create(startArea.top());
-					let rangeAX = Range.create(startArea.left(), startArea.right());
-					let rangeBY = Range.create(startArea.top() - minBuffer, Math.max(endArea.top(), startArea.top() - minBuffer - defaultSpan));
-					let rangeCX = Range.create(endArea.left());
-					elbowPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
-					elbowPath.points.push(PotentialPoint.create(rangeAX, rangeBY));
-					elbowPath.points.push(PotentialPoint.create(rangeCX, rangeBY));
-				}
-
-				//curl around on top
-				let secondPath = Path.create(Path.types.curl, arrowLine, startNode, endNode, false);
-				possiblePaths.paths.push(secondPath);
-				let rangeAX = Range.create(startArea.left(), startArea.right());
-				let rangeAY = Range.create(startArea.top());
-				let rangeBY = Range.create(Math.min(startArea.top(), endArea.top()) - minBuffer - defaultSpan, Math.min(startArea.top(), endArea.top()) - minBuffer);
-				let rangeCX = Range.create(endArea.left(), endArea.right());
-				let rangeDY = Range.create(endArea.top());
-				secondPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
-				secondPath.points.push(PotentialPoint.create(rangeAX, rangeBY));
-				secondPath.points.push(PotentialPoint.create(rangeCX, rangeBY));
-				secondPath.points.push(PotentialPoint.create(rangeCX, rangeDY));
-
+				possiblePaths.paths.push(this.createPossiblePath(Path.types.straight, pathConfig, Direction.right));
+				possiblePaths.paths.push(this.createPossiblePath(Path.types.elbow, pathConfig, Direction.up, Direction.right));
+				possiblePaths.paths.push(this.createPossiblePath(Path.types.elbow, pathConfig, Direction.down, Direction.right));
+				possiblePaths.paths.push(this.createPossiblePath(Path.types.curl, pathConfig, Direction.up, Direction.right, Direction.down));
 				return possiblePaths;
 			}
 			if(startArea.isRightOf(endArea))
 			{
-				//direct line
-				let path = Path.create(Path.types.straight, arrowLine, startNode, endNode, true);
-				possiblePaths.paths.push(path);
-				const minY = Math.max(startArea.top(), endArea.top());
-				const maxY = (startNode.labelLayout.isHeader() && endNode.labelLayout.isHeader()) ? 
-					Math.min(startNode.labelArea.bottom(startNode.absoluteArea.point()), endNode.labelArea.bottom(endNode.absoluteArea.point())) :
-					Math.min(startArea.bottom(), endArea.bottom());
-				let rangeY = Range.create(minY, maxY);
-				path.points.push(PotentialPoint.create(Range.create(startArea.left()), rangeY));
-				path.points.push(PotentialPoint.create(Range.create(endArea.right()), rangeY));
-
-				//elbow left-up, if space allows
-				if(startArea.bottom() > endArea.bottom() + minBuffer)
-				{
-					let elbowPath = Path.create(Path.types.elbow, arrowLine, startNode, endNode, true);
-					possiblePaths.paths.push(elbowPath);
-					let rangeAX = Range.create(startArea.left());
-					let rangeAY = Range.create(endArea.bottom() + minBuffer, Math.min(startArea.bottom(), endArea.bottom() + minBuffer + defaultSpan));
-					let rangeBX = Range.create(endArea.left(), endArea.right());
-					let rangeCY = Range.create(endArea.bottom());
-					elbowPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
-					elbowPath.points.push(PotentialPoint.create(rangeBX, rangeAY));
-					elbowPath.points.push(PotentialPoint.create(rangeBX, rangeCY));
-				}
-
-				//curl around on bottom
-				let secondPath = Path.create(Path.types.curl, arrowLine, startNode, endNode, false);
-				possiblePaths.paths.push(secondPath);
-				let rangeAX = Range.create(startArea.left(), startArea.right());
-				let rangeAY = Range.create(startArea.bottom());
-				let rangeCX = Range.create(endArea.left(), endArea.right());
-				let rangeDY = Range.create(endArea.bottom());
-				let rangeBY = Range.create(Math.max(startArea.bottom(), endArea.bottom()) + minBuffer, Math.max(startArea.bottom(), endArea.bottom()) + minBuffer + defaultSpan);
-				secondPath.points.push(PotentialPoint.create(rangeAX, rangeAY));
-				secondPath.points.push(PotentialPoint.create(rangeAX, rangeBY));
-				secondPath.points.push(PotentialPoint.create(rangeCX, rangeBY));
-				secondPath.points.push(PotentialPoint.create(rangeCX, rangeDY));
-
+				possiblePaths.paths.push(this.createPossiblePath(Path.types.straight, pathConfig, Direction.left));
+				possiblePaths.paths.push(this.createPossiblePath(Path.types.elbow, pathConfig, Direction.up, Direction.left));
+				possiblePaths.paths.push(this.createPossiblePath(Path.types.elbow, pathConfig, Direction.down, Direction.left));
+				possiblePaths.paths.push(this.createPossiblePath(Path.types.curl, pathConfig, Direction.down, Direction.left, Direction.up));
 				return possiblePaths;
 			}
 			if(startArea.isAboveLeftOf(endArea))
@@ -3285,11 +3312,43 @@ pinker.testMode = true;
 		createPossiblePath: function(pathType, pathConfig, ...directions) {
 			const startsHorizontal = (directions[0] == Direction.left || directions[0] == Direction.right);
 			const path = Path.create(pathType, pathConfig.arrowLine, pathConfig.startNode, pathConfig.endNode, startsHorizontal);
+			path.startLabel = pathConfig.relation.lineLabelStart;
+			path.middleLabel = pathConfig.relation.lineLabelMiddle;
+			path.endLabel = pathConfig.relation.lineLabelEnd;
+						
 			const startArea = pathConfig.startNode.absoluteArea;
 			const endArea   = pathConfig.endNode.absoluteArea;
 			const minBuffer = pathConfig.minBuffer;
+			const defaultSpan = pathConfig.defaultSpan;
 			let rangeX = null;
 			let rangeY = null;
+			if(pathType == Path.types.straight)
+			{
+				switch(directions[0])
+				{
+					case Direction.left:
+						rangeY = Range.create(Math.max(startArea.top(), endArea.top()), Math.min(startArea.bottom(), endArea.bottom()));
+						path.points.push(PotentialPoint.create(Range.create(startArea.left()), rangeY));
+						path.points.push(PotentialPoint.create(Range.create(endArea.right()), rangeY));
+						break;
+					case Direction.right:
+						rangeY = Range.create(Math.max(startArea.top(), endArea.top()), Math.min(startArea.bottom(), endArea.bottom()));
+						path.points.push(PotentialPoint.create(Range.create(startArea.right()), rangeY));
+						path.points.push(PotentialPoint.create(Range.create(endArea.left()), rangeY));
+						break;
+					case Direction.up:
+						rangeX = Range.create(Math.max(startArea.left(), endArea.left()), Math.min(startArea.right(), endArea.right()));
+						path.points.push(PotentialPoint.create(rangeX, Range.create(startArea.top())));
+						path.points.push(PotentialPoint.create(rangeX, Range.create(endArea.bottom())));
+						break;
+					case Direction.down:
+						rangeX = Range.create(Math.max(startArea.left(), endArea.left()), Math.min(startArea.right(), endArea.right()));
+						path.points.push(PotentialPoint.create(rangeX, Range.create(startArea.bottom())));
+						path.points.push(PotentialPoint.create(rangeX, Range.create(endArea.top())));
+						break;
+				}
+				return path;
+			}
 			switch(directions[0])
 			{
 				case Direction.left:
@@ -3305,6 +3364,33 @@ pinker.testMode = true;
 					path.points.push(PotentialPoint.create(Range.create(startArea.left(), startArea.right()), Range.create(startArea.bottom())));
 					break;
 			}
+			if(pathType == Path.types.curl)
+			{
+				switch(directions[0])
+				{
+					case Direction.left:
+						path.points.push(PotentialPoint.create(Range.create(Math.min(startArea.left(), endArea.left()) - minBuffer - defaultSpan, Math.min(startArea.left(), endArea.left()) - minBuffer), path.points[0].rangeY));
+						path.points.push(PotentialPoint.create(path.points[1].rangeX, Range.create(endArea.top(), endArea.bottom())));
+						path.points.push(PotentialPoint.create(Range.create(endArea.left()), path.points[2].rangeY));
+						break;
+					case Direction.right:
+						path.points.push(PotentialPoint.create(Range.create(Math.max(startArea.right(), endArea.right()) + minBuffer, Math.max(startArea.right(), endArea.right()) + minBuffer + defaultSpan), path.points[0].rangeY));
+						path.points.push(PotentialPoint.create(path.points[1].rangeX, Range.create(endArea.top(), endArea.bottom())));
+						path.points.push(PotentialPoint.create(Range.create(endArea.right()), path.points[2].rangeY));
+						break;
+					case Direction.up:
+						path.points.push(PotentialPoint.create(path.points[0].rangeX, Range.create(Math.min(startArea.top(), endArea.top()) - minBuffer - defaultSpan, Math.min(startArea.top(), endArea.top()) - minBuffer)));
+						path.points.push(PotentialPoint.create(Range.create(endArea.left(), endArea.right()), path.points[1].rangeY));
+						path.points.push(PotentialPoint.create(path.points[2].rangeX, Range.create(endArea.top())));
+						break;
+					case Direction.down:
+						path.points.push(PotentialPoint.create(path.points[0].rangeX, Range.create(Math.max(startArea.bottom(), endArea.bottom()) + minBuffer, Math.max(startArea.bottom(), endArea.bottom()) + minBuffer + defaultSpan)));
+						path.points.push(PotentialPoint.create(Range.create(endArea.left(), endArea.right()), path.points[1].rangeY));
+						path.points.push(PotentialPoint.create(path.points[2].rangeX, Range.create(endArea.bottom())));
+						break;
+				}
+				return path;
+			}			
 			for(let i=1; i<directions.length-1; i++)
 			{
 				switch(directions[i])
@@ -3321,7 +3407,7 @@ pinker.testMode = true;
 					case Direction.down:
 						if(directions[i+1] == Direction.left)
 							rangeX = Range.create(startArea.left() - minBuffer, endArea.right() + minBuffer);
-						else
+						else if(directions[i+1] == Direction.right)
 							rangeX = Range.create(startArea.right() + minBuffer, endArea.left() - minBuffer);
 						path.points.push(PotentialPoint.create(rangeX, path.points[path.points.length-1].rangeY));
 						break;

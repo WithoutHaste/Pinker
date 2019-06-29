@@ -3,6 +3,7 @@ Layout:
 	[C][D]
 	[E][F]
 	[G][H]
+	[I][J][K][L]
 [A]:
 	Layout:
 		[a1]
@@ -59,3 +60,31 @@ Layout:
 		...[h6]
 	Relate:
 		[h6]->[h1]
+[I]:
+	Layout:
+		[i1]
+		[i2]
+		[i3 loooong]
+	Relate:
+		[i1]->[i3 loooong]
+[J]:
+	Layout:
+		...[j1]
+		...[j2]
+		[j3 loooong]
+	Relate:
+		[j1]->[j3 loooong]
+[K]:
+	Layout:
+		[k3 loooong]
+		[k2]
+		[k1]
+	Relate:
+		[k1]->[k3 loooong]
+[L]:
+	Layout:
+		[l3 loooong]
+		...[l2]
+		...[l1]
+	Relate:
+		[l1]->[l3 loooong]
