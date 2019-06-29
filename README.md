@@ -211,6 +211,8 @@ Relate:
 	[G1]->[G2] :"end label"
 ```
 
+An arrow that points to the left (such as `[A]<-[B]`) still "starts" at `[A]` and "ends" at `[B]`.
+
 ### Aliases
 
 Since some labels can be very long, Pinker supports **aliases**.

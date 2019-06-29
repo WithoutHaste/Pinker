@@ -2799,7 +2799,7 @@ pinker.testMode = true;
 				Draw.fillShape(points, pinker.config.lineColor, context);
 				break;
 			case ArrowTypes.singleBar:
-				drawBarArrow(end, angle, context);
+				drawHalfBarArrow(end, angle, context);
 				break;
 			case ArrowTypes.doubleBar:
 				drawDoubleBarArrow(end, angle, context);
@@ -3319,7 +3319,7 @@ pinker.testMode = true;
 				}
 				if(i == Math.floor(lines.length / 2))
 				{
-					lines.middleLabel = path.middleLabel;
+					line.middleLabel = path.middleLabel;
 				}
 				if(i == lines.length - 1)
 				{

@@ -12,8 +12,8 @@
 		<div>
 			<pre id='Source02'>
 Layout:
-	[two-segment lines TODO]
-	[three-segment lines TODO]
+	[two-segment lines]
+	[three-segment lines]
 	[left to right]
 	[right to left]
 	[top to bottom]
@@ -22,6 +22,26 @@ Layout:
 	[diagonal down-left]
 	[diagonal up-right]
 	[diagonal down-right]
+[two-segment lines]:
+	Layout:
+		[A1]
+		[A2][A3]
+		[A4][A5][A6]
+		[B1][B2][B3]
+		[B4][B5]
+		[B6]
+	Relate:
+		[A1]->[A6] "start label":"middle label":"end label"
+		[B3]->[B6] "start label":"middle label":"end label"
+[three-segment lines]:
+	Layout:
+		[A1]
+		[A2]
+		[A3]
+		[B1][B2][B3]
+	Relate:
+		[A1]->[A3] "start label":"middle label":"end label"
+		[B1]->[B3] "start label":"middle label":"end label"
 [left to right]:
 	Layout:
 		[Loooooooooooooooooooooooooong]
@@ -131,5 +151,5 @@ Layout:
 		<script>
 			var canvas = document.getElementById("Canvas02");
 			var source = document.getElementById("Source02").innerHTML;
-			pinker.draw(canvas, source, {useSmartArrows:false});
+			pinker.draw(canvas, source, {useSmartArrows:true});
 		</script>

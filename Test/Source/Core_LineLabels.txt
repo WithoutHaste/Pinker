@@ -1,4 +1,6 @@
 Layout:
+	[two-segment lines]
+	[three-segment lines]
 	[left to right]
 	[right to left]
 	[top to bottom]
@@ -7,6 +9,26 @@ Layout:
 	[diagonal down-left]
 	[diagonal up-right]
 	[diagonal down-right]
+[two-segment lines]:
+	Layout:
+		[A1]
+		[A2][A3]
+		[A4][A5][A6]
+		[B1][B2][B3]
+		[B4][B5]
+		[B6]
+	Relate:
+		[A1]->[A6] "start label":"middle label":"end label"
+		[B3]->[B6] "start label":"middle label":"end label"
+[three-segment lines]:
+	Layout:
+		[A1]
+		[A2]
+		[A3]
+		[B1][B2][B3]
+	Relate:
+		[A1]->[A3] "start label":"middle label":"end label"
+		[B1]->[B3] "start label":"middle label":"end label"
 [left to right]:
 	Layout:
 		[Loooooooooooooooooooooooooong]
@@ -85,3 +107,27 @@ Layout:
 		[G1]D-[G2] :"end label"
 		[H1]D-[H2] "start label":"too long end label"
 		[I1]D-[I2] "middle label too loooooooong"
+[diagonal up-left]:
+	Layout:
+		[A]
+		[B][C][D]
+	Relate:
+		[D]->[A] "start label":"middle label":"end label"
+[diagonal down-left]:
+	Layout:
+		...[A]
+		[B][C][D]
+	Relate:
+		[A]->[B] "start label":"middle label":"end label"
+[diagonal up-right]:
+	Layout:
+		...[A]
+		[B][C][D]
+	Relate:
+		[B]->[A] "start label":"middle label":"end label"
+[diagonal down-right]:
+	Layout:
+		[A]
+		[B][C][D]
+	Relate:
+		[A]->[D] "start label":"middle label":"end label"
