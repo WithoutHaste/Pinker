@@ -211,7 +211,7 @@ Relate:
 	[G1]->[G2] :"end label"
 ```
 
-An arrow that points to the left (such as `[A]<-[B]`) still "starts" at `[A]` and "ends" at `[B]`.
+An arrow that points to the left, such as `[A]<-[B]`, still "starts" at `[A]` and "ends" at `[B]`.
 
 ### Aliases
 

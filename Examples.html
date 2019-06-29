@@ -23,7 +23,7 @@
 		Pinker.js
 		</div>
 		
-		Types of arrows
+		Types of Arrows
 		<div>
 			<pre id='Source01'>
 Layout:
@@ -58,7 +58,7 @@ Relate:
 			pinker.draw(canvas, source);
 		</script>
 
-		Types of lines
+		Types of Lines
 		<div>
 			<pre id='Source02'>
 Layout:
@@ -84,7 +84,7 @@ Relate:
 			pinker.draw(canvas, source);
 		</script>
 
-		Single-level diagram
+		Single-level Diagram
 		<div>
 			<pre id='Source03'>
 Layout:
@@ -103,7 +103,7 @@ Relate:
 			pinker.draw(canvas, source);
 		</script>
 
-		Multi-level diagram
+		Multi-level Diagram
 		<div>
 			<pre id='Source04'>
 Layout:
@@ -127,6 +127,24 @@ Layout:
 		<script>
 			var canvas = document.getElementById("Canvas04");
 			var source = document.getElementById("Source04").innerHTML;
+			pinker.draw(canvas, source);
+		</script>
+
+		Labeled Lines
+		<div>
+			<pre id='Source04.5'>
+Layout:
+	[A]
+	[B]
+	[C]
+Relate:
+	[A]->[C] "1":"2":"3"
+			</pre>
+			<canvas id='Canvas04.5'></canvas>
+		</div>
+		<script>
+			var canvas = document.getElementById("Canvas04.5");
+			var source = document.getElementById("Source04.5").innerHTML;
 			pinker.draw(canvas, source);
 		</script>
 
