@@ -5,7 +5,7 @@
 
 var pinker = pinker || {};
 
-pinker.testMode = true;
+//pinker.testMode = true;
 
 (function() { //private scope
 

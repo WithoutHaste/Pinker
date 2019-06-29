@@ -309,7 +309,7 @@ Uses [Semantic Versioning 2.0.0](https://semver.org/).
 
 To see what version you are using: `let v = pinker.version;`
 
-Untitled - v1.3.0  
+[Labels and Relations - v1.3.0](https://github.com/WithoutHaste/Pinker/releases/tag/v1.3.0)  
 - support labels on relationship lines/arrows
 - support passing multiple options into render() and draw()
 - support arrows pointing right or left; support double-headed arrows
