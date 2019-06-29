@@ -57,24 +57,6 @@ with the examples and link to github</Data>
       </Row>
       <Row>
         <Cell>
-          <Data ss:Type="Number">30</Data>
-        </Cell>
-        <Cell ss:StyleID="paragraph">
-          <Data ss:Type="String">refactor
-rename PotentialPoint to PossiblePoint to follow naming pattern</Data>
-        </Cell>
-        <Cell>
-          <Data ss:Type="String">Todo</Data>
-        </Cell>
-        <Cell>
-          <Data ss:Type="String">Task</Data>
-        </Cell>
-        <Cell ss:StyleID="cellShortDate">
-          <Data ss:Type="DateTime">2019-06-12T00:00:00.000</Data>
-        </Cell>
-      </Row>
-      <Row>
-        <Cell>
           <Data ss:Type="Number">34</Data>
         </Cell>
         <Cell ss:StyleID="paragraph">
@@ -88,23 +70,6 @@ rename PotentialPoint to PossiblePoint to follow naming pattern</Data>
         </Cell>
         <Cell ss:StyleID="cellShortDate">
           <Data ss:Type="DateTime">2019-06-14T00:00:00.000</Data>
-        </Cell>
-      </Row>
-      <Row>
-        <Cell>
-          <Data ss:Type="Number">41</Data>
-        </Cell>
-        <Cell ss:StyleID="paragraph">
-          <Data ss:Type="String">fill in more unit tests</Data>
-        </Cell>
-        <Cell>
-          <Data ss:Type="String">Todo</Data>
-        </Cell>
-        <Cell>
-          <Data ss:Type="String">Testing</Data>
-        </Cell>
-        <Cell ss:StyleID="cellShortDate">
-          <Data ss:Type="DateTime">2019-06-19T00:00:00.000</Data>
         </Cell>
       </Row>
       <Row>
@@ -126,20 +91,19 @@ rename PotentialPoint to PossiblePoint to follow naming pattern</Data>
       </Row>
       <Row>
         <Cell>
-          <Data ss:Type="Number">38</Data>
+          <Data ss:Type="Number">44</Data>
         </Cell>
         <Cell ss:StyleID="paragraph">
-          <Data ss:Type="String">refactor
-could a lot of almost-duplicate code in SmartArrows.arrangePossiblePathsBetweenNodes be replaced with a conversion from "left-up-left" descriptions to Paths?</Data>
+          <Data ss:Type="String">overriding config options by passing them into render() or draw() should not affect the next call to render() or draw()</Data>
         </Cell>
         <Cell>
           <Data ss:Type="String">Todo</Data>
         </Cell>
         <Cell>
-          <Data ss:Type="String">Task</Data>
+          <Data ss:Type="String">Bug</Data>
         </Cell>
         <Cell ss:StyleID="cellShortDate">
-          <Data ss:Type="DateTime">2019-06-14T00:00:00.000</Data>
+          <Data ss:Type="DateTime">2019-06-29T00:00:00.000</Data>
         </Cell>
       </Row>
       <Row>
@@ -162,25 +126,6 @@ and remove support for defining aliases in layout? or leave that option? cleaner
         </Cell>
         <Cell ss:StyleID="cellShortDate">
           <Data ss:Type="DateTime">2019-06-05T00:00:00.000</Data>
-        </Cell>
-      </Row>
-      <Row>
-        <Cell>
-          <Data ss:Type="Number">7</Data>
-        </Cell>
-        <Cell ss:StyleID="paragraph">
-          <Data ss:Type="String">support
-quantities at each end of an relation
-in general, labels at each end of relation</Data>
-        </Cell>
-        <Cell>
-          <Data ss:Type="String">Todo</Data>
-        </Cell>
-        <Cell>
-          <Data ss:Type="String">Feature</Data>
-        </Cell>
-        <Cell ss:StyleID="cellShortDate">
-          <Data ss:Type="DateTime">2019-06-04T00:00:00.000</Data>
         </Cell>
       </Row>
       <Row>
@@ -350,7 +295,8 @@ where pipe delineates columns, and groups of nodes are horizontally centered in 
 [F]... indicates left-align in column
 whitespace not required, whitespace will be ignored
 
-can row-span be indicated without using up lots of lines?</Data>
+can row-span be indicated without using up lots of lines?
+_[A][B] means +1 row span?</Data>
         </Cell>
         <Cell>
           <Data ss:Type="String">Todo</Data>
@@ -360,24 +306,6 @@ can row-span be indicated without using up lots of lines?</Data>
         </Cell>
         <Cell ss:StyleID="cellShortDate">
           <Data ss:Type="DateTime">2019-06-10T00:00:00.000</Data>
-        </Cell>
-      </Row>
-      <Row>
-        <Cell>
-          <Data ss:Type="Number">14</Data>
-        </Cell>
-        <Cell ss:StyleID="paragraph">
-          <Data ss:Type="String">support
-labels on lines</Data>
-        </Cell>
-        <Cell>
-          <Data ss:Type="String">Todo</Data>
-        </Cell>
-        <Cell>
-          <Data ss:Type="String">Feature</Data>
-        </Cell>
-        <Cell ss:StyleID="cellShortDate">
-          <Data ss:Type="DateTime">2019-06-05T00:00:00.000</Data>
         </Cell>
       </Row>
       <Row>
@@ -429,6 +357,90 @@ or by passing in options</Data>
         </Cell>
         <Cell ss:StyleID="header">
           <Data ss:Type="String">Done</Data>
+        </Cell>
+      </Row>
+      <Row>
+        <Cell>
+          <Data ss:Type="Number">14</Data>
+        </Cell>
+        <Cell ss:StyleID="paragraph">
+          <Data ss:Type="String">support
+labels on lines</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Done</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Feature</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-05T00:00:00.000</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-29T00:00:00.000</Data>
+        </Cell>
+      </Row>
+      <Row>
+        <Cell>
+          <Data ss:Type="Number">7</Data>
+        </Cell>
+        <Cell ss:StyleID="paragraph">
+          <Data ss:Type="String">support
+quantities at each end of an relation
+in general, labels at each end of relation</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Done</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Feature</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-04T00:00:00.000</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-29T00:00:00.000</Data>
+        </Cell>
+      </Row>
+      <Row>
+        <Cell>
+          <Data ss:Type="Number">38</Data>
+        </Cell>
+        <Cell ss:StyleID="paragraph">
+          <Data ss:Type="String">refactor
+could a lot of almost-duplicate code in SmartArrows.arrangePossiblePathsBetweenNodes be replaced with a conversion from "left-up-left" descriptions to Paths?</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Done</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Task</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-14T00:00:00.000</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-29T00:00:00.000</Data>
+        </Cell>
+      </Row>
+      <Row>
+        <Cell>
+          <Data ss:Type="Number">41</Data>
+        </Cell>
+        <Cell ss:StyleID="paragraph">
+          <Data ss:Type="String">fill in more unit tests</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Done</Data>
+        </Cell>
+        <Cell>
+          <Data ss:Type="String">Testing</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-19T00:00:00.000</Data>
+        </Cell>
+        <Cell ss:StyleID="cellShortDate">
+          <Data ss:Type="DateTime">2019-06-29T00:00:00.000</Data>
         </Cell>
       </Row>
       <Row>
@@ -992,7 +1004,7 @@ and getting it in the webpage or js when you need it</Data>
           </Data>
         </Cell>
         <Cell>
-          <Data ss:Type="Number">43</Data>
+          <Data ss:Type="Number">44</Data>
         </Cell>
       </Row>
       <Row>
