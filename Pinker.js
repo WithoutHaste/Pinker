@@ -543,7 +543,7 @@ pinker.testMode = true;
 		//main intention is to differentiate a Section Header from a Relate row that ends in a colon
 		//ex [B1]->[B2] :"middle label":
 		isRelateRowEndingInColon: function(line) {
-			return (line.match(/\[.*\].*":/) != null);
+			return (line.match(/\[.*\].*":/) != null || line.match(/\{.*\}.*":/) != null);
 		},
 		//returns true if source relate line starts with a scope
 		startIsScope: function(line) {
@@ -1395,8 +1395,18 @@ pinker.testMode = true;
 	};
 
 	const Line = {
+		//returns length of line (absolute value)
 		length: function(startPoint, endPoint) {
 			return Math.sqrt(Math.pow((endPoint.x - startPoint.x),2) + Math.pow((endPoint.y - startPoint.y),2));
+		},
+		//returns new point that is LENGTH away from startPoint, towards endPoint
+		getPointLengthAlong: function(startPoint, endPoint, length) {
+			const angle = Math.atan2(endPoint.y - startPoint.y, endPoint.x - startPoint.x);
+	console.log(angle);
+			return Point.create(
+				startPoint.x - length * Math.cos(angle),
+				startPoint.y - length * Math.sin(angle)
+			);
 		},
 		//returns intersection point between a vertical line and a horizontal line
 		intersectionVerticalHorizontal: function(verticalLine, horizontalLine) {
@@ -1482,8 +1492,30 @@ pinker.testMode = true;
 				maxY: function() {
 					return Math.max(this.startPoint.y, this.endPoint.y);
 				},
+				midPoint: function() {
+					return Point.create(
+						(this.startPoint.x + this.endPoint.x)/2,
+						(this.startPoint.y + this.startPoint.y)/2
+					);
+				},
 				length: function() {
 					return Line.length(this.startPoint, this.endPoint);
+				},
+				//deep copy of line
+				copy: function() {
+					return Line.create(this.startPoint.copy(), this.endPoint.copy());
+				},
+				//returns true if start and end points are the same
+				equals: function(otherLine) {
+					return (this.startPoint.equals(otherLine.startPoint) && this.endPoint.equals(otherLine.endPoint));
+				},
+				//shorten this line, from start point, by length
+				shortenFromStart: function(length) {
+					this.startPoint = Line.getPointLengthAlong(this.startPoint, this.endPoint, length);
+				},
+				//shorten this line, from end point, by length
+				shortenFromEnd: function(length) {
+					this.endPoint = Line.getPointLengthAlong(this.endPoint, this.startPoint, length);
 				},
 				//returns overlap point of lines, or null
 				intersection: function(otherLine) {
@@ -1565,6 +1597,14 @@ pinker.testMode = true;
 				//return new point = this + deltas
 				plus: function(deltaPoint) {
 					return Point.create(this.x + deltaPoint.x, this.y + deltaPoint.y);
+				},
+				//deep copy of object
+				copy: function() {
+					return Point.create(this.x, this.y);
+				},
+				//returns true if coordinates are the same
+				equals: function(otherPoint) {
+					return (this.x == otherPoint.x && this.y == otherPoint.y);
 				}
 			};
 		}
@@ -2454,18 +2494,33 @@ pinker.testMode = true;
 				context.lineTo(points[i].x, points[i].y);
 			}
 		},
-		//draw text left-aligned to point
-		textLeftAligned: function(text, xBottomLeft, yBottomLeft, context) {
+		//draw text left-aligned to and above point
+		textLeftAlignedAbove: function(text, point, context) {
 			context.fillStyle = pinker.config.lineColor;
 			context.font = pinker.config.font();
-			context.fillText(text, xBottomLeft, yBottomLeft);
+			context.fillText(text, point.x, point.y);
 		},
-		//draw text right-aligned to point
-		textRightAligned: function(text, xBottomRight, yBottomRight, context) {
-			context.fillStyle = pinker.config.lineColor;
-			context.font = pinker.config.font();
-			const xBottomLeft = xBottomRight - context.measureText(text).width;
-			context.fillText(text, xBottomLeft, yBottomRight);
+		//draw text left-aligned to and below point
+		textLeftAlignedBelow: function(text, point, context) {
+			this.textLeftAlignedAbove(text, Point.create(point.x, point.y + pinker.config.estimateFontHeight()), context);
+		},
+		//draw text right-aligned to and above point
+		textRightAlignedAbove: function(text, point, context) {
+			this.textLeftAlignedAbove(text, Point.create(point.x - context.measureText(text).width, point.y), context);
+		},
+		//draw text right-aligned to and below point
+		textRightAlignedBelow: function(text, point, context) {
+			this.textLeftAlignedBelow(text, Point.create(point.x - context.measureText(text).width, point.y), context);
+		},
+		//draw text middle-aligned to and above points
+		textMiddleAlignedAbove: function(text, pointA, pointB, context) {
+			const centerPoint = Point.create((pointA.x + pointB.x) / 2, (pointA.y + pointB.y) / 2);
+			this.textLeftAlignedAbove(text, Point.create(centerPoint.x - context.measureText(text).width/2, centerPoint.y), context);
+		},
+		//draw text middle-aligned to and below points
+		textMiddleAlignedBelow: function(text, pointA, pointB, context) {
+			const centerPoint = Point.create((pointA.x + pointB.x) / 2, (pointA.y + pointB.y) / 2);
+			this.textLeftAlignedBelow(text, Point.create(centerPoint.x - context.measureText(text).width/2, centerPoint.y), context);
 		}
 	};
 	
@@ -2481,114 +2536,162 @@ pinker.testMode = true;
 			//no labels
 			if(!hasStartLabel && !hasMiddleLabel && !hasEndLabel)
 				return;
-			//only start
-			if(hasStartLabel && !hasMiddleLabel && !hasEndLabel)
-			{
-				this.drawTextAlignedToStart(line, line.startLabel, context);
-			}
-			//only middle
-			else if(!hasStartLabel && hasMiddleLabel && !hasEndLabel)
-			{
-				this.drawTextAlignedToMiddle(line, line.middleLabel, context);
-			}
-			//only end
-			else if(!hasStartLabel && !hasMiddleLabel && hasEndLabel)
-			{
-				this.drawTextAlignedToEnd(line, line.endLabel, context);
-			}
-			//start and end
-			else if(hasStartLabel && !hasMiddleLabel && hasEndLabel)
-			{
-				this.drawTextAlignedToStart(line, line.startLabel, context);
-				if(startLength + endLength < line.length())
-					this.drawTextAlignedToEnd(line, line.endLabel, context);
-				else
-					this.drawTextAlignedToEnd(line, line.endLabel, context, true);
-			}
-			//start and middle
-			else if(hasStartLabel && hasMiddleLabel && !hasEndLabel)
-			{
-			}
-			//middle and end
-			else if(!hasStartLabel && hasMiddleLabel && hasEndLabel)
-			{
-			}
-			//start and middle and end
-			else if(!hasStartLabel && hasMiddleLabel && hasEndLabel)
-			{
-			}
-		},
-		//align text to start of line
-		drawTextAlignedToStart: function(line, text, context) {
-			const margin = 5;
-			const arrowHeadLength = (line.arrowLine.leftArrowType > 0) ? Math.sqrt(pinker.config.arrowHeadArea) : 0; //estimate arrow head length
-			const fontHeight = pinker.config.estimateFontHeight();
+			
 			if(line.isVertical())
 			{
+				this.applyToVertical(line, context);
+				return;
+			}
+			if(line.isHorizontal())
+			{
+				this.applyToHorizontal(line, context);
+				return;
+			}
+			this.applyToDiagonal(line, context);
+		},
+		//apply labels to vertical line
+		applyToVertical: function(line, context) {
+			textLine = this.getTextAreaLine(line);
+			const margin = 5;
+			textLine.startPoint.x += margin;
+			textLine.endPoint.x += margin;
+
+			if(!Text.isBlank(line.startLabel))
+				if(textLine.startPoint.y < textLine.endPoint.y)
+					Draw.textLeftAlignedBelow(line.startLabel, textLine.startPoint, context);
+				else
+					Draw.textLeftAlignedAbove(line.startLabel, textLine.startPoint, context);
+
+			if(!Text.isBlank(line.middleLabel))
+				Draw.textLeftAlignedAbove(line.middleLabel, textLine.midPoint(), context);
+
+			if(!Text.isBlank(line.endLabel))
+				if(textLine.endPoint.y < textLine.startPoint.y)
+					Draw.textLeftAlignedBelow(line.endLabel, textLine.endPoint, context);
+				else
+					Draw.textLeftAlignedAbove(line.endLabel, textLine.endPoint, context);
+		},
+		//apply labels to horizontal line
+		applyToHorizontal: function(line, context) {
+			context.font = pinker.config.font();
+			const margin = 5;
+			let topLine = this.getTextAreaLine(line);
+			let bottomLine = topLine.copy();
+			topLine.startPoint.y -= margin;
+			topLine.endPoint.y -= margin;
+			bottomLine.startPoint.y += margin;
+			bottomLine.endPoint.y += margin;
+			if(topLine.startPoint.x < topLine.endPoint.x)
+			{
+				if(!Text.isBlank(line.startLabel))
+				{
+					Draw.textLeftAlignedAbove(line.startLabel, topLine.startPoint, context);
+					topLine.startPoint.x += context.measureText(line.startLabel).width + margin;
+				}
+				if(!Text.isBlank(line.endLabel))
+				{
+					let endLength = context.measureText(line.endLabel).width;
+					if(endLength <= Line.length(topLine.startPoint, topLine.endPoint))
+					{
+						Draw.textRightAlignedAbove(line.endLabel, topLine.endPoint, context);
+						topLine.endPoint.x -= context.measureText(line.endLabel).width + margin;
+					}
+					else
+					{
+						Draw.textRightAlignedBelow(line.endLabel, bottomLine.endPoint, context);
+						bottomLine.endPoint.x -= context.measureText(line.endLabel).width + margin;
+					}
+				}
+				if(!Text.isBlank(line.middleLabel))
+				{
+					const middleLength = context.measureText(line.middleLabel).width;
+					const topLength = topLine.length();
+					const bottomLength = bottomLine.length();
+					if(middleLength < topLength)
+						Draw.textMiddleAlignedAbove(line.middleLabel, topLine.startPoint, topLine.endPoint, context);
+					else if(middleLength < bottomLength)
+						Draw.textMiddleAlignedBelow(line.middleLabel, bottomLine.startPoint, bottomLine.endPoint, context);
+					else if(topLength >= bottomLength)
+						Draw.textLeftAlignedAbove(line.middleLabel, topLine.startPoint, context);
+					else
+						Draw.textRightAlignedBelow(line.middleLabel, bottomLine.endPoint, context);
+				}
+			}
+			else
+			{
+				if(!Text.isBlank(line.startLabel))
+				{
+					Draw.textRightAlignedAbove(line.startLabel, topLine.startPoint, context);
+					topLine.startPoint.x -= context.measureText(line.startLabel).width + margin;
+				}
+				if(!Text.isBlank(line.endLabel))
+				{
+					let endLength = context.measureText(line.endLabel).width;
+					if(endLength <= topLine.length())
+					{
+						Draw.textLeftAlignedAbove(line.endLabel, topLine.endPoint, context);
+						topLine.endPoint.x += context.measureText(line.endLabel).width + margin;
+					}
+					else
+					{
+						Draw.textLeftAlignedBelow(line.endLabel, bottomLine.endPoint, context);
+						bottomLine.endPoint.x += context.measureText(line.endLabel).width + margin;
+					}
+				}
+				if(!Text.isBlank(line.middleLabel))
+				{
+					const middleLength = context.measureText(line.middleLabel).width;
+					const topLength = topLine.length();
+					const bottomLength = bottomLine.length();
+					if(middleLength < topLength)
+						Draw.textMiddleAlignedAbove(line.middleLabel, topLine.endPoint, topLine.startPoint, context);
+					else if(middleLength < bottomLength)
+						Draw.textMiddleAlignedBelow(line.middleLabel, bottomLine.endPoint, bottomLine.startPoint, context);
+					else if(topLength >= bottomLength)
+						Draw.textRightAlignedAbove(line.middleLabel, topLine.startPoint, context);
+					else
+						Draw.textLeftAlignedBelow(line.middleLabel, bottomLine.endPoint, context);
+				}
+			}
+		},
+		//apply labels to diagonal line
+		applyToDiagonal: function(line, context) {
+			/*
+			let [startPoint, endPoint] = this.getStartAndEndTextArea(line);
+			const margin = 5;
+			startPoint.x += margin;
+			endPoint.x += margin;
+
+			if(!Text.isBlank(line.startLabel))
 				if(line.startPoint.y < line.endPoint.y)
-					Draw.textLeftAligned(text, line.startPoint.x + margin, line.startPoint.y + arrowHeadLength + margin + fontHeight, context);
+					Draw.textLeftAlignedBelow(line.startLabel, startPoint, context);
 				else
-					Draw.textLeftAligned(text, line.startPoint.x + margin, line.startPoint.y - arrowHeadLength - margin - fontHeight, context);
-			}
-			else if(line.isHorizontal())
-			{
-				if(line.startPoint.x < line.endPoint.x)
-					Draw.textLeftAligned(text, line.startPoint.x + arrowHeadLength + margin, line.startPoint.y - margin, context);
-				else
-					Draw.textRightAligned(text, line.startPoint.x - arrowHeadLength - margin, line.startPoint.y - margin, context);
-			}
-			else
-			{
-				//TODO
-			}
-		},
-		//align text to end of line
-		drawTextAlignedToEnd: function(line, text, context, offset=false) {
-			const margin = 5;
-			const arrowHeadLength = (line.arrowLine.rightArrowType > 0) ? Math.sqrt(pinker.config.arrowHeadArea) : 0; //estimate arrow head length
-			const fontHeight = pinker.config.estimateFontHeight();
-			if(line.isVertical())
-			{
+					Draw.textLeftAlignedAbove(line.startLabel, startPoint, context);
+
+			if(!Text.isBlank(line.middleLabel))
+				Draw.textLeftAlignedAbove(line.middleLabel, Point.create(startPoint.x, (startPoint.y + endPoint.y)/2), context);
+
+			if(!Text.isBlank(line.endLabel))
 				if(line.endPoint.y < line.startPoint.y)
-					Draw.textLeftAligned(text, line.endPoint.x + margin, line.endPoint.y + arrowHeadLength + margin + fontHeight, context);
+					Draw.textLeftAlignedBelow(line.endLabel, endPoint, context);
 				else
-					Draw.textLeftAligned(text, line.endPoint.x + margin, line.endPoint.y - arrowHeadLength - margin - fontHeight, context);
-			}
-			else if(line.isHorizontal())
-			{
-				let y = (offset) ? line.endPoint.y + margin + fontHeight : line.endPoint.y - margin;
-				if(line.endPoint.x < line.startPoint.x)
-					Draw.textLeftAligned(text, line.endPoint.x + arrowHeadLength + margin, y, context);
-				else
-					Draw.textRightAligned(text, line.endPoint.x - arrowHeadLength - margin, y, context);
-			}
-			else
-			{
-				//TODO
-			}
+					Draw.textLeftAlignedAbove(line.endLabel, endPoint, context);
+				*/
 		},
-		//align text to middle of line
-		drawTextAlignedToMiddle: function(line, text, context, offset=false) {
+		//returns new line, shortened for arrow heads and margins
+		getTextAreaLine: function(line) {
 			const margin = 5;
-			const fontHeight = pinker.config.estimateFontHeight();
-			const textLength = context.measureText(text).width;
-			if(line.isVertical())
-			{
-				let y = (line.startPoint.y + line.endPoint.y) / 2;
-				Draw.textLeftAligned(text, line.startPoint.x + margin, y, context);
-			}
-			else if(line.isHorizontal())
-			{
-				let x = Math.min(line.startPoint.x, line.endPoint.x);
-				if(textLength < line.length())
-					x += (line.length() - textLength) / 2;
-				let y = (offset) ? line.endPoint.y + margin + fontHeight : line.endPoint.y - margin;
-				Draw.textLeftAligned(text, x, y, context);
-			}
-			else
-			{
-				//TODO
-			}
+			const estimateArrowHeadLength = Math.sqrt(pinker.config.arrowHeadArea);
+			let newLine = line.copy();
+			let shortenStart = margin;
+			let shortenEnd = margin;
+			if(line.arrowLine.leftArrowType > 0)
+				shortenStart = estimateArrowHeadLength;
+			if(line.arrowLine.rightArrowType > 0)
+				shortenEnd = estimateArrowHeadLength;
+			newLine.shortenFromStart(shortenStart);
+			newLine.shortenFromEnd(shortenEnd);
+			return newLine;
 		}
 	};
 	
@@ -3570,6 +3673,8 @@ pinker.testMode = true;
 	{
 		pinker.RelateRecord = RelateRecord;
 		pinker.ArrowTypes = ArrowTypes;
+		pinker.Line = Line;
+		pinker.Point = Point;
 	}
 	
 })();

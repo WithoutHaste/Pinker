@@ -12,6 +12,8 @@
 		<div>
 			<pre id='Source02'>
 Layout:
+	[two-segment lines TODO]
+	[three-segment lines TODO]
 	[left to right]
 	[right to left]
 	[top to bottom]
@@ -98,6 +100,31 @@ Layout:
 		[G1]D-[G2] :"end label"
 		[H1]D-[H2] "start label":"too long end label"
 		[I1]D-[I2] "middle label too loooooooong"
+[diagonal up-left]:
+	Layout:
+		[A]
+		[B][C][D]
+	Relate:
+		[D]->[A] "start label":"middle label":"end label"
+[diagonal down-left]:
+	Layout:
+		...[A]
+		[B][C][D]
+	Relate:
+		[A]->[B] "start label":"middle label":"end label"
+[diagonal up-right]:
+	Layout:
+		...[A]
+		[B][C][D]
+	Relate:
+		[B]->[A] "start label":"middle label":"end label"
+[diagonal down-right]:
+	Layout:
+		[A]
+		[B][C][D]
+	Relate:
+		[A]->[D] "start label":"middle label":"end label"
+
 			</pre>
 			<canvas id='Canvas02'></canvas>
 		</div>
