@@ -1399,13 +1399,24 @@ pinker.testMode = true;
 		length: function(startPoint, endPoint) {
 			return Math.sqrt(Math.pow((endPoint.x - startPoint.x),2) + Math.pow((endPoint.y - startPoint.y),2));
 		},
+		//returns the angle (radians) of the line (ex: 0 = horizontal to the right)
+		//result is modulating into (0, Pi*2] range
+		angle: function(startPoint, endPoint) {
+			let result = Math.atan2(endPoint.y - startPoint.y, endPoint.x - startPoint.x);
+			while(result > Math.PI*2)
+				result -= Math.PI*2;
+			while(result < 0)
+				result += Math.PI*2;
+			return result;
+		},
 		//returns new point that is LENGTH away from startPoint, towards endPoint
 		getPointLengthAlong: function(startPoint, endPoint, length) {
-			const angle = Math.atan2(endPoint.y - startPoint.y, endPoint.x - startPoint.x);
-	console.log(angle);
+			const angle = this.angle(startPoint, endPoint);
+			const cosAngle = parseFloat(Math.cos(angle).toFixed(4));
+			const sinAngle = parseFloat(Math.sin(angle).toFixed(4));
 			return Point.create(
-				startPoint.x - length * Math.cos(angle),
-				startPoint.y - length * Math.sin(angle)
+				startPoint.x + length * cosAngle,
+				startPoint.y + length * sinAngle
 			);
 		},
 		//returns intersection point between a vertical line and a horizontal line
@@ -1480,6 +1491,26 @@ pinker.testMode = true;
 				isHorizontal: function() {
 					return (startPoint.y == endPoint.y);
 				},
+				//up and down in relation to computer screen: "up" is lower "y"
+				isDiagonalRightUp: function() {
+					const angle = this.angle();
+					return (angle > Math.PI*3/2 && angle < Math.PI*2); //270 to 360 degrees, exclusive
+				},
+				//up and down in relation to computer screen: "up" is lower "y"
+				isDiagonalLeftUp: function() {
+					const angle = this.angle();
+					return (angle > Math.PI && angle < Math.PI*3/2); //180 to 270 degrees, exclusive
+				},
+				//up and down in relation to computer screen: "up" is lower "y"
+				isDiagonalLeftDown: function() {
+					const angle = this.angle();
+					return (angle > Math.PI/2 && angle < Math.PI); //90 to 180 degrees, exclusive
+				},
+				//up and down in relation to computer screen: "up" is lower "y"
+				isDiagonalRightDown: function() {
+					const angle = this.angle();
+					return (angle > 0 && angle < Math.PI/2); //0 to 90 degrees, exclusive
+				},
 				minX: function() {
 					return Math.min(this.startPoint.x, this.endPoint.x);
 				},
@@ -1495,11 +1526,14 @@ pinker.testMode = true;
 				midPoint: function() {
 					return Point.create(
 						(this.startPoint.x + this.endPoint.x)/2,
-						(this.startPoint.y + this.startPoint.y)/2
+						(this.startPoint.y + this.endPoint.y)/2
 					);
 				},
 				length: function() {
 					return Line.length(this.startPoint, this.endPoint);
+				},
+				angle: function() {
+					return Line.angle(this.startPoint, this.endPoint);
 				},
 				//deep copy of line
 				copy: function() {
@@ -2656,27 +2690,34 @@ pinker.testMode = true;
 		},
 		//apply labels to diagonal line
 		applyToDiagonal: function(line, context) {
-			/*
-			let [startPoint, endPoint] = this.getStartAndEndTextArea(line);
 			const margin = 5;
-			startPoint.x += margin;
-			endPoint.x += margin;
+			let textLine = this.getTextAreaLine(line);
+			if(textLine.isDiagonalLeftUp() || textLine.isDiagonalRightDown())
+			{
+				//place labels to right of line, left aligned
+				textLine.startPoint.x += margin;
+				textLine.endPoint.x += margin;
 
-			if(!Text.isBlank(line.startLabel))
-				if(line.startPoint.y < line.endPoint.y)
-					Draw.textLeftAlignedBelow(line.startLabel, startPoint, context);
-				else
-					Draw.textLeftAlignedAbove(line.startLabel, startPoint, context);
+				if(!Text.isBlank(line.startLabel))
+					Draw.textLeftAlignedAbove(line.startLabel, textLine.startPoint, context);
+				if(!Text.isBlank(line.middleLabel))
+					Draw.textLeftAlignedAbove(line.middleLabel, textLine.midPoint(), context);
+				if(!Text.isBlank(line.endLabel))
+					Draw.textLeftAlignedAbove(line.endLabel, textLine.endPoint, context);
+			}
+			else
+			{
+				//place labels to left of line, right aligned
+				textLine.startPoint.x -= margin;
+				textLine.endPoint.x -= margin;
 
-			if(!Text.isBlank(line.middleLabel))
-				Draw.textLeftAlignedAbove(line.middleLabel, Point.create(startPoint.x, (startPoint.y + endPoint.y)/2), context);
-
-			if(!Text.isBlank(line.endLabel))
-				if(line.endPoint.y < line.startPoint.y)
-					Draw.textLeftAlignedBelow(line.endLabel, endPoint, context);
-				else
-					Draw.textLeftAlignedAbove(line.endLabel, endPoint, context);
-				*/
+				if(!Text.isBlank(line.startLabel))
+					Draw.textRightAlignedAbove(line.startLabel, textLine.startPoint, context);
+				if(!Text.isBlank(line.middleLabel))
+					Draw.textRightAlignedAbove(line.middleLabel, textLine.midPoint(), context);
+				if(!Text.isBlank(line.endLabel))
+					Draw.textRightAlignedAbove(line.endLabel, textLine.endPoint, context);
+			}
 		},
 		//returns new line, shortened for arrow heads and margins
 		getTextAreaLine: function(line) {
