@@ -20,13 +20,26 @@ This avoids the problem of being limited by the limits of the 3rd party tools.
 
 ## Source Code Organization
 
-Pinker is deployed as a single file with no dependencies. This is the easiest format for a client to use; they just need to include one js file in their website.
+Pinker is deployed as a single file with no dependencies. This is the easiest format for a client to use; they just need to include one js file in their website. Also with a single file you can keep almost everything in a private scope to minimize global-space pollution.
 
 Therefore, Pinker does not use Modules. There is no import/export because everything is in one file, and that design pattern is for organization across multiple files.
 
 However, there is still great value in dividing source code into multiple files, both for ease of searching and to enforce separation of concerns. Thus, Pinker's source is literally sliced into multiple files, for ease of development, and is concatenated back together for deployment. 
 
 (There is a little more logic than just concatenation, to enclose as much logic as possible in a private scope.)
+
+### File Names
+
+The sliced up source files are named starting with a number, so they can be reassembled in the correct order.  
+* The numbers have a lot of space between to allow more files to be added in between.
+* The numbers are prefix-filled with 0s to support text sorting.
+
+The rest of the name is descriptive.
+
+### Generate Pinker.js 
+
+Windows: Run `generatePinker_Windows.bat` to generate `Pinker.js` in the parent directory.
+
 
 ## CORS Load and Render
 
