@@ -1,7 +1,0 @@
-Layout:
-	[A]
-	[B][D][E]
-	[C]...[F]
-Relate:
-	[B]->[A],[C]
-	[D]->[B],[E],[F]
