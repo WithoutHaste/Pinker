@@ -35,7 +35,7 @@ Ideally, I wanted the text source files to be separate from the HTML rendering. 
 This render option worked briefly in FireFox, but it doesn't anymore. You can see the loaded document in the browser and inspector, but JavaScript is not given access to it.
 
 So this option has been removed:
-'''
+```
 <html>
 	<head>
 		<script src='Pinker.js'></script>
@@ -47,4 +47,4 @@ So this option has been removed:
 <script type='text/javascript'>
 	pinker.render();
 </script>
-'''
+```
