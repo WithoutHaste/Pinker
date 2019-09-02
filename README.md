@@ -59,22 +59,6 @@ Every `<pre class='pinker'>` element will be rendered as a Pinker diagram. The d
 </script>
 ```
 
-You can also separate your diagram sources into text files and include them in your web page. _In testing, this worked in FireFox, but did not work in Chrome._ [Demo](Demo/RenderSyntax_FromFile.html)
-
-```
-<html>
-	<head>
-		<script src='Pinker.js'></script>
-	</head>
-	<body>
-		<object id='Source01' type="text/plain" data="Diagram01.txt" class="pinker"></object>
-	</body>
-</html>
-<script type='text/javascript'>
-	pinker.render();
-</script>
-```
-
 ## Pinker Syntax
 
 Indentation is not important; you can use indentation to make the source more legible.
@@ -308,6 +292,9 @@ Passing multiple configuration settings:
 Uses [Semantic Versioning 2.0.0](https://semver.org/).
 
 To see what version you are using: `let v = pinker.version;`
+
+In Progress - v1.4.0
+- bug fix: removed CORS render option which is no longer supported in FireFox
 
 [Labels and Relations - v1.3.0](https://github.com/WithoutHaste/Pinker/releases/tag/v1.3.0)  
 - support labels on relationship lines/arrows

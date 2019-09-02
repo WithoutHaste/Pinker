@@ -49,7 +49,7 @@ var pinker = pinker || {};
 			switch(pinkerElement.tagName)
 			{
 				case "PRE": renderFromPre(pinkerElement, options); break;
-				case "OBJECT": pinkerElement.onload = function() { renderFromObject(pinkerElement, options); }; break;
+				default: displayError("unknown tag skipped (id:"+pinkerElement.id+")"); break;
 			}
 		}
 	};
