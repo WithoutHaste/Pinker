@@ -6,14 +6,102 @@
 	</head>
 	<body>
 		<div class='header'>
-		Pinker.js Tests: Multi-Level
+		Pinker.js Tests: Core: Multi-level Diagrams
 		</div>
-		(open in Firefox)<br/>
 
-		<object id="Source01" type="text/plain" data="Source/Core_MultiLevel_Simple.txt" class="pinker"></object><br/>
-		<object id="Source02" type="text/plain" data="Source/Core_MultiLevel_CleanArchitecture.txt" class="pinker"></object><br/>
+		<div>
+			<pre id='Source01'>
+Layout:
+	[A][B]
+[A]:
+	Layout:
+		[C][D]
+	Relate:
+		[C]->[D]
+		[D]->[B.E]
+[B]:
+	Layout:
+		[E]
+		[F]
+	Relate:
+		[E]->[F]
+		[F]->[A.D]
+
+			</pre>
+			<canvas id='Canvas01'></canvas>
+		</div>
+		<script>
+			var canvas = document.getElementById("Canvas01");
+			var source = document.getElementById("Source01").innerHTML;
+			pinker.draw(canvas, source);
+		</script>
+
+		Clean Architecture Diagram:<br/>
+		<div>
+			<pre id='Source02'>
+Layout:
+	[Controller][Interactor]
+	[Screen Presenter][Print Presenter]...[Database]
+	[Web View][PDF View]
+[Interactor]:
+	Layout:
+		[{A}Financial Report Request (Data Structure)]
+		[{B}Financial Report Requester (Interface)][{D}Financial Report Generator][{F}Financial Entities]
+		[{C}Financial Report Response (Data Structure)][{E}Financial Data Gateway (Interface)]
+	Relate:
+		{D}->{A},{C},{E},{F}
+		{D}-:>{B}
+[Database]:
+	Layout:
+		[{G}Financial Data Mapper][{H}Financial Database]
+	Relate:
+		{G}->{H},{F}
+		{G}-:>{E}
+[Controller]:
+	Layout:
+		[{I}Financial Report Controller]
+		[{J}Financial Report Presenter (Interface)]
+	Relate:
+		{I}->{A},{B},{C},{J}
+		{J}->{C}
+[Screen Presenter]:
+	Layout:
+		[{K}Screen Presenter]
+		[{L}Screen View Model (DS)]
+		[{M}Screen View (I)]
+	Relate:
+		{K}-:>{J}
+		{K}->{L},{M}
+		{M}->{L}
+[Web View]:
+	Layout:
+		[Web View]
+	Relate:
+		[Web View]-:>{M}
+[Print Presenter]:
+	Layout:
+		[{N}Print Presenter]
+		[{O}Print View Model (DS)]
+		[{P}Print View (I)]
+	Relate:
+		{N}-:>{J}
+		{N}->{O},{P}
+		{P}->{O}
+[PDF View]:
+	Layout:
+		[PDF View]
+	Relate:
+		[PDF View]-:>{P}
+
+
+			</pre>
+			<canvas id='Canvas02'></canvas>
+		</div>
+		<script>
+			var canvas = document.getElementById("Canvas02");
+			var source = document.getElementById("Source02").innerHTML;
+			pinker.draw(canvas, source);
+		</script>
+
 	</body>
 </html>
-<script type='text/javascript'>
-	pinker.render({keepSource:true});
-</script>

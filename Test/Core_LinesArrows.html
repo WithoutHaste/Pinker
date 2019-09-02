@@ -6,16 +6,263 @@
 	</head>
 	<body>
 		<div class='header'>
-		Pinker.js Tests
+		Pinker.js Tests: Core: Lines and Arrows
 		</div>
-		(open in Firefox)<br/>
 
-		<object id='Source01' type="text/plain" data="Source/Core_ArrowTypes.txt" class="pinker"></object><br/>
-		<object id='Source02' type="text/plain" data="Source/Core_LineTypes.txt" class="pinker"></object><br/>
-		<object id='Source03' type="text/plain" data="Source/Core_RelateLists.txt" class="pinker"></object><br/>
-		<object id='Source04' type="text/plain" data="Source/Core_LineLabels.txt" class="pinker"></object><br/>
+		Types of Arrows:<br/>
+		<div>
+			<pre id='Source01'>
+Layout:
+	[A][A2]
+	[B][B2][C][C2]
+	[D][D2]
+	[E][E2]
+	[F][F2][F3]
+	[G][G2][G3]...[F4]
+	[H][H2][H3]...[G4]
+	[I][I2][I3]...[H4]
+	[J][J2][J3]...[I4]
+	[K][K2][K3]...[J4]
+	...[K4]
+	[L][L2]
+	[M][M2][N][N2]
+	[O][O2]
+	[P][P2]
+	[Q][R][S]
+	...
+	[Q2][R2][S2]
+Relate:
+	[A]->[A2]
+	[B]-D[B2]
+	[C]-:>[C2]
+	[D]-o[D2]
+	[E]-+[E2]
+	[F]-1[F2]
+	[G]-11[G2]
+	[H]-N[H2]
+	[I]-01[I2]
+	[J]-1N[J2]
+	[K]-0N[K2]
+	[F3]-1[F4]
+	[G3]-11[G4]
+	[H3]-N[H4]
+	[I3]-01[I4]
+	[J3]-1N[J4]
+	[K3]-0N[K4]
+	[L]<-[L2]
+	[M]D-[M2]
+	[N]<:-[N2]
+	[O]o-[O2]
+	[P]+-[P2]
+	[Q]1-11[Q2]
+	[R]N-01[R2]
+	[S]N1-0N[S2]
+
+			</pre>
+			<canvas id='Canvas01'></canvas>
+		</div>
+		<script>
+			var canvas = document.getElementById("Canvas01");
+			var source = document.getElementById("Source01").innerHTML;
+			pinker.draw(canvas, source);
+		</script>
+
+
+		Types of Lines:<br/>
+		<div>
+			<pre id='Source02'>
+Layout:
+	[A][A2][A3][A4]
+	[B][B2][B3][B4]
+	[C][C2][C3][C4]
+	[D][D2][D3][D4]
+Relate:
+	[A]->[A2]
+	[A3]-[A4]
+	[B]=>[B2]
+	[B3]=[B4]
+	[C]-->[C2]
+	[C3]--[C4]
+	[D]*>[D2]
+	[D3]*[D4]
+
+
+			</pre>
+			<canvas id='Canvas02'></canvas>
+		</div>
+		<script>
+			var canvas = document.getElementById("Canvas02");
+			var source = document.getElementById("Source02").innerHTML;
+			pinker.draw(canvas, source);
+		</script>
+		
+
+		Line Labels:<br/>
+		<div>
+			<pre id='Source03'>
+Layout:
+	[two-segment lines]
+	[three-segment lines]
+	[left to right]
+	[right to left]
+	[top to bottom]
+	[bottom to top]
+	[diagonal up-left]
+	[diagonal down-left]
+	[diagonal up-right]
+	[diagonal down-right]
+[two-segment lines]:
+	Layout:
+		[A1]
+		[A2][A3]
+		[A4][A5][A6]
+		[B1][B2][B3]
+		[B4][B5]
+		[B6]
+	Relate:
+		[A1]->[A6] "start label":"middle label":"end label"
+		[B3]->[B6] "start label":"middle label":"end label"
+[three-segment lines]:
+	Layout:
+		[A1]
+		[A2]
+		[A3]
+		[B1][B2][B3]
+	Relate:
+		[A1]->[A3] "start label":"middle label":"end label"
+		[B1]->[B3] "start label":"middle label":"end label"
+[left to right]:
+	Layout:
+		[Loooooooooooooooooooooooooong]
+		[A1]...[A2]
+		[B1]...[B2]
+		[C1]...[C2]
+		[D1]...[D2]
+		[E1]...[E2]
+		[F1]...[F2]
+		[G1]...[G2]
+		[H1]...[H2]
+		[I1]...[I2]
+	Relate:
+		[A1]->[A2] "middle label"
+		[B1]->[B2] :"middle label":
+		[C1]->[C2] "start label" : "middle label" : "end label"
+		[D1]->[D2] "start label" :: "end label"
+		[E1]->[E2] "start label":"end label"
+		[F1]->[F2] "start label":
+		[G1]->[G2] :"end label"
+		[H1]->[H2] "start label":"too long end label"
+		[I1]->[I2] "middle label too loooooooong"
+[right to left]:
+	Layout:
+		[Loooooooooooooooooooooooooong]
+		[A1]...[A2]
+		[B1]...[B2]
+		[C1]...[C2]
+		[D1]...[D2]
+		[E1]...[E2]
+		[F1]...[F2]
+		[G1]...[G2]
+		[H1]...[H2]
+		[I1]...[I2]
+	Relate:
+		[A1]D-[A2] "middle label"
+		[B1]D-[B2] :"middle label":
+		[C1]D-[C2] "start label" : "middle label" : "end label"
+		[D1]D-[D2] "start label" :: "end label"
+		[E1]D-[E2] "start label":"end label"
+		[F1]D-[F2] "start label":
+		[G1]D-[G2] :"end label"
+		[H1]D-[H2] "start label":"too long end label"
+		[I1]D-[I2] "middle label too loooooooong"
+[top to bottom]:
+	Layout:
+		[X][A1][B1][C1][D1][E1][F1][G1][H1][I1]
+		[X]
+		[X]
+		[X]
+		[X][A2][B2][C2][D2][E2][F2][G2][H2][I2]
+	Relate:
+		[A1]->[A2] "middle label"
+		[B1]->[B2] :"middle label":
+		[C1]->[C2] "start label" : "middle label" : "end label"
+		[D1]->[D2] "start label" :: "end label"
+		[E1]->[E2] "start label":"end label"
+		[F1]->[F2] "start label":
+		[G1]->[G2] :"end label"
+		[H1]->[H2] "start label":"too long end label"
+		[I1]->[I2] "middle label too loooooooong"
+[bottom to top]:
+	Layout:
+		[X][A1][B1][C1][D1][E1][F1][G1][H1][I1]
+		[X]
+		[X]
+		[X]
+		[X][A2][B2][C2][D2][E2][F2][G2][H2][I2]
+	Relate:
+		[A1]D-[A2] "middle label"
+		[B1]D-[B2] :"middle label":
+		[C1]D-[C2] "start label" : "middle label" : "end label"
+		[D1]D-[D2] "start label" :: "end label"
+		[E1]D-[E2] "start label":"end label"
+		[F1]D-[F2] "start label":
+		[G1]D-[G2] :"end label"
+		[H1]D-[H2] "start label":"too long end label"
+		[I1]D-[I2] "middle label too loooooooong"
+[diagonal up-left]:
+	Layout:
+		[A]
+		[B][C][D]
+	Relate:
+		[D]->[A] "start label":"middle label":"end label"
+[diagonal down-left]:
+	Layout:
+		...[A]
+		[B][C][D]
+	Relate:
+		[A]->[B] "start label":"middle label":"end label"
+[diagonal up-right]:
+	Layout:
+		...[A]
+		[B][C][D]
+	Relate:
+		[B]->[A] "start label":"middle label":"end label"
+[diagonal down-right]:
+	Layout:
+		[A]
+		[B][C][D]
+	Relate:
+		[A]->[D] "start label":"middle label":"end label"
+			</pre>
+			<canvas id='Canvas03'></canvas>
+		</div>
+		<script>
+			var canvas = document.getElementById("Canvas03");
+			var source = document.getElementById("Source03").innerHTML;
+			pinker.draw(canvas, source);
+		</script>
+		
+
+
+		Lists in "Relate" Section:<br/>
+		<div>
+			<pre id='Source04'>
+Layout:
+	[A][B][C]
+	[D][E][F]
+	[G][H][I]
+Relate:
+	[A]->[B],[D],[E]
+	[E],[F],[H]-D[I]
+	[B],[C]-o[E],[F]
+			</pre>
+			<canvas id='Canvas04'></canvas>
+		</div>
+		<script>
+			var canvas = document.getElementById("Canvas04");
+			var source = document.getElementById("Source04").innerHTML;
+			pinker.draw(canvas, source);
+		</script>
+		
 	</body>
 </html>
-<script type='text/javascript'>
-	pinker.render({keepSource:true});
-</script>
