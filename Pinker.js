@@ -1064,8 +1064,8 @@ pinker.config = {
 						this.height += lineHeight + lineSpacing;
 					}
 				},
-				//draw lines on context
-				draw: function(point, lineWidthPadding, context) {
+				//draw lines on context (text lines and dividing lines)
+				draw: function(point, areaMinX, areaMaxX, context) {
 					context.fillStyle = pinker.config.lineColor;
 					context.strokeStyle = pinker.config.lineColor;
 					context.lineWidth = pinker.config.lineWeight / 2;
@@ -1080,8 +1080,8 @@ pinker.config = {
 						{
 							let lineY = point.y + (lineSpacing * 0.9);
 							context.beginPath();
-							context.moveTo(point.x - lineWidthPadding, lineY);
-							context.lineTo(point.x + this.width + lineWidthPadding, lineY);
+							context.moveTo(areaMinX, lineY);
+							context.lineTo(areaMaxX, lineY);
 							context.closePath();
 							context.stroke();
 						}
@@ -1984,7 +1984,9 @@ pinker.config = {
 		{
 			node.defineArea.outline(node.absoluteArea.point(), pinker.config.lineColor, lineWeight, context);
 			const definePoint = node.absoluteArea.point().plus(node.defineArea.point()).plus(paddingPoint);
-			node.defineLayout.draw(definePoint, (node.defineArea.width - node.defineLayout.width)/2, context);
+			const areaMinX = node.absoluteArea.x;
+			const areaMaxX = areaMinX + node.defineArea.width;
+			node.defineLayout.draw(definePoint, areaMinX, areaMaxX, context);
 		}
 
 		//node area
