@@ -294,6 +294,7 @@ Uses [Semantic Versioning 2.0.0](https://semver.org/).
 To see what version you are using: `let v = pinker.version;`
 
 In Progress - v1.4.0
+- bug fix #4: Relate fails to find local address under non-first-level alias
 - bug fix: removed CORS render option which is no longer supported in FireFox
 
 [Labels and Relations - v1.3.0](https://github.com/WithoutHaste/Pinker/releases/tag/v1.3.0)  
