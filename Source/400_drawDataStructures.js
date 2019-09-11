@@ -145,6 +145,60 @@ const Node = {
 	}
 };
 
+const FindNode = {
+	findNode: function(nodes, label, labelPath) {
+		if(Source.isAliasPath(label))
+			return findNodeAliasPath(nodes, label);
+		if(Source.pathStartsWithAlias(label))
+		{
+			let [alias, remainingPath] = Source.splitAliasFromPath(label);
+			let node = findNodeAlias(nodes, alias);
+			if(node == null)
+				return null;
+			return node.findLabel(node.pathPrefix() + Source.openScope(remainingPath));
+		}
+		let node = findNodeRelative(nodes, label, labelPath);
+		if(node != null)
+			return node;
+		return findNodeAbsolute(nodes, label);
+	},
+	findNodeRelative: function(nodes, label, path) {
+		let startingNode = findNodeAbsolute(nodes, path);
+		if(startingNode == null)
+			return null;
+		return findNodeAbsolute(startingNode.nodes, label);
+	},
+	findNodeAbsolute: function(nodes, labelOrPath) {
+		for(let i=0; i<nodes.length; i++)
+		{
+			let node = nodes[i];
+			let result = node.findPath(labelOrPath);
+			if(result != null)
+				return result;
+		}
+		return null;
+	},
+	findNodeAliasPath: function(nodes, aliasPath) {
+		if(Source.isAlias(aliasPath))
+			return findNodeAlias(nodes, aliasPath);
+		let [alias, path] = Source.splitAliasFromPath(aliasPath);
+		let node = findNodeAlias(nodes, alias);
+		if(node == null)
+			return null;
+		return findNodeAbsolute(node.nodes, Source.openScope(path));
+	},
+	findNodeAlias: function(nodes, alias) {
+		for(let i=0; i<nodes.length; i++)
+		{
+			let node = nodes[i];
+			let result = node.findAlias(alias);
+			if(result != null)
+				return result;
+		}
+		return null;
+	}
+};
+
 const DefineLayout = {
 	//returns define layout object based on define section
 	parse: function(defineSection, context) {

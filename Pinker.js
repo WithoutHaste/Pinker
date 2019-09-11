@@ -5,7 +5,7 @@
 
 var pinker = pinker || {};
 
-//pinker.testMode = true;
+pinker.testMode = true;
 
 pinker.version = '1.3.0';
 
@@ -229,6 +229,8 @@ const Source = {
 			},
 			appendToPath: function(prefix=null) {
 				if(prefix == null)
+					return this.getPathSegment();
+				if(this.alias != null)
 					return this.getPathSegment();
 				return prefix + "." + this.getPathSegment();
 			},
@@ -954,6 +956,62 @@ const Node = {
 				return maxDepth;
 			}
 		};
+	}
+};
+
+const FindNode = {
+	//label = fully qualified alias/label/path being searched for from current node
+	//labelPath = the path from root node to current node
+	findNode: function(nodes, label, labelPath) {
+		if(Source.isAliasPath(label))
+			return FindNode.findNodeAliasPath(nodes, label);
+		if(Source.pathStartsWithAlias(label))
+		{
+			let [alias, remainingPath] = Source.splitAliasFromPath(label);
+			let node = FindNode.findNodeAlias(nodes, alias);
+			if(node == null)
+				return null;
+			return node.findLabel(node.pathPrefix() + Source.openScope(remainingPath));
+		}
+		let node = FindNode.findNodeRelative(nodes, label, labelPath);
+		if(node != null)
+			return node;
+		return FindNode.findNodeAbsolute(nodes, label);
+	},
+	findNodeRelative: function(nodes, label, path) {
+		let startingNode = FindNode.findNodeAbsolute(nodes, path);
+		if(startingNode == null)
+			return null;
+		return FindNode.findNodeAbsolute(startingNode.nodes, label);
+	},
+	findNodeAbsolute: function(nodes, labelOrPath) {
+		for(let i=0; i<nodes.length; i++)
+		{
+			let node = nodes[i];
+			let result = node.findPath(labelOrPath);
+			if(result != null)
+				return result;
+		}
+		return null;
+	},
+	findNodeAliasPath: function(nodes, aliasPath) {
+		if(Source.isAlias(aliasPath))
+			return FindNode.findNodeAlias(nodes, aliasPath);
+		let [alias, path] = Source.splitAliasFromPath(aliasPath);
+		let node = FindNode.findNodeAlias(nodes, alias);
+		if(node == null)
+			return null;
+		return FindNode.findNodeAbsolute(node.nodes, Source.openScope(path));
+	},
+	findNodeAlias: function(nodes, alias) {
+		for(let i=0; i<nodes.length; i++)
+		{
+			let node = nodes[i];
+			let result = node.findAlias(alias);
+			if(result != null)
+				return result;
+		}
+		return null;
 	}
 };
 
@@ -2112,8 +2170,8 @@ function convertRelationsToPossibleLines(source, allNodes, path=null) {
 	if(source.relate != null)
 	{
 		source.relate.records.forEach(function(relation) {
-			const startNode = findNode(allNodes, relation.startLabel, path);
-			const endNode = findNode(allNodes, relation.endLabel, path);
+			const startNode = FindNode.findNode(allNodes, relation.startLabel, path);
+			const endNode = FindNode.findNode(allNodes, relation.endLabel, path);
 			if(startNode == null || endNode == null)
 				return;
 			const line = arrangeLineBetweenNodes(startNode, endNode, allNodes, relation);
@@ -2212,62 +2270,6 @@ function getCoincidentPossibleLineSets(lines) {
 		}
 	});
 	return sets;
-}
-
-function findNode(nodes, label, labelPath) {
-	if(Source.isAliasPath(label))
-		return findNodeAliasPath(nodes, label);
-	if(Source.pathStartsWithAlias(label))
-	{
-		let [alias, remainingPath] = Source.splitAliasFromPath(label);
-		let node = findNodeAlias(nodes, alias);
-		if(node == null)
-			return null;
-		return node.findLabel(node.pathPrefix() + Source.openScope(remainingPath));
-	}
-	let node = findNodeRelative(nodes, label, labelPath);
-	if(node != null)
-		return node;
-	return findNodeAbsolute(nodes, label);
-}
-
-function findNodeRelative(nodes, label, path) {
-	let startingNode = findNodeAbsolute(nodes, path);
-	if(startingNode == null)
-		return null;
-	return findNodeAbsolute(startingNode.nodes, label);
-}
-
-function findNodeAbsolute(nodes, labelOrPath) {
-	for(let i=0; i<nodes.length; i++)
-	{
-		let node = nodes[i];
-		let result = node.findPath(labelOrPath);
-		if(result != null)
-			return result;
-	}
-	return null;
-}
-
-function findNodeAliasPath(nodes, aliasPath) {
-	if(Source.isAlias(aliasPath))
-		return findNodeAlias(nodes, aliasPath);
-	let [alias, path] = Source.splitAliasFromPath(aliasPath);
-	let node = findNodeAlias(nodes, alias);
-	if(node == null)
-		return null;
-	return findNodeAbsolute(node.nodes, Source.openScope(path));
-}
-
-function findNodeAlias(nodes, alias) {
-	for(let i=0; i<nodes.length; i++)
-	{
-		let node = nodes[i];
-		let result = node.findAlias(alias);
-		if(result != null)
-			return result;
-	}
-	return null;
 }
 
 function calculateCanvasDimensions(nodes) {
@@ -3308,8 +3310,8 @@ const SmartArrows = {
 		if(source.relate != null)
 		{
 			source.relate.records.forEach(function(relation) {
-				const startNode = findNode(allNodes, relation.startLabel, path);
-				const endNode = findNode(allNodes, relation.endLabel, path);
+				const startNode = FindNode.findNode(allNodes, relation.startLabel, path);
+				const endNode = FindNode.findNode(allNodes, relation.endLabel, path);
 				if(startNode == null || endNode == null)
 					return;
 				const possiblePaths = SmartArrows.arrangePossiblePathsBetweenNodes(startNode, endNode, allNodes, relation);
@@ -3683,5 +3685,8 @@ if(pinker.testMode)
 	pinker.ArrowTypes = ArrowTypes;
 	pinker.Line = Line;
 	pinker.Point = Point;
+	pinker.Source = Source;
+	pinker.Node = Node;
+	pinker.FindNode = FindNode;
 } 
 })(); 

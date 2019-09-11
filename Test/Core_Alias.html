@@ -9,6 +9,7 @@
 		Pinker.js Tests: Core: Alias
 		</div>
 
+		Basic demo
 		<div>
 			<pre id='Source01'>
 Layout:
@@ -35,6 +36,30 @@ Relate:
 		<script>
 			var canvas = document.getElementById("Canvas01");
 			var source = document.getElementById("Source01").innerHTML;
+			pinker.draw(canvas, source);
+		</script>
+
+		Non-top-level alias with relative addresses (Bug #4 - should see 2 arrows)
+		<div>
+			<pre id='Source02'>
+Layout:
+	[A]
+[A]:
+	Layout:
+		[{B}B]
+{B}:
+	Layout:
+		[V][W]
+		[X][Y]
+	Relate:
+		[V]->[W]
+		{B}.[X]-D{B}.[Y]			
+			</pre>
+			<canvas id='Canvas02'></canvas>
+		</div>
+		<script>
+			var canvas = document.getElementById("Canvas02");
+			var source = document.getElementById("Source02").innerHTML;
 			pinker.draw(canvas, source);
 		</script>
 

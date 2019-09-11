@@ -366,62 +366,6 @@ function getCoincidentPossibleLineSets(lines) {
 	return sets;
 }
 
-function findNode(nodes, label, labelPath) {
-	if(Source.isAliasPath(label))
-		return findNodeAliasPath(nodes, label);
-	if(Source.pathStartsWithAlias(label))
-	{
-		let [alias, remainingPath] = Source.splitAliasFromPath(label);
-		let node = findNodeAlias(nodes, alias);
-		if(node == null)
-			return null;
-		return node.findLabel(node.pathPrefix() + Source.openScope(remainingPath));
-	}
-	let node = findNodeRelative(nodes, label, labelPath);
-	if(node != null)
-		return node;
-	return findNodeAbsolute(nodes, label);
-}
-
-function findNodeRelative(nodes, label, path) {
-	let startingNode = findNodeAbsolute(nodes, path);
-	if(startingNode == null)
-		return null;
-	return findNodeAbsolute(startingNode.nodes, label);
-}
-
-function findNodeAbsolute(nodes, labelOrPath) {
-	for(let i=0; i<nodes.length; i++)
-	{
-		let node = nodes[i];
-		let result = node.findPath(labelOrPath);
-		if(result != null)
-			return result;
-	}
-	return null;
-}
-
-function findNodeAliasPath(nodes, aliasPath) {
-	if(Source.isAlias(aliasPath))
-		return findNodeAlias(nodes, aliasPath);
-	let [alias, path] = Source.splitAliasFromPath(aliasPath);
-	let node = findNodeAlias(nodes, alias);
-	if(node == null)
-		return null;
-	return findNodeAbsolute(node.nodes, Source.openScope(path));
-}
-
-function findNodeAlias(nodes, alias) {
-	for(let i=0; i<nodes.length; i++)
-	{
-		let node = nodes[i];
-		let result = node.findAlias(alias);
-		if(result != null)
-			return result;
-	}
-	return null;
-}
-
 function calculateCanvasDimensions(nodes) {
 	let width = 0;
 	let height = 0;
