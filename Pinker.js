@@ -7,7 +7,7 @@ var pinker = pinker || {};
 
 pinker.testMode = true;
 
-pinker.version = '1.3.0';
+pinker.version = '1.4.0';
 
 pinker.config = {
 	fontSize: 14 //font size in pixels
