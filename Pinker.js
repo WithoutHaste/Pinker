@@ -157,9 +157,19 @@ pinker.config = {
 			element.innerHTML = text;
 			return element.value;
 		},
+		//returns the text, with all leading and trailing whitespace characters removed from each line
+		trim: function(text) {
+			let result = Source.removeLeadingWhitespace(text);
+			result = Source.removeTrailingWhitespace(result);
+			return result;
+		},
 		//returns the text, with all leading whitespace characters removed from each line
-		unIndent: function(text) {
+		removeLeadingWhitespace: function(text) {
 			return text.replace(/^\s+/mg,"");
+		},
+		//returns the text, with all trailing whitespace characters removed from each line
+		removeTrailingWhitespace: function(text) {
+			return text.replace(/\s+$/mg,"");
 		},
 		//returns true if this is a section header
 		isSectionHeader: function(term) {
@@ -687,7 +697,7 @@ pinker.config = {
 	//returns a "source" object
 	function parseSource(sourceText) {
 		const source = Source.create();
-		sourceText = Source.unIndent(sourceText);
+		sourceText = Source.trim(sourceText);
 		const sections = parseSections(sourceText);
 		source.addSections(sections);
 		source.validate();

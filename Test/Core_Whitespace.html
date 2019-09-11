@@ -1,0 +1,59 @@
+<html>
+	<head>
+		<meta charset="UTF-8"> 
+		<script src='../Pinker.js'></script>
+		<link rel="stylesheet" type="text/css" href="Test.css" />
+	</head>
+	<body>
+		<div class='header'>
+		Pinker.js Tests: Core: Whitespace
+		</div>
+
+		Leading whitespace ignored
+		<div>
+			<pre id='Source01'>
+Layout:
+	[A][B]
+		[C][D]
+  Relate:
+[A]->[B]
+       [C]:
+Layout:
+[C1][C2]
+	[D]:
+	Define:
+Text
+			</pre>
+			<canvas id='Canvas01'></canvas>
+		</div>
+		<script>
+			var canvas = document.getElementById("Canvas01");
+			var source = document.getElementById("Source01").innerHTML;
+			pinker.draw(canvas, source);
+		</script>
+
+		Trailing whitespace ignored
+		<div>
+			<pre id='Source02'>
+Layout:		
+	[A][B] 
+	[C][D]    
+ Relate:
+	[A]->[B]
+[C]: 
+	Layout:	
+		[C1][C2]			
+[D]:
+	Define:
+		Text 	 
+			</pre>
+			<canvas id='Canvas02'></canvas>
+		</div>
+		<script>
+			var canvas = document.getElementById("Canvas02");
+			var source = document.getElementById("Source02").innerHTML;
+			pinker.draw(canvas, source);
+		</script>
+
+	</body>
+</html>
